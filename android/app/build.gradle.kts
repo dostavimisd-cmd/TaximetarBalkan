@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.taksimetar_balkan"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = flutter.compileSdkVersion 
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
