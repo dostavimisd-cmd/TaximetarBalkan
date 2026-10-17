@@ -6,8 +6,8 @@ Pomoćna aplikacija za vozača (offline-first) koja računa cenu vožnje. Pomaž
 
 ## Analiza Konkurencije (TAXImet, Taximeter)
 - **Šta rade dobro:** Imaju osnovno merenje, istoriju i unos tarifa.
-- **Problemi (Žalbe korisnika):** Aplikacije se gase u pozadini (baterija), GPS šum dodaje metre na semaforu, Bluetooth štampači izbacuju hijeroglife umesto č,ć,ž,š,đ, tarife ne prate automatski domaće praznike.
-- **Naša prednost:** Pametno čekanje (ispod 8 km/h), stroga kalibracija, podrška za naša slova na kineskim štampačima, stabilan foreground servis.
+- **Problemi (Žalbe korisnika):** Pretpostavke, nisu proverene sa pravim recenzijama - aplikacije se gase u pozadini (baterija), GPS šum dodaje metre na semaforu, Bluetooth štampači izbacuju hijeroglife umesto č,ć,ž,š,đ, tarife ne prate automatski domaće praznike.
+- **Naša prednost:** Pametno čekanje, stroga kalibracija, podrška za naša slova na kineskim štampačima, stabilan foreground servis.
 
 ## Faze razvoja
 1. **Faza 1 (Jezgro):** GPS merenje, FareCalculator, sqflite čuvanje stanja vožnje, Foreground Service, glavni UI ekran.
