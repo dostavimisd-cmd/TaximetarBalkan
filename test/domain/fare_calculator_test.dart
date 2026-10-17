@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 
-// ZAMENI 'ime_tvog_projekta' sa tačnim nazivom iz pubspec.yaml fajla
+// ZAMENI 'ime_tvog_projekta' sa tačnim nazivom iz pubspec.yaml
 import 'package:taksimetar_balkan/domain/fare_calculator.dart';
 import 'package:taksimetar_balkan/domain/models/tariff.dart';
 
 void main() {
-  group('FareCalculator Tests', () {
+  group('FareCalculator - Celobrojna Matematika', () {
     const defaultTariff = Tariff(
       startPrice: 150,
       pricePerKm: 80,
@@ -13,80 +13,102 @@ void main() {
       minPrice: 200,
     );
 
-    test('Vožnja bez čekanja (nema minimalne cene)', () {
+    test('Vožnja bez čekanja (Nema minimalne cene)', () {
+      // Ručni račun: Start 150. Km = (2000 * 80)/1000 = 160. Total = 310.
       final result = FareCalculator.calculate(
         tariff: defaultTariff,
-        distanceMeters: 2000, // 2 km = 160
+        distanceMeters: 2000,
         waitingSeconds: 0,
       );
-
-      expect(result.startPrice, 150);
       expect(result.kmPrice, 160);
       expect(result.waitingPrice, 0);
+      expect(result.minPriceAdjustment, 0);
       expect(result.totalPrice, 310);
-      expect(result.isMinPriceApplied, false);
+      expect(result.startPrice + result.kmPrice + result.waitingPrice + result.minPriceAdjustment, result.totalPrice);
     });
 
     test('Vožnja sa čekanjem', () {
+      // Ručni račun: Start 150. Km = (5000 * 80)/1000 = 400. Cekanje = (300 * 10)/60 = 50. Total = 600.
       final result = FareCalculator.calculate(
         tariff: defaultTariff,
-        distanceMeters: 5000, // 5 km = 400
-        waitingSeconds: 300, // 5 min = 50
+        distanceMeters: 5000,
+        waitingSeconds: 300,
       );
-
       expect(result.kmPrice, 400);
       expect(result.waitingPrice, 50);
-      expect(result.totalPrice, 600); // 150 + 400 + 50
+      expect(result.totalPrice, 600);
+      expect(result.startPrice + result.kmPrice + result.waitingPrice + result.minPriceAdjustment, result.totalPrice);
     });
 
-    test('Primenjena minimalna cena', () {
+    test('Minimalna cena i adjustment', () {
+      // Ručni račun: Start 150. Km = (100 * 80)/1000 = 8. Ukupno 158. Min je 200. Adjustment = 42.
       final result = FareCalculator.calculate(
         tariff: defaultTariff,
-        distanceMeters: 100, // 0.1 km = 8
+        distanceMeters: 100,
         waitingSeconds: 0,
       );
-
-      // Start 150 + 8 = 158. Minimalna je 200.
       expect(result.kmPrice, 8);
       expect(result.totalPrice, 200);
+      expect(result.minPriceAdjustment, 42);
       expect(result.isMinPriceApplied, true);
+      expect(result.startPrice + result.kmPrice + result.waitingPrice + result.minPriceAdjustment, result.totalPrice);
     });
 
-    test('Koeficijent kalibracije menja obračun distance', () {
+    test('Kalibracija različita od 1.0', () {
+      // Ručni račun: Dist = 1000 * 1.05 = 1050m. Km = (1050 * 80)/1000 = 84. Total = 150 + 84 = 234.
       final result = FareCalculator.calculate(
         tariff: defaultTariff,
-        distanceMeters: 1000, // Originalno 1 km
+        distanceMeters: 1000,
         waitingSeconds: 0,
-        calibrationMultiplier: 1.05, // 5% veći impuls (1.05 km = 84 din)
+        calibrationMultiplier: 1.05,
       );
-
-      expect(result.kmPrice, 84); 
-      expect(result.totalPrice, 234); // 150 + 84
+      expect(result.kmPrice, 84);
+      expect(result.totalPrice, 234);
     });
 
-    test('Nula pređenih kilometara i minuta', () {
+    test('Nula km i minuta', () {
+      // Ručni račun: Start 150. Sve nula. Min 200. Adjustment 50.
       final result = FareCalculator.calculate(
         tariff: defaultTariff,
         distanceMeters: 0,
         waitingSeconds: 0,
       );
-
-      expect(result.totalPrice, 200); // Primeniće se min cena jer je 150 < 200
-      expect(result.isMinPriceApplied, true);
+      expect(result.kmPrice, 0);
+      expect(result.totalPrice, 200);
+      expect(result.minPriceAdjustment, 50);
     });
 
-    test('Pravila zaokruživanja: > 0.5 se zaokružuje na gore', () {
-      // 1250 metara = 1.25 km. 1.25 * 80 = 100
-      // 35 sekundi = 0.5833 min. 0.5833 * 10 = 5.833 -> 6 dinara.
+    test('Granica zaokruživanja na .5', () {
+      // Distanca: 1256m * 80 = 100480. 100480 / 1000 = 100.48 -> 100.
+      // Distanca: 1257m * 80 = 100560. 100560 / 1000 = 100.56 -> 101.
+      // Cekanje: 32s * 10 = 320. 320 / 60 = 5.33 -> 5.
+      // Cekanje: 33s * 10 = 330. 330 / 60 = 5.5 -> 6.
+      final result1 = FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 1256, waitingSeconds: 32);
+      expect(result1.kmPrice, 100);
+      expect(result1.waitingPrice, 5);
+
+      final result2 = FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 1257, waitingSeconds: 33);
+      expect(result2.kmPrice, 101);
+      expect(result2.waitingPrice, 6);
+    });
+
+    test('Veliki iznosi (izbegavanje overflow-a)', () {
+      // Ručni račun: Start 150. Dist = 100,000 m (100km). Km = (100,000 * 80)/1000 = 8000. 
+      // Cekanje 36000s (10 sati). Cekanje = (36000 * 10)/60 = 6000. Total = 150 + 8000 + 6000 = 14150.
       final result = FareCalculator.calculate(
         tariff: defaultTariff,
-        distanceMeters: 1250,
-        waitingSeconds: 35, 
+        distanceMeters: 100000,
+        waitingSeconds: 36000,
       );
+      expect(result.kmPrice, 8000);
+      expect(result.waitingPrice, 6000);
+      expect(result.totalPrice, 14150);
+    });
 
-      expect(result.kmPrice, 100);
-      expect(result.waitingPrice, 6);
-      expect(result.totalPrice, 256); // 150 + 100 + 6
+    test('Nevažeći ulazi bacaju grešku', () {
+      expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: -10, waitingSeconds: 0), throwsArgumentError);
+      expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 10, waitingSeconds: -5), throwsArgumentError);
+      expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 10, waitingSeconds: 0, calibrationMultiplier: 0), throwsArgumentError);
     });
   });
 }
