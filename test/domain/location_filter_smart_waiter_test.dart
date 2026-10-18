@@ -60,6 +60,13 @@ void main() {
       expect(r.addedWaitingMs, 10000);
     });
 
+    test('rupa od 2 sata dok vozilo stoji: čekanje ograničeno na 5 min', () {
+      final p1 = pt(0, 0);
+      final r = waiter.process(p1, pt(0, 7200), p1);
+      expect(r.addedDistanceMeters, 0.0);
+      expect(r.addedWaitingMs, 300000);
+    });
+
     test('normalna vožnja: 100 m za 10 s -> distanca, čekanje 0', () {
       final p1 = pt(0, 0, speed: 10.0);
       final r = waiter.process(p1, pt(100, 10, speed: 10.0), p1);
