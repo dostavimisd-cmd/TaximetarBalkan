@@ -4,55 +4,55 @@ import 'models/location_point.dart';
 class SmartWaiterResult {
   final double addedDistanceMeters;
   final int addedWaitingMs;
-
+  
   const SmartWaiterResult(this.addedDistanceMeters, this.addedWaitingMs);
 }
 
 class SmartWaiter {
   final double waitingSpeedThresholdKmh;
-
-  /// Dužina prozora za procenu brzine (ms). Brzina se meri na ovom prozoru,
-  /// ne između dve susedne tačke, da bi GPS šum dok vozilo stoji ostao ispod praga.
-  final int windowMs;
+  final int gapThresholdMs;
 
   const SmartWaiter({
     this.waitingSpeedThresholdKmh = 8.0,
-    this.windowMs = 5000,
+    this.gapThresholdMs = 10000, 
   });
 
-  /// [windowStart] je poslednja validna tačka stara bar [windowMs] (daje je RideTracker).
-  /// Ako je null, brzina se računa između lastPoint i newPoint.
   SmartWaiterResult process(
-    LocationPoint lastPoint,
-    LocationPoint newPoint, {
-    LocationPoint? windowStart,
-  }) {
-    final msPassed =
-        newPoint.timestamp.difference(lastPoint.timestamp).inMilliseconds;
+    LocationPoint lastPoint, 
+    LocationPoint newPoint, 
+    LocationPoint windowStart,
+  ) {
+    final msPassed = newPoint.timestamp.difference(lastPoint.timestamp).inMilliseconds;
     if (msPassed <= 0) return const SmartWaiterResult(0.0, 0);
 
-    final distance = LocationFilter.calculateDistance(
+    // Stvarna pređena distanca od prošle tačke (za sabiranje ako vozimo)
+    final stepDistance = LocationFilter.calculateDistance(
       lastPoint.latitude, lastPoint.longitude,
       newPoint.latitude, newPoint.longitude,
     );
 
-    // Brzina iz pomaka na prozoru (GPS speed se ne koristi za odluku).
-    final ref = windowStart ?? lastPoint;
-    final refMs = newPoint.timestamp.difference(ref.timestamp).inMilliseconds;
-    final refDistance = identical(ref, lastPoint)
-        ? distance
-        : LocationFilter.calculateDistance(
-            ref.latitude, ref.longitude,
-            newPoint.latitude, newPoint.longitude,
-          );
+    double effectiveSpeedKmh = newPoint.speed * 3.6;
 
-    final double speedKmh = refMs > 0
-        ? (refDistance / (refMs / 1000.0)) * 3.6
-        : newPoint.speed * 3.6; // samo ako nema upotrebljivog prozora
-
-    if (speedKmh < waitingSpeedThresholdKmh) {
-      return SmartWaiterResult(0.0, msPassed);
+    final windowMs = newPoint.timestamp.difference(windowStart.timestamp).inMilliseconds;
+    
+    // Ako GPS kaže 0 ili imamo rupu, koristimo prozor za izračunavanje brzine
+    if (msPassed > gapThresholdMs || newPoint.speed <= 0.01) {
+      if (windowMs > 0) {
+        final windowDistance = LocationFilter.calculateDistance(
+          windowStart.latitude, windowStart.longitude,
+          newPoint.latitude, newPoint.longitude,
+        );
+        effectiveSpeedKmh = (windowDistance / (windowMs / 1000.0)) * 3.6;
+      } else {
+        effectiveSpeedKmh = (stepDistance / (msPassed / 1000.0)) * 3.6;
+      }
     }
-    return SmartWaiterResult(distance, 0);
+
+    // Klasifikacija: stoji ili vozi na osnovu brzine iz prozora
+    if (effectiveSpeedKmh < waitingSpeedThresholdKmh) {
+      return SmartWaiterResult(0.0, msPassed);
+    } else {
+      return SmartWaiterResult(stepDistance, 0);
+    }
   }
 }

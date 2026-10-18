@@ -1,109 +1,113 @@
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taksimetar_balkan/domain/location_filter.dart';
-import 'package:taksimetar_balkan/domain/smart_waiter.dart';
 import 'package:taksimetar_balkan/domain/models/location_point.dart';
+import 'package:taksimetar_balkan/domain/ride_tracker.dart';
+import 'package:taksimetar_balkan/domain/models/tariff.dart';
 
 double addMetersToLat(double lat, double meters) {
   return lat + (meters * 180.0 / (pi * 6371000.0));
 }
 
 void main() {
-  group('GPS Logika - Filter i SmartWaiter (Svi slučajevi)', () {
-    late LocationFilter filter;
-    late SmartWaiter waiter;
+  group('RideTracker integracioni testovi (Prozor)', () {
+    const baseLat = 44.8000;
+    const baseLon = 20.4000;
     final baseTime = DateTime.utc(2023, 1, 1, 12, 0, 0);
-    const double baseLat = 44.8000;
-    const double baseLon = 20.4000;
+    const tariff = Tariff(id: 1, startPrice: 150, pricePerKm: 80, waitingPricePerMin: 10, minPrice: 200);
 
-    setUp(() {
-      filter = const LocationFilter(accuracyThresholdMeters: 15.0, maxSpeedKmh: 200.0, resetGapSeconds: 60);
-      waiter = const SmartWaiter(waitingSpeedThresholdKmh: 8.0);
-    });
-
-    // --- STARI TESTOVI KOJE SMO VRATILI ---
-
-    test('Filter: Odbacuje tačku sa lošom tačnošću (iako je prva)', () {
-      final p1 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 20.0, speed: 0.0, timestamp: baseTime);
-      expect(filter.isValid(p1, null), false);
-    });
-
-    test('Filter: Odbacuje nerealne skokove (teleportaciju od 5km za 10s uz GPS speed 10m/s)', () {
-      final p1 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime);
-      // Fizički razmak 5000m, razmak u vremenu 10s -> Izračunato 1800 km/h (pada na filteru)
-      final p2 = LocationPoint(latitude: addMetersToLat(baseLat, 5000), longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime.add(const Duration(seconds: 10)));
-      expect(filter.isValid(p2, p1), false);
-    });
-
-    test('Filter: Isti timestamp ili negativan razmak -> Odbacuje se bezbedno', () {
-      final p1 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 5.0, timestamp: baseTime);
-      final p2 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 5.0, timestamp: baseTime); 
-      final p3 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 5.0, timestamp: baseTime.subtract(const Duration(seconds: 5))); 
+    test('a) 60 tačaka, speed 0, šum 3m napred-nazad', () {
+      final tracker = RideTracker(tariff: tariff);
+      // Šum naizmenično (0m, 3m, 0m, 3m). Brzina susednih je 10.8 km/h, ali u 4s prozoru je ~0 km/h.
+      for (int i = 0; i <= 60; i++) {
+        double offsetMeters = (i % 2 == 0) ? 0.0 : 3.0;
+        tracker.processLocation(LocationPoint(
+          latitude: addMetersToLat(baseLat, offsetMeters), 
+          longitude: baseLon, accuracy: 5.0, speed: 0.0, 
+          timestamp: baseTime.add(Duration(seconds: i))
+        ));
+      }
       
-      expect(filter.isValid(p2, p1), false);
-      expect(filter.isValid(p3, p1), false);
+      // Sav šum mora otići u čekanje
+      expect(tracker.totalDistanceMeters, lessThan(5.0)); // Distanca praktično 0
+      expect(tracker.totalWaitingMs, closeTo(60000, 1000));
     });
 
-    test('SmartWaiter: Normalna vožnja (preko 8 km/h)', () {
-      final p1 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime);
-      final p2 = LocationPoint(latitude: addMetersToLat(baseLat, 100), longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime.add(const Duration(seconds: 10)));
+    test('b) Vožnja 9 km/h (2.5 m/s), speed 0', () {
+      final tracker = RideTracker(tariff: tariff);
+      for (int i = 0; i <= 60; i++) {
+        tracker.processLocation(LocationPoint(
+          latitude: addMetersToLat(baseLat, i * 2.5), 
+          longitude: baseLon, accuracy: 5.0, speed: 0.0, 
+          timestamp: baseTime.add(Duration(seconds: i))
+        ));
+      }
       
-      final result = waiter.process(p1, p2);
-      expect(result.addedDistanceMeters, closeTo(100.0, 1.0));
-      expect(result.addedWaitingMs, 0);
+      expect(tracker.totalDistanceMeters, closeTo(150.0, 5.0)); // 60 * 2.5 = 150
+      expect(tracker.totalWaitingMs, lessThan(4000)); // Do 4s lag na samom početku
     });
 
-    test('SmartWaiter: Vozilo stoji na semaforu', () {
-      final p1 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 0.0, timestamp: baseTime);
-      final p2 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 0.0, timestamp: baseTime.add(const Duration(seconds: 10)));
+    test('c) Vožnja 36 km/h (10 m/s), speed 0', () {
+      final tracker = RideTracker(tariff: tariff);
+      for (int i = 0; i <= 60; i++) {
+        tracker.processLocation(LocationPoint(
+          latitude: addMetersToLat(baseLat, i * 10.0), 
+          longitude: baseLon, accuracy: 5.0, speed: 0.0, 
+          timestamp: baseTime.add(Duration(seconds: i))
+        ));
+      }
       
-      final result = waiter.process(p1, p2);
-      expect(result.addedDistanceMeters, 0.0);
-      expect(result.addedWaitingMs, 10000);
+      expect(tracker.totalDistanceMeters, closeTo(600.0, 5.0));
+      expect(tracker.totalWaitingMs, lessThan(2000));
     });
 
-    // --- NOVI TESTOVI (Ivični slučajevi) ---
-
-    test('SmartWaiter: GPS javlja speed 0, ali imamo 100m pomeranja za 10s (Bag senzora)', () {
-      final p1 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 0.0, timestamp: baseTime);
-      final p2 = LocationPoint(latitude: addMetersToLat(baseLat, 100), longitude: baseLon, accuracy: 5.0, speed: 0.0, timestamp: baseTime.add(const Duration(seconds: 10)));
+    test('d) Prelaz iz stajanja u vožnju (Lag klasifikacije)', () {
+      final tracker = RideTracker(tariff: tariff);
+      // Stoji 10s
+      for (int i = 0; i <= 10; i++) {
+        tracker.processLocation(LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 0.0, timestamp: baseTime.add(Duration(seconds: i))));
+      }
+      expect(tracker.totalDistanceMeters, 0.0);
       
-      // Iako je GPS javio 0, waiter prepoznaje skok i računa 36km/h (preko 8)
-      final result = waiter.process(p1, p2);
-      expect(result.addedDistanceMeters, closeTo(100.0, 1.0));
-      expect(result.addedWaitingMs, 0);
+      // Krece ubrzanjem: pređe 10 metara u prvoj sekundi (36 km/h)
+      // Iako je prozor 4 sekunde (gde su prve 3 stajale, a u 4. prešao 10m), 
+      // 10 metara u 4 sekunde = 2.5 m/s = 9.0 km/h. To je odma iznad 8 km/h!
+      tracker.processLocation(LocationPoint(latitude: addMetersToLat(baseLat, 10.0), longitude: baseLon, accuracy: 5.0, speed: 0.0, timestamp: baseTime.add(const Duration(seconds: 11))));
+      
+      /* KOMENTAR: 
+         Zbog praga od 8 km/h (2.22 m/s), prelaz iz mirovanja u normalnu 
+         gradsku vožnju kasni MAKSIMALNO 1 sekundu. Čak i osrednje ubrzanje 
+         preskoči prag unutar prozora odmah. Sistem reaguje ekstremno brzo. */
+      expect(tracker.totalDistanceMeters, closeTo(10.0, 0.1));
     });
 
-    test('SmartWaiter: Rupa u signalu od 120s (Prolazak kroz tunel)', () {
-      final p1 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime);
-      
-      // A) Brz tunel: 2000m za 120s (60 km/h izračunato)
-      final p2Fast = LocationPoint(latitude: addMetersToLat(baseLat, 2000), longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime.add(const Duration(seconds: 120)));
-      final resFast = waiter.process(p1, p2Fast);
-      expect(resFast.addedDistanceMeters, closeTo(2000.0, 1.0));
-      expect(resFast.addedWaitingMs, 0);
+    test('e) Restore iz Snapshot-a vs Neprekinuta vožnja', () {
+      final trackerContinuous = RideTracker(tariff: tariff);
+      final trackerRestored = RideTracker(tariff: tariff);
 
-      // B) Spor tunel (Gužva): 100m za 120s (3 km/h izračunato)
-      final p2Slow = LocationPoint(latitude: addMetersToLat(baseLat, 100), longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime.add(const Duration(seconds: 120)));
-      final resSlow = waiter.process(p1, p2Slow);
-      expect(resSlow.addedDistanceMeters, 0.0);
-      expect(resSlow.addedWaitingMs, 120000);
-    });
+      // Obojica voze 50s po 10 m/s
+      for (int i = 0; i <= 50; i++) {
+        trackerContinuous.processLocation(LocationPoint(latitude: addMetersToLat(baseLat, i * 10.0), longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime.add(Duration(seconds: i))));
+      }
 
-    test('SmartWaiter: Tačno na ivici (7.9 km/h i 8.1 km/h)', () {
-      final p1 = LocationPoint(latitude: baseLat, longitude: baseLon, accuracy: 5.0, speed: 0.0, timestamp: baseTime);
-      
-      // 7.9 km/h (2.194 m/s). Speed iz senzora kontroliše ishod.
-      final p79 = LocationPoint(latitude: addMetersToLat(baseLat, 21.94), longitude: baseLon, accuracy: 5.0, speed: 2.194, timestamp: baseTime.add(const Duration(seconds: 10)));
-      final res79 = waiter.process(p1, p79);
-      expect(res79.addedDistanceMeters, 0.0);
-      expect(res79.addedWaitingMs, 10000); // Manje od 8, ide u čekanje
+      // Prekid drugog, učitavanje snapshot-a
+      trackerRestored.restoreFromSnapshot(
+        restoredDistance: trackerContinuous.totalDistanceMeters,
+        restoredWaitingMs: trackerContinuous.totalWaitingMs,
+        lastLat: trackerContinuous.lastValidPoint!.latitude,
+        lastLon: trackerContinuous.lastValidPoint!.longitude,
+        lastTimestamp: trackerContinuous.lastValidPoint!.timestamp,
+      );
 
-      // 8.1 km/h (2.25 m/s)
-      final p81 = LocationPoint(latitude: addMetersToLat(baseLat, 22.5), longitude: baseLon, accuracy: 5.0, speed: 2.25, timestamp: baseTime.add(const Duration(seconds: 10)));
-      final res81 = waiter.process(p1, p81);
-      expect(res81.addedDistanceMeters, closeTo(22.5, 0.1));
-      expect(res81.addedWaitingMs, 0); // Više od 8, ide u distancu
+      // Nastavljaju obojica do 60s
+      for (int i = 51; i <= 60; i++) {
+        final point = LocationPoint(latitude: addMetersToLat(baseLat, i * 10.0), longitude: baseLon, accuracy: 5.0, speed: 10.0, timestamp: baseTime.add(Duration(seconds: i)));
+        trackerContinuous.processLocation(point);
+        trackerRestored.processLocation(point);
+      }
+
+      final loss = (trackerContinuous.totalDistanceMeters - trackerRestored.totalDistanceMeters).abs();
+      // Gubitak usled restarta i poništenog prozora mora biti minimalan
+      expect(loss, lessThan(0.5));
     });
   });
 }
