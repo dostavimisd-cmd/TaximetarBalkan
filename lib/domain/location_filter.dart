@@ -4,37 +4,44 @@ import 'models/location_point.dart';
 class LocationFilter {
   final double accuracyThresholdMeters;
   final double maxSpeedKmh;
+  final int resetGapSeconds;
 
-  LocationFilter({
+  const LocationFilter({
     this.accuracyThresholdMeters = 15.0,
-    this.maxSpeedKmh = 200.0, // Preko ovoga smatramo da je "skok" (GPS greška)
+    this.maxSpeedKmh = 200.0,
+    this.resetGapSeconds = 60,
   });
 
   bool isValid(LocationPoint newPoint, LocationPoint? lastPoint) {
     if (newPoint.accuracy > accuracyThresholdMeters) return false;
+    if (lastPoint == null) return true;
 
-    if (lastPoint != null) {
-      final secondsPassed = newPoint.timestamp.difference(lastPoint.timestamp).inSeconds;
-      if (secondsPassed <= 0) return false;
+    final msPassed = newPoint.timestamp.difference(lastPoint.timestamp).inMilliseconds;
+    if (msPassed <= 0) return false;
 
-      final distance = _calculateDistance(
-        lastPoint.latitude, lastPoint.longitude,
-        newPoint.latitude, newPoint.longitude,
-      );
-      final speed = (distance / secondsPassed) * 3.6;
+    final distance = calculateDistance(
+      lastPoint.latitude, lastPoint.longitude,
+      newPoint.latitude, newPoint.longitude,
+    );
+    final calculatedSpeedKmh = (distance / (msPassed / 1000.0)) * 3.6;
 
-      if (speed > maxSpeedKmh) return false; // Nerealan skok
+    if (calculatedSpeedKmh > maxSpeedKmh) {
+      if ((msPassed / 1000.0) < resetGapSeconds) {
+        return false; 
+      }
+      return true; 
     }
+
     return true;
   }
 
-  static double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const r = 6371000.0;
-    final dLat = (lat2 - lat1) * (pi / 180.0);
-    final dLon = (lon2 - lon1) * (pi / 180.0);
-    final a = sin(dLat / 2) * sin(dLat / 2) +
+  static double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double r = 6371000.0;
+    final double dLat = (lat2 - lat1) * (pi / 180.0);
+    final double dLon = (lon2 - lon1) * (pi / 180.0);
+    final double a = sin(dLat / 2) * sin(dLat / 2) +
         cos(lat1 * (pi / 180.0)) * cos(lat2 * (pi / 180.0)) *
         sin(dLon / 2) * sin(dLon / 2);
-    return r * 2 * atan2(sqrt(a), sqrt(1 - a));
+    return r * 2 * asin(sqrt(a));
   }
 }

@@ -17,9 +17,10 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
+    // Dižemo verziju na 2
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -69,7 +70,12 @@ class DatabaseHelper {
         total_price INTEGER NOT NULL,
         tariff_id INTEGER NOT NULL,
         applied_calibration REAL NOT NULL,
-        status TEXT NOT NULL
+        status TEXT NOT NULL,
+        tariff_start_price INTEGER DEFAULT 0,
+        tariff_price_per_km INTEGER DEFAULT 0,
+        tariff_waiting_price_per_min INTEGER DEFAULT 0,
+        tariff_min_price INTEGER DEFAULT 0,
+        min_price_adjustment INTEGER DEFAULT 0
       )
     ''');
 
@@ -77,11 +83,11 @@ class DatabaseHelper {
       CREATE TABLE ride_snapshots (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ride_id INTEGER NOT NULL,
-        current_distance INTEGER NOT NULL,
-        current_waiting_sec INTEGER NOT NULL,
+        current_distance REAL NOT NULL,
+        current_waiting_ms INTEGER NOT NULL,
         current_price INTEGER NOT NULL,
-        last_lat REAL,
-        last_lon REAL,
+        last_lat REAL NOT NULL,
+        last_lon REAL NOT NULL,
         timestamp INTEGER NOT NULL
       )
     ''');
@@ -97,13 +103,34 @@ class DatabaseHelper {
       )
     ''');
 
-    // Podrazumevane vrednosti
     await db.insert('app_settings', {'key': 'waiting_speed_threshold', 'value': '8.0'});
     await db.insert('app_settings', {'key': 'gps_accuracy_threshold', 'value': '15.0'});
     await db.insert('app_settings', {'key': 'calibration_multiplier', 'value': '1.0'});
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
-    // Migracije za buduće verzije
+    if (oldVersion < 2) {
+      // Dodajemo nove kolone u postojeću tabelu rides
+      await db.execute('ALTER TABLE rides ADD COLUMN tariff_start_price INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE rides ADD COLUMN tariff_price_per_km INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE rides ADD COLUMN tariff_waiting_price_per_min INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE rides ADD COLUMN tariff_min_price INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE rides ADD COLUMN min_price_adjustment INTEGER DEFAULT 0');
+      
+      // Brišemo staru snapshot tabelu i pravimo novu sa pravilnim tipovima
+      await db.execute('DROP TABLE IF EXISTS ride_snapshots');
+      await db.execute('''
+        CREATE TABLE ride_snapshots (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          ride_id INTEGER NOT NULL,
+          current_distance REAL NOT NULL,
+          current_waiting_ms INTEGER NOT NULL,
+          current_price INTEGER NOT NULL,
+          last_lat REAL NOT NULL,
+          last_lon REAL NOT NULL,
+          timestamp INTEGER NOT NULL
+        )
+      ''');
+    }
   }
 }
