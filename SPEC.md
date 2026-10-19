@@ -1,9 +1,43 @@
-# Specifikacija obračuna
+# Specifikacija: Taksimetar Balkan
+
+## Cilj
+Pomoćna aplikacija za vozača (offline-first) koja računa cenu vožnje. Pomaže taksistima da koriguju tarife u odnosu na državni taksimetar.
+**Važno:** Ovo NIJE zvanični taksimetar ni fiskalni uređaj (jasna oznaka na UI i računu).
+
+## Analiza Konkurencije (TAXImet, Taximeter)
+- **Šta rade dobro:** Imaju osnovno merenje, istoriju i unos tarifa.
+- **Problemi (Žalbe korisnika):** Pretpostavke, nisu proverene sa pravim recenzijama - aplikacije se gase u pozadini (baterija), GPS šum dodaje metre na semaforu, Bluetooth štampači izbacuju hijeroglife umesto č,ć,ž,š,đ, tarife ne prate automatski domaće praznike.
+- **Naša prednost:** Pametno čekanje, stroga kalibracija, podrška za naša slova na kineskim štampačima, stabilan foreground servis.
+
+## Faze razvoja
+1. **Faza 1 (Jezgro):** GPS merenje, FareCalculator, sqflite čuvanje stanja vožnje, Foreground Service, glavni UI ekran.
+2. **Faza 2 (Tarife):** Model tarifa, automatski/ručni režim, korisnički definisani praznici.
+3. **Faza 3 (Izveštaji):** Istorija vožnji, mesečni izveštaji, fiksne relacije.
+4. **Faza 4 (Hardver - ostavljeno za Claude Code):** Kalibracija, ESC/POS štampač, glasovna najava cene.
+
+### Status (2026-10-19)
+| Faza | Stavka | Status |
+|---|---|---|
+| 1 | GPS, FareCalculator, sqflite, Foreground Service, glavni ekran | urađeno (revizija koraci 1–9) |
+| 2 | Model tarifa (unos korisnika) | urađeno |
+| 2 | Automatski/ručni režim tarifa | sledeće |
+| 2 | Korisnički definisani praznici | sledeće |
+| 3 | Istorija vožnji | urađeno (brisanje odloženo) |
+| 3 | Mesečni izveštaji | čeka |
+| 3 | Fiksne relacije | čeka |
+| 4 | Kalibracija | urađeno |
+| 4 | ESC/POS štampač (č,ć,ž,š,đ) | čeka |
+| 4 | Glasovna najava cene | čeka |
+| — | Podešavanja (ekran, GPS prag tačnosti, pamćenje jezika/valute/tarife) | u radu |
+
+---
+
+# Pravila obračuna (odluke korisnika)
 
 Odluke korisnika (2026-10-19), vidi `docs/AUDIT_2026-10-19.md` (N17, U7).
 
 ## Novac
-- Sve cene i iznosi su **celi dinari** (`int`). Nema decimala u bazi ni u obračunu.
+- Sve cene i iznosi su **celi dinari** (`int`), osim cene čekanja po minutu koja se čuva u para (1/100 dinara, takođe `int`). Nema `double` u obračunu.
 - Tarife unosi korisnik; aplikacija nema ugrađene tarife, cene ni kurs (Pravilo 3).
 - **EUR je samo prikaz.** Korisnik unosi kurs (dinara za 1 EUR, do 3 decimale); čuva se kao `int` hiljaditih delova (`app_settings.eur_rate_milli`, 117.2 → 117200). Prikaz = `dinari * 100000 / kurs`, zaokruženo na cent (.5 naviše), celobrojno (`CurrencyConverter`). Bez unetog kursa EUR prikaz nije dostupan.
 
