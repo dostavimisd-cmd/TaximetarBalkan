@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../data/services/navigation_service.dart';
+import '../../domain/fare_estimate.dart';
 import '../../domain/models/navigation.dart';
+import '../../domain/models/tariff.dart';
 import '../providers/taximeter_provider.dart';
 import 'address_search_dialog.dart';
 
@@ -19,7 +21,19 @@ final navigationServiceProvider = Provider<NavigationService>(
 /// (pravila: https://operations.osmfoundation.org/policies/tiles/). Pre
 /// objave sa mnogo korisnika treba sopstveni ili plaćeni server podloga.
 class RideMap extends ConsumerStatefulWidget {
-  const RideMap({super.key});
+  /// Tarifa koja bi važila za vožnju (za približnu cenu do odredišta).
+  final Tariff? tariff;
+  final int calibrationPermille;
+
+  /// Fiksna relacija izabrana za sledeću vožnju (tada je cena tačna).
+  final int? fixedPrice;
+
+  const RideMap({
+    super.key,
+    this.tariff,
+    this.calibrationPermille = 1000,
+    this.fixedPrice,
+  });
 
   @override
   ConsumerState<RideMap> createState() => _RideMapState();
@@ -109,6 +123,30 @@ class _RideMapState extends ConsumerState<RideMap> {
     } finally {
       if (mounted) setState(() => _routing = false);
     }
+  }
+
+  /// "≈ 3870 din" po tarifi (bez čekanja) ili tačna fiksna cena.
+  String _estimate() {
+    final plan = _plan, tariff = widget.tariff;
+    if (plan == null || (tariff == null && widget.fixedPrice == null)) {
+      return '';
+    }
+    final price = FareEstimate.forRoute(
+      tariff:
+          tariff ??
+          const Tariff(
+            startPrice: 0,
+            pricePerKm: 0,
+            waitingParaPerMin: 0,
+            minPrice: 0,
+          ),
+      distanceMeters: plan.distanceMeters,
+      calibrationPermille: widget.calibrationPermille,
+      fixedPrice: widget.fixedPrice,
+    );
+    return widget.fixedPrice != null
+        ? '\nFiksna cena: $price din'
+        : '\n≈ $price din (bez čekanja)';
   }
 
   void _clearDestination() => setState(() {
@@ -263,8 +301,8 @@ class _RideMapState extends ConsumerState<RideMap> {
                     Expanded(
                       child: Text(
                         '${_destination!.label.split(',').first}'
-                        '${_plan == null ? '' : '\n${_plan!.describe()}'}',
-                        maxLines: 2,
+                        '${_plan == null ? '' : '\n${_plan!.describe()}${_estimate()}'}',
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,

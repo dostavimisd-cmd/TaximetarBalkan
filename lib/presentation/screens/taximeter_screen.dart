@@ -420,11 +420,16 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                         ),
 
                         if (settings.showMap && !landscape)
-                          const Expanded(
+                          Expanded(
                             flex: 4,
                             child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 10),
-                              child: RideMap(),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: RideMap(
+                                tariff: tariff,
+                                calibrationPermille:
+                                    settings.calibrationPermille,
+                                fixedPrice: _fixedRoute?.price,
+                              ),
                             ),
                           )
                         else
@@ -741,7 +746,13 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                   ),
                   if (settings.showMap && landscape) ...[
                     const SizedBox(width: 12),
-                    const Expanded(child: RideMap()),
+                    Expanded(
+                      child: RideMap(
+                        tariff: tariff,
+                        calibrationPermille: settings.calibrationPermille,
+                        fixedPrice: _fixedRoute?.price,
+                      ),
+                    ),
                   ],
                 ],
               ),
