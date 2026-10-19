@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 8,
+      version: 9,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -35,6 +35,17 @@ class DatabaseHelper {
     await db.rawQuery('PRAGMA journal_mode=WAL');
     await db.rawQuery('PRAGMA busy_timeout=5000');
     await db.execute('PRAGMA foreign_keys=ON');
+  }
+
+  /// Smene vozača (Faza 3).
+  static Future<void> _createShiftsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE shifts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        start_time INTEGER NOT NULL,
+        end_time INTEGER
+      )
+    ''');
   }
 
   /// V12: prekidi GPS signala tokom vožnje i kako su obračunati.
@@ -132,6 +143,7 @@ class DatabaseHelper {
         'CREATE INDEX idx_snapshots_ride ON ride_snapshots(ride_id)');
 
     await _createGapsTable(db);
+    await _createShiftsTable(db);
 
     await db.execute('''
       CREATE TABLE fixed_routes (
@@ -192,6 +204,9 @@ class DatabaseHelper {
           db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+    if (oldVersion < 9) {
+      await _createShiftsTable(db);
     }
     if (oldVersion < 8) {
       // Faza 2: raspored tarife (dani + vreme od-do) i tarifa praznika.

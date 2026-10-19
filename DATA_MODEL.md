@@ -2,7 +2,7 @@
 
 **Pravila:** Novac se čuva kao `INTEGER` (najmanja jedinica valute; za RSD dinar, za EUR cent — vidi N17 u `docs/AUDIT_2026-10-19.md`). Vreme se čuva kao `INTEGER` (UTC milisekunde). Logičke vrednosti (boolean) kao 0 ili 1.
 
-**Verzija šeme: 8** (`DatabaseHelper.openAt`). `onConfigure`: WAL, `busy_timeout=5000`, `foreign_keys=ON`.
+**Verzija šeme: 9** (`DatabaseHelper.openAt`). `onConfigure`: WAL, `busy_timeout=5000`, `foreign_keys=ON`.
 Servis (`RideEngine`) je jedini pisac u `rides` i `ride_snapshots`.
 
 ## Tabele
@@ -14,6 +14,7 @@ Servis (`RideEngine`) je jedini pisac u `rides` i `ride_snapshots`.
   - `total_price = start_price + km_price + waiting_price + min_price_adjustment`.
 - `ride_snapshots`: id, ride_id, current_distance (REAL, metri), current_waiting_ms, current_price, last_lat, last_lon, timestamp (GPS vreme poslednje tačke), **saved_at** (v3, vreme upisa; starost se meri njime). Najviše jedan red po vožnji; briše se pri stop-u i pri prekidu. Indeks `idx_snapshots_ride`.
 - `ride_gaps` (v6): id, ride_id, started_at (UTC ms, poslednja važeća tačka pre rupe), duration_ms, kind, added_distance_m, added_waiting_ms. Prekidi GPS signala duži od 10 s tokom vožnje. `kind`: `waiting` (rupa naplaćena kao čekanje), `distance` (dodata vazdušna linija), `skipped` (skok nemoguće brzine, ništa dodato), `service_restart` (servis je bio zaustavljen, nije mereno). Indeks `idx_gaps_ride`.
+- `shifts` (v9): id, start_time, end_time (NULL = smena u toku). Vožnje pripadaju smeni po vremenu početka; nema stranog ključa.
 - `fixed_routes`: id, name, from_label, to_label, conditions, fixed_price.
 
 ## Migracije
@@ -24,3 +25,4 @@ Servis (`RideEngine`) je jedini pisac u `rides` i `ride_snapshots`.
 - v5→v6: tabela `ride_gaps`.
 - v6→v7: `rides.gps_accuracy_m`.
 - v7→v8: raspored tarife (`tariffs.schedule_*`) i `holidays.tariff_id`.
+- v8→v9: tabela `shifts`.

@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/database_helper.dart';
 import '../../data/repositories/ride_history_repository_impl.dart';
+import '../../data/repositories/shift_repository_impl.dart';
+import '../../domain/models/shift.dart';
+import '../../domain/repositories/shift_repository.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../../domain/reports.dart';
@@ -25,4 +28,21 @@ final reportRidesProvider =
   (ref, range) => ref
       .read(rideHistoryRepositoryProvider)
       .getBetween(range.startUtcMs, range.endUtcMs),
+);
+
+final shiftRepositoryProvider = Provider<ShiftRepository>(
+  (ref) => ShiftRepositoryImpl(() => DatabaseHelper.instance.database),
+);
+
+/// Sve smene, najnovija prva (osvežava se posle početka/kraja smene).
+final shiftsProvider = FutureProvider.autoDispose<List<Shift>>(
+  (ref) => ref.read(shiftRepositoryProvider).getAll(),
+);
+
+/// Vožnje u smeni; otvorena smena se računa do sada.
+final shiftRidesProvider = FutureProvider.autoDispose.family<List<RideRecord>, Shift>(
+  (ref, shift) => ref.read(rideHistoryRepositoryProvider).getBetween(
+        shift.start.millisecondsSinceEpoch,
+        shift.endOr(DateTime.now().toUtc()).millisecondsSinceEpoch + 1,
+      ),
 );

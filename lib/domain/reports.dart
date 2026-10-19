@@ -102,6 +102,9 @@ class RideStats {
   /// Zarada po satu vožnje (vreme u vožnji, ne smena).
   int get perHour => _div(totalPrice * 3600, durationSeconds);
 
+  /// Zarada po satu za zadato vreme (npr. trajanje smene).
+  int perHourOver(int seconds) => _div(totalPrice * 3600, seconds);
+
   /// Zarada po kilometru.
   int get perKm => _div(totalPrice * 1000, distanceMeters);
 }

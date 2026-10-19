@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/currency_converter.dart';
+import '../../domain/models/shift.dart';
 import '../../domain/reports.dart';
 import '../providers/history_provider.dart';
 import '../providers/settings_provider.dart';
@@ -17,8 +18,139 @@ class ReportsScreen extends ConsumerStatefulWidget {
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   ReportRange _range = ReportRange.containing(ReportPeriod.day, DateTime.now());
 
-  void _setPeriod(ReportPeriod p) =>
-      setState(() => _range = ReportRange.containing(p, _range.start));
+  /// null = izveštaj po periodu; inače indeks smene u listi (0 = najnovija).
+  int? _shiftIndex;
+
+  void _setPeriod(ReportPeriod p) => setState(() {
+    _shiftIndex = null;
+    _range = ReportRange.containing(p, _range.start);
+  });
+
+  Future<void> _toggleShift(Shift? open) async {
+    final repo = ref.read(shiftRepositoryProvider);
+    final now = DateTime.now().toUtc();
+    if (open == null) {
+      await repo.start(now);
+    } else {
+      await repo.end(now);
+    }
+    ref.invalidate(shiftsProvider);
+    setState(() => _shiftIndex = 0);
+  }
+
+  Widget _shiftView(int? eurRate) {
+    final shifts = ref.watch(shiftsProvider);
+    return shifts.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) =>
+          Text('Greška: $e', style: const TextStyle(color: Colors.redAccent)),
+      data: (list) {
+        final open = list.where((s) => s.isOpen).firstOrNull;
+        final index = (_shiftIndex ?? 0).clamp(
+          0,
+          list.isEmpty ? 0 : list.length - 1,
+        );
+        final shift = list.isEmpty ? null : list[index];
+        String fmt(DateTime t) {
+          final l = t.toLocal();
+          String two(int v) => v.toString().padLeft(2, '0');
+          return '${two(l.day)}.${two(l.month)}. ${two(l.hour)}:${two(l.minute)}';
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: open == null
+                    ? const Color(0xFF2E7D32)
+                    : const Color(0xFFD32F2F),
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: () => _toggleShift(open),
+              icon: Icon(
+                open == null ? Icons.play_arrow : Icons.stop,
+                color: Colors.white,
+              ),
+              label: Text(
+                open == null ? 'POČNI SMENU' : 'ZAVRŠI SMENU',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (shift == null)
+              const Text(
+                'Još nema smena.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54),
+              )
+            else ...[
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.fast_rewind,
+                      color: index < list.length - 1
+                          ? Colors.white70
+                          : Colors.white24,
+                    ),
+                    onPressed: index < list.length - 1
+                        ? () => setState(() => _shiftIndex = index + 1)
+                        : null,
+                  ),
+                  Expanded(
+                    child: Text(
+                      '${fmt(shift.start)} – ${shift.end == null ? 'u toku' : fmt(shift.end!)}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.fast_forward,
+                      color: index > 0 ? Colors.white70 : Colors.white24,
+                    ),
+                    onPressed: index > 0
+                        ? () => setState(() => _shiftIndex = index - 1)
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ref
+                  .watch(shiftRidesProvider(shift))
+                  .when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text(
+                      'Greška: $e',
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
+                    data: (rides) {
+                      final shiftSeconds = shift
+                          .endOr(DateTime.now().toUtc())
+                          .difference(shift.start)
+                          .inSeconds;
+                      return _StatsCard(
+                        stats: RideStats.of(rides),
+                        eurRate: eurRate,
+                        shiftSeconds: shiftSeconds,
+                      );
+                    },
+                  ),
+            ],
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,47 +161,74 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(backgroundColor: Colors.black, title: const Text('Izveštaji')),
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: const Text('Izveštaji'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          SegmentedButton<ReportPeriod>(
+          SegmentedButton<ReportPeriod?>(
             segments: const [
               ButtonSegment(value: ReportPeriod.day, label: Text('DAN')),
-              ButtonSegment(value: ReportPeriod.week, label: Text('NEDELJA')),
+              ButtonSegment(value: ReportPeriod.week, label: Text('NED.')),
               ButtonSegment(value: ReportPeriod.month, label: Text('MESEC')),
+              ButtonSegment(value: null, label: Text('SMENA')),
             ],
-            selected: {_range.period},
+            selected: {_shiftIndex == null ? _range.period : null},
             showSelectedIcon: false,
-            onSelectionChanged: (s) => _setPeriod(s.first),
+            onSelectionChanged: (s) {
+              final p = s.first;
+              if (p == null) {
+                setState(() => _shiftIndex = 0);
+              } else {
+                _setPeriod(p);
+              }
+            },
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.fast_rewind, color: Colors.white70),
-                onPressed: () => setState(() => _range = _range.previous()),
-              ),
-              Expanded(
-                child: Text(_range.describe(),
+          if (_shiftIndex != null)
+            _shiftView(eurRate)
+          else ...[
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.fast_rewind, color: Colors.white70),
+                  onPressed: () => setState(() => _range = _range.previous()),
+                ),
+                Expanded(
+                  child: Text(
+                    _range.describe(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                        color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.fast_forward,
+                    color: isCurrentOrFuture ? Colors.white24 : Colors.white70,
+                  ),
+                  onPressed: isCurrentOrFuture
+                      ? null
+                      : () => setState(() => _range = _range.next()),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            rides.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text(
+                'Greška: $e',
+                style: const TextStyle(color: Colors.redAccent),
               ),
-              IconButton(
-                icon: Icon(Icons.fast_forward,
-                    color: isCurrentOrFuture ? Colors.white24 : Colors.white70),
-                onPressed: isCurrentOrFuture ? null : () => setState(() => _range = _range.next()),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          rides.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) =>
-                Text('Greška: $e', style: const TextStyle(color: Colors.redAccent)),
-            data: (list) => _StatsCard(stats: RideStats.of(list), eurRate: eurRate),
-          ),
+              data: (list) =>
+                  _StatsCard(stats: RideStats.of(list), eurRate: eurRate),
+            ),
+          ],
         ],
       ),
     );
@@ -80,24 +239,36 @@ class _StatsCard extends StatelessWidget {
   final RideStats stats;
   final int? eurRate;
 
-  const _StatsCard({required this.stats, required this.eurRate});
+  /// Trajanje smene (za "zarada po satu smene"); null u izveštaju po periodu.
+  final int? shiftSeconds;
+
+  const _StatsCard({
+    required this.stats,
+    required this.eurRate,
+    this.shiftSeconds,
+  });
 
   Widget _row(String label, String value, {bool big = false}) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(color: Colors.white60, fontSize: 15)),
-            Text(value,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'monospace',
-                  fontSize: big ? 24 : 16,
-                  fontWeight: big ? FontWeight.bold : FontWeight.normal,
-                )),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white60, fontSize: 15),
         ),
-      );
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'monospace',
+            fontSize: big ? 24 : 16,
+            fontWeight: big ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -118,17 +289,29 @@ class _StatsCard extends StatelessWidget {
         children: [
           _row('Ukupno', '${stats.totalPrice} din', big: true),
           if (eurRate != null)
-            _row('', '${CurrencyConverter.formatForeign(stats.totalPrice, eurRate!)} EUR'),
+            _row(
+              '',
+              '${CurrencyConverter.formatForeign(stats.totalPrice, eurRate!)} EUR',
+            ),
           const Divider(color: Colors.white12),
-          _row('Vožnji', '${stats.rideCount}'
-              '${stats.interruptedCount > 0 ? ' (prekinuto ${stats.interruptedCount})' : ''}'),
+          _row(
+            'Vožnji',
+            '${stats.rideCount}'
+                '${stats.interruptedCount > 0 ? ' (prekinuto ${stats.interruptedCount})' : ''}',
+          ),
           _row('Prosek po vožnji', '${stats.averagePerRide} din'),
           _row('Po satu vožnje', '${stats.perHour} din'),
+          if (shiftSeconds != null && shiftSeconds! > 0)
+            _row('Po satu smene', '${stats.perHourOver(shiftSeconds!)} din'),
           _row('Po kilometru', '${stats.perKm} din'),
           const Divider(color: Colors.white12),
+          if (shiftSeconds != null) _row('Trajanje smene', hm(shiftSeconds!)),
           _row('Vreme u vožnji', hm(stats.durationSeconds)),
           _row('Od toga čekanje', formatClock(stats.waitingSeconds)),
-          _row('Pređeno (GPS)', '${(stats.distanceMeters / 1000).toStringAsFixed(2)} km'),
+          _row(
+            'Pređeno (GPS)',
+            '${(stats.distanceMeters / 1000).toStringAsFixed(2)} km',
+          ),
         ],
       ),
     );

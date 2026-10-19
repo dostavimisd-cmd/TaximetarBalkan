@@ -87,6 +87,8 @@ void main() {
       expect(s.averagePerRide, 376); // 375,5 → 376
       expect(s.perHour, 1502); // 751 za pola sata
       expect(s.perKm, 150); // 751 / 5 = 150,2
+      expect(s.perHourOver(3 * 3600), 250); // 751 za 3 h smene = 250,3
+      expect(s.perHourOver(0), 0);
     });
 
     test('vožnja bez kraja ne ulazi u trajanje', () {
