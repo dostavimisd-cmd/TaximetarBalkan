@@ -49,3 +49,7 @@ app.*.map.json
 
 # Firebase Hosting keš
 .firebase/
+
+# privremeni snimci za Play grafiku
+docs/play/raw/
+docs/play/telefon_4_*

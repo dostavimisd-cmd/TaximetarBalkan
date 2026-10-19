@@ -78,10 +78,11 @@ Important: this app is an auxiliary tool for recording and estimating. It is not
 
 To keep it running with a locked screen, turn off battery restrictions for the app (instructions are in the app).
 
-## 5. Grafika (još nije napravljeno)
-- Ikona 512×512 (iz `assets/branding/icon.png`).
-- Feature graphic 1024×500.
-- 4–8 slika ekrana telefona (glavni ekran sa crvenom/plavom cenom, rezime sa mapom, izveštaji, relacije, račun), SR i EN.
+## 5. Grafika (u `docs/play/`)
+- `ikona_512.png` — ikona 512×512 (spremna).
+- `feature_graphic_1024x500.png` — feature graphic (spremna).
+- `telefon_1_glavni_ekran.png`, `telefon_2_rezime_voznje.png`, `telefon_3_izvestaji.png` — snimci ekrana sa Honora, isečeni na odnos 2:1 (Play dozvoljava najviše 2:1). Snimci 2 i 3 prikazuju stvarne probne vožnje i zaradu; zameni ih ako ne želiš da se to vidi.
+- Još treba: snimci na engleskom (prebaci jezik na EN i snimi isti redosled), po želji tamna/svetla varijanta. Play traži najmanje 2 snimka telefona, preporučeno 4–8.
 
 ## 6. Preostalo za vlasnika
 - Napraviti rezervnu kopiju `D:\kljucevi\taksimetar-upload.jks` (i zapisati lozinku na sigurno mesto, ne u projekat).
