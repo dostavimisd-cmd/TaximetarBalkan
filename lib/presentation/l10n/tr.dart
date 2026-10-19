@@ -17,6 +17,18 @@ class Tr {
     }
     return text;
   }
+
+  /// Poruka iz servisa/kontrolera (greška, upozorenje): ceo tekst ako postoji
+  /// u rečniku, inače prevod početka ("Greška pri …: " + tehnički opis).
+  String message(String sr) {
+    if (!english) return sr;
+    final exact = enStrings[sr];
+    if (exact != null) return exact;
+    for (final e in enMessagePrefixes.entries) {
+      if (sr.startsWith(e.key)) return e.value + sr.substring(e.key.length);
+    }
+    return sr;
+  }
 }
 
 final trProvider = Provider<Tr>((ref) {

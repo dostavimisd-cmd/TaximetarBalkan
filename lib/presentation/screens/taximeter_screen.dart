@@ -625,7 +625,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10.0),
                             child: Text(
-                              state.warningMessage!,
+                              t.message(state.warningMessage!),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Colors.amberAccent,
@@ -637,7 +637,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10.0),
                             child: Text(
-                              state.errorMessage!,
+                              t.message(state.errorMessage!),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Colors.redAccent,

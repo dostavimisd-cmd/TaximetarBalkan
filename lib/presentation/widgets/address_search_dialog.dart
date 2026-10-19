@@ -112,7 +112,7 @@ class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  _message!,
+                  t.message(_message!),
                   style: const TextStyle(color: Colors.white54, fontSize: 12),
                 ),
               ),

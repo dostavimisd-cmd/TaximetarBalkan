@@ -442,7 +442,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   for (final key in AppSettings.priceColors)
                     ChoiceChip(
-                      label: Text(priceColorLabels[key]!),
+                      label: Text(t(priceColorLabels[key]!)),
                       selected: _priceColor == key,
                       avatar: CircleAvatar(
                         backgroundColor: priceColorOf(key),
@@ -697,7 +697,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 16),
                   child: Text(
-                    _error!,
+                    t.message(_error!),
                     style: const TextStyle(color: Colors.redAccent),
                   ),
                 ),

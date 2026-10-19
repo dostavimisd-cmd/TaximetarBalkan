@@ -170,7 +170,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
             children: [
               for (var i = 0; i < 7; i++)
                 FilterChip(
-                  label: Text(TariffSchedule.dayLetters[i]),
+                  label: Text(TariffSchedule.letters(english: t.english)[i]),
                   selected: _days & (1 << i) != 0,
                   showCheckmark: false,
                   visualDensity: VisualDensity.compact,
@@ -193,7 +193,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
             ],
           ),
           Text(
-            '${preview.describe()}${_startMinute != _endMinute && _endMinute < _startMinute ? t(' (preko ponoći)') : ''}',
+            '${preview.describe(english: t.english)}${_startMinute != _endMinute && _endMinute < _startMinute ? t(' (preko ponoći)') : ''}',
             style: const TextStyle(color: Colors.white54, fontSize: 11),
           ),
         ],
@@ -252,7 +252,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
             _scheduleSection(),
             if (_error != null)
               Text(
-                _error!,
+                t.message(_error!),
                 style: const TextStyle(color: Colors.redAccent, fontSize: 12),
               ),
           ],

@@ -24,8 +24,9 @@ class FixedRoute {
     return null;
   }
 
-  String describe() {
+  String describe({bool english = false}) {
+    final unit = english ? 'RSD' : 'din';
     final route = [fromLabel.trim(), toLabel.trim()].where((s) => s.isNotEmpty).join(' → ');
-    return route.isEmpty ? '$price din' : '$route · $price din';
+    return route.isEmpty ? '$price $unit' : '$route · $price $unit';
   }
 }

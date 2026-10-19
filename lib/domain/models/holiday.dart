@@ -52,8 +52,8 @@ class Holiday {
     );
   }
 
-  String describe() {
+  String describe({bool english = false}) {
     String two(int v) => v.toString().padLeft(2, '0');
-    return year == null ? '${two(day)}.${two(month)}. (svake godine)' : '${two(day)}.${two(month)}.$year.';
+    return year == null ? '${two(day)}.${two(month)}. (${english ? 'every year' : 'svake godine'})' : '${two(day)}.${two(month)}.$year.';
   }
 }

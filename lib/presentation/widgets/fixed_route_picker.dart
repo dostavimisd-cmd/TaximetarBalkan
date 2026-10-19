@@ -102,7 +102,7 @@ class _PickerState extends ConsumerState<_Picker> {
                         style: const TextStyle(color: Colors.white),
                       ),
                       subtitle: Text(
-                        r.describe(),
+                        r.describe(english: t.english),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,

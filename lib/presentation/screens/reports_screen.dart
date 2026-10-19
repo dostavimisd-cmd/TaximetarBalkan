@@ -172,11 +172,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           SegmentedButton<ReportPeriod?>(
-            segments: const [
-              ButtonSegment(value: ReportPeriod.day, label: Text('DAN')),
-              ButtonSegment(value: ReportPeriod.week, label: Text('NED.')),
-              ButtonSegment(value: ReportPeriod.month, label: Text('MESEC')),
-              ButtonSegment(value: null, label: Text('SMENA')),
+            segments: [
+              ButtonSegment(value: ReportPeriod.day, label: Text(t('DAN'))),
+              ButtonSegment(value: ReportPeriod.week, label: Text(t('NED.'))),
+              ButtonSegment(value: ReportPeriod.month, label: Text(t('MESEC'))),
+              ButtonSegment(value: null, label: Text(t('SMENA'))),
             ],
             selected: {_shiftIndex == null ? _range.period : null},
             showSelectedIcon: false,

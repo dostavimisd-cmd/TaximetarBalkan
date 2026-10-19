@@ -132,7 +132,7 @@ class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
                               style: const TextStyle(color: Colors.white),
                             ),
                             subtitle: Text(
-                              r.describe(),
+                              r.describe(english: t.english),
                               style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12,
@@ -313,7 +313,7 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
               ],
               if (_message != null)
                 Text(
-                  _message!,
+                  t.message(_message!),
                   style: const TextStyle(color: Colors.redAccent),
                 ),
             ],
@@ -437,7 +437,7 @@ class _FixedRouteDialogState extends ConsumerState<_FixedRouteDialog> {
             _field(t('Fiksna cena (din)'), _price, number: true),
             if (_error != null)
               Text(
-                _error!,
+                t.message(_error!),
                 style: const TextStyle(color: Colors.redAccent, fontSize: 12),
               ),
           ],

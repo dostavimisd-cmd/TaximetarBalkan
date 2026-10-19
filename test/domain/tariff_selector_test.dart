@@ -154,4 +154,14 @@ void main() {
       expect(c.tariff.name, 'Dnevna');
     });
   });
+
+  test('opisi na engleskom (raspored, praznik)', () {
+    const s = TariffSchedule(days: TariffSchedule.allDays, startMinute: 1320, endMinute: 360);
+    expect(s.describe(english: true), 'every day · 22:00–06:00');
+    expect(const TariffSchedule(days: sat | sun, startMinute: 0, endMinute: 0).describe(english: true),
+        'S S · all day');
+    expect(const TariffSchedule(days: 0, startMinute: 0, endMinute: 0).describe(english: true), 'no schedule');
+    expect(const Holiday(name: 'x', month: 1, day: 7, tariffId: 1).describe(english: true), '07.01. (every year)');
+    expect(const Holiday(name: 'x', month: 1, day: 7, tariffId: 1).describe(), '07.01. (svake godine)');
+  });
 }

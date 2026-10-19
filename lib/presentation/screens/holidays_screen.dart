@@ -70,7 +70,7 @@ class HolidaysScreen extends ConsumerWidget {
                     style: const TextStyle(color: Colors.white),
                   ),
                   subtitle: Text(
-                    '${h.describe()} · ${tariffName(h.tariffId)}',
+                    '${h.describe(english: t.english)} · ${tariffName(h.tariffId)}',
                     style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   onTap: () => _edit(context, tariffs, existing: h),
@@ -221,7 +221,7 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
             ),
             if (_error != null)
               Text(
-                _error!,
+                t.message(_error!),
                 style: const TextStyle(color: Colors.redAccent, fontSize: 12),
               ),
           ],

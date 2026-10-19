@@ -52,15 +52,18 @@ class TariffSchedule {
       '${(m ~/ 60).toString().padLeft(2, '0')}:${(m % 60).toString().padLeft(2, '0')}';
 
   static const List<String> dayLetters = ['P', 'U', 'S', 'Č', 'P', 'S', 'N'];
+  static const List<String> dayLettersEn = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  static List<String> letters({bool english = false}) => english ? dayLettersEn : dayLetters;
 
   /// npr. "P U S Č P · 22:00–06:00" ili "svaki dan · ceo dan"
-  String describe() {
-    if (isEmpty) return 'bez rasporeda';
+  String describe({bool english = false}) {
+    if (isEmpty) return english ? 'no schedule' : 'bez rasporeda';
     final dayText = days == allDays
-        ? 'svaki dan'
-        : [for (var i = 0; i < 7; i++) if (days & (1 << i) != 0) dayLetters[i]].join(' ');
+        ? (english ? 'every day' : 'svaki dan')
+        : [for (var i = 0; i < 7; i++) if (days & (1 << i) != 0) letters(english: english)[i]].join(' ');
     final time = startMinute == endMinute
-        ? 'ceo dan'
+        ? (english ? 'all day' : 'ceo dan')
         : '${formatMinute(startMinute)}–${formatMinute(endMinute)}';
     return '$dayText · $time';
   }
