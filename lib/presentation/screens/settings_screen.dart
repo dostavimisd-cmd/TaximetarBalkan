@@ -195,6 +195,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _printerMac = chosen.$1;
           _printerName = chosen.$2;
         });
+        // Izbor se pamti odmah (ne tek na SAČUVAJ), da dugmad za štampu
+        // postoje i ako se iz podešavanja izađe nazad.
+        await ref.read(appSettingsProvider.notifier).change(
+            (s) => s.copyWith(printerMac: chosen.$1, printerName: chosen.$2));
       }
     } catch (e) {
       setState(() => _error = 'Štampač: $e');

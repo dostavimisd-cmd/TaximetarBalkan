@@ -273,15 +273,14 @@ class _RideDetailsDialog extends ConsumerWidget {
             if (context.mounted) Navigator.pop(context);
           },
         ),
-        if (ref.watch(appSettingsProvider).value?.printerMac != null)
-          TextButton.icon(
-            onPressed: () => printRideReceipt(context, ref, ride.id),
-            icon: const Icon(Icons.print, color: Colors.amberAccent, size: 18),
-            label: const Text(
-              'ŠTAMPAJ',
-              style: TextStyle(color: Colors.amberAccent),
-            ),
+        TextButton.icon(
+          onPressed: () => printRideReceipt(context, ref, ride.id),
+          icon: const Icon(Icons.print, color: Colors.amberAccent, size: 18),
+          label: const Text(
+            'ŠTAMPAJ',
+            style: TextStyle(color: Colors.amberAccent),
           ),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text(

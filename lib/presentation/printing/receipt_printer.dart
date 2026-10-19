@@ -46,8 +46,12 @@ class PrintException implements Exception {
 /// Šalje račun na upareni Bluetooth termalni štampač (58 mm, ESC/POS).
 class ReceiptPrinter {
   Future<void> _ensurePermission() async {
-    if (!(await Permission.bluetoothConnect.request()).isGranted) {
-      throw const PrintException('Potrebna je dozvola za Bluetooth uređaje u blizini.');
+    // Plugin pri povezivanju poziva cancelDiscovery(), što na Androidu 12+
+    // traži i BLUETOOTH_SCAN, a ne samo BLUETOOTH_CONNECT.
+    final result = await [Permission.bluetoothConnect, Permission.bluetoothScan].request();
+    if (result.values.any((s) => !s.isGranted)) {
+      throw const PrintException(
+          'Potrebna je dozvola "Uređaji u blizini" (Podešavanja telefona → Aplikacije → Dozvole).');
     }
     if (!await PrintBluetoothThermal.bluetoothEnabled) {
       throw const PrintException('Bluetooth je isključen.');

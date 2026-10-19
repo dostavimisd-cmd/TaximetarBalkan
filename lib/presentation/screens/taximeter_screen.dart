@@ -520,30 +520,27 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                         : 'Minimum fare top-up',
                                     result.minPriceAdjustment,
                                   ),
-                                if (settings.printerMac != null)
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton.icon(
-                                      onPressed: () => printRideReceipt(
-                                        context,
-                                        ref,
-                                        result.rideId,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.print,
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: () => printRideReceipt(
+                                      context,
+                                      ref,
+                                      result.rideId,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.print,
+                                      color: Colors.amberAccent,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      isSr ? 'ŠTAMPAJ RAČUN' : 'PRINT RECEIPT',
+                                      style: const TextStyle(
                                         color: Colors.amberAccent,
-                                        size: 18,
-                                      ),
-                                      label: Text(
-                                        isSr
-                                            ? 'ŠTAMPAJ RAČUN'
-                                            : 'PRINT RECEIPT',
-                                        style: const TextStyle(
-                                          color: Colors.amberAccent,
-                                        ),
                                       ),
                                     ),
                                   ),
+                                ),
                               ],
                             ),
                           ),
