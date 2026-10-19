@@ -60,7 +60,7 @@ void main() {
         tariff: defaultTariff,
         distanceMeters: 1000,
         waitingSeconds: 0,
-        calibrationMultiplier: 1.05,
+        calibrationPermille: 1050,
       );
       expect(result.kmPrice, 84);
       expect(result.totalPrice, 234);
@@ -108,7 +108,7 @@ void main() {
     test('Nevažeći ulazi bacaju grešku', () {
       expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: -10, waitingSeconds: 0), throwsArgumentError);
       expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 10, waitingSeconds: -5), throwsArgumentError);
-      expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 10, waitingSeconds: 0, calibrationMultiplier: 0), throwsArgumentError);
+      expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 10, waitingSeconds: 0, calibrationPermille: 0), throwsArgumentError);
     });
   });
 

@@ -18,13 +18,14 @@ class RideTracker {
   final int windowMs;
 
   final Tariff tariff;
-  final double calibrationMultiplier;
+  /// Kalibracija distance u promilima (1000 = 100%).
+  final int calibrationPermille;
   final LocationFilter filter;
   final SmartWaiter waiter;
 
   RideTracker({
     required this.tariff,
-    this.calibrationMultiplier = 1.0,
+    this.calibrationPermille = 1000,
     this.filter = const LocationFilter(),
     this.waiter = const SmartWaiter(),
     this.windowMs = 4000, // 4 sekunde prozor
@@ -82,7 +83,7 @@ class RideTracker {
       tariff: tariff,
       distanceMeters: totalDistanceMeters.round(),
       waitingSeconds: totalWaitingMs ~/ 1000,
-      calibrationMultiplier: calibrationMultiplier,
+      calibrationPermille: calibrationPermille,
     );
   }
 

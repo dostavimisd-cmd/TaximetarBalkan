@@ -13,15 +13,16 @@ class FareCalculator {
     required Tariff tariff,
     required int distanceMeters,
     required int waitingSeconds,
-    double calibrationMultiplier = 1.0,
+    int calibrationPermille = 1000,
   }) {
     // Provera ulaznih parametara
     if (distanceMeters < 0) throw ArgumentError('Distanca ne sme biti negativna.');
     if (waitingSeconds < 0) throw ArgumentError('Vreme čekanja ne sme biti negativno.');
-    if (calibrationMultiplier <= 0) throw ArgumentError('Kalibracija mora biti veća od 0.');
+    if (calibrationPermille <= 0) throw ArgumentError('Kalibracija mora biti veća od 0.');
 
     // 1. Kalibrisani metri se zaokružuju na ceo metar
-    final int calibratedMeters = (distanceMeters * calibrationMultiplier).round();
+    // (kalibracija u promilima: 1000 = 100%, bez decimalnog množenja)
+    final int calibratedMeters = _roundHalfUp(distanceMeters * calibrationPermille, 1000);
 
     // 2. Cena po kilometru (1000 metara)
     // Formula: (metri * cena) / 1000

@@ -21,3 +21,8 @@ Odluke korisnika (2026-10-19), vidi `docs/AUDIT_2026-10-19.md` (N17, U7).
 ## Čekanje
 - Čekanje se računa kad je brzina ispod praga (km/h); inače se računa kilometraža. Korak ide ili u distancu ili u čekanje, nikad u oba.
 - Prag podešava korisnik (Podešavanja), ceo broj 1–50 km/h; bez unosa važi 8 km/h (dosadašnje ponašanje). Šalje se pri startu i upisuje u `rides.waiting_speed_kmh`, pa oporavljena vožnja koristi isti prag.
+
+## Kalibracija distance
+- Korisnik unosi procenat korekcije (npr. 2,5 ili -1, jedna decimala, -50 do 50); čuva se kao ceo broj promila (1000 = bez korekcije).
+- Obračun: `kalibrisani_metri = round_half_up(metri * promili / 1000)`, celobrojno. U `rides.distance_m` ostaje izmerena distanca, a iznos km se računa iz kalibrisane.
+- Promili važe od starta vožnje (`rides.applied_calibration`), pa se oporavljena vožnja obračunava istom kalibracijom.

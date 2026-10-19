@@ -31,7 +31,7 @@ class FakeController extends RideServiceController {
     required int pricePerKm,
     required int waitingParaPerMin,
     required int minPrice,
-    required double calibration,
+    required int calibrationPermille,
     int? waitingSpeedKmh,
   }) async {
     startCalls++;

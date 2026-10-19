@@ -14,7 +14,7 @@ const Map<String, dynamic> startCmd = {
   'price_per_km': 100,
   'waiting_para_per_min': 1000,
   'min_price': 0,
-  'calibration': 1.0,
+  'calibration_permille': 1000,
 };
 
 class Harness {
@@ -398,6 +398,38 @@ void main() {
     }
     expect(h.of('error').length, 4);
     expect(h.of('error').every((e) => e['cmd'] == 'start'), true);
+    expect(await h.rides(), isEmpty);
+  });
+
+  test('kalibracija: promili se čuvaju i primenjuju na distancu u obračunu', () async {
+    await h.engine.receive({...startCmd, 'calibration_permille': 1100});
+    h.drive(60);
+    final raw = h.engine.tracker!.totalDistanceMeters.round();
+    await h.engine.receive({'command': 'stop'});
+
+    final stopped = h.of('stopped').single;
+    expect(stopped['distance_m'], raw); // zabeležena distanca je izmerena
+    // obračun koristi 110% distance: km cena po 100 din/km
+    final expectedKm = (((raw * 1100 + 500) ~/ 1000) * 100 + 500) ~/ 1000;
+    expect(stopped['km_price'], expectedKm);
+    expect((await h.rides()).single['applied_calibration'], 1.1);
+  });
+
+  test('kalibracija se oporavlja zajedno sa vožnjom', () async {
+    await h.engine.receive({...startCmd, 'calibration_permille': 1025});
+    h.drive(30);
+    await h.engine.saveSnapshot();
+    h.now += 30 * 1000;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+    expect(engine2.tracker!.calibrationPermille, 1025);
+  });
+
+  test('kalibracija van opsega → error{cmd:start}', () async {
+    for (final bad in [0, 499, 1501, -1000]) {
+      await h.engine.receive({...startCmd, 'calibration_permille': bad});
+    }
+    expect(h.of('error').length, 4);
     expect(await h.rides(), isEmpty);
   });
 

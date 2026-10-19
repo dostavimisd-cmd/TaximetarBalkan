@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/services/ride_engine.dart';
+import '../../domain/calibration.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/tariff.dart';
 import '../providers/taximeter_provider.dart';
@@ -71,6 +72,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     final eurRate = ref.watch(eurRateProvider).value;
     final speedSetting = ref.watch(waitingSpeedProvider).value ??
         RideEngine.defaultWaitingSpeedKmh;
+    final calibration = ref.watch(calibrationProvider).value ?? Calibration.neutralPermille;
     final badgeSpeed = state.waitingSpeedKmh ?? speedSetting;
     final tariff = _activeTariff;
     // EUR samo uz kurs koji je korisnik uneo; račun je celobrojan.
@@ -369,6 +371,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                 waitingParaPerMin: t.waitingParaPerMin,
                                                 minPrice: t.minPrice,
                                                 waitingSpeedKmh: speedSetting,
+                                                calibrationPermille: calibration,
                                               );
                                             },
                                   style: _mainButtonStyle(const Color(0xFF2E7D32)),

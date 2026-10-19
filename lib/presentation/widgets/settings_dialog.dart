@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/services/ride_engine.dart';
+import '../../domain/calibration.dart';
 import '../../domain/currency_converter.dart';
 import '../providers/tariffs_provider.dart';
 
@@ -24,6 +25,7 @@ class _SettingsDialog extends ConsumerStatefulWidget {
 class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
   late final TextEditingController _rate;
   late final TextEditingController _speed;
+  late final TextEditingController _calibration;
   String? _error;
 
   @override
@@ -32,6 +34,9 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
     final current = ref.read(eurRateProvider).value;
     _speed = TextEditingController(
         text: '${ref.read(waitingSpeedProvider).value ?? RideEngine.defaultWaitingSpeedKmh}');
+    _calibration = TextEditingController(
+        text: Calibration.formatPercent(
+            ref.read(calibrationProvider).value ?? Calibration.neutralPermille));
     _rate = TextEditingController(
         text: current == null ? '' : CurrencyConverter.formatRate(current));
   }
@@ -40,6 +45,7 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
   void dispose() {
     _rate.dispose();
     _speed.dispose();
+    _calibration.dispose();
     super.dispose();
   }
 
@@ -52,6 +58,12 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
           'Brzina za čekanje: ceo broj od ${RideEngine.minWaitingSpeedKmh} do ${RideEngine.maxWaitingSpeedKmh} km/h.');
       return;
     }
+    final calibration = Calibration.parsePercent(_calibration.text);
+    if (calibration == null) {
+      setState(() => _error =
+          'Kalibracija: procenat od -50 do 50, npr. 2,5 ili -1 (najviše 1 decimala).');
+      return;
+    }
     // Kurs je opcion: prazno polje ostavlja EUR prikaz isključen.
     final rateText = _rate.text.trim();
     final milli = rateText.isEmpty ? null : CurrencyConverter.parseRateMilli(rateText);
@@ -60,6 +72,7 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
       return;
     }
     await ref.read(waitingSpeedProvider.notifier).set(speed);
+    await ref.read(calibrationProvider.notifier).set(calibration);
     if (milli != null) await ref.read(eurRateProvider.notifier).set(milli);
     if (mounted) Navigator.pop(context, true);
   }
@@ -92,6 +105,20 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
             decoration: const InputDecoration(
               labelText: 'Čekanje se računa ispod (km/h)',
               labelStyle: TextStyle(color: Colors.white54),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _calibration,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,+-]'))],
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              labelText: 'Kalibracija distance (%)',
+              labelStyle: TextStyle(color: Colors.white54),
+              helperText: '0 = bez korekcije; 2,5 = distanca +2,5%',
+              helperStyle: TextStyle(color: Colors.white38, fontSize: 11),
               isDense: true,
             ),
           ),

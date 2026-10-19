@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
+import '../../domain/calibration.dart';
 import '../../domain/fare_calculator.dart';
 import '../../domain/models/fare_result.dart';
 import '../../domain/models/location_point.dart';
@@ -38,10 +39,10 @@ class RideEngine {
   static const int minWaitingSpeedKmh = 1;
   static const int maxWaitingSpeedKmh = 50;
 
-  static RideTracker _newTracker(Tariff tariff, double calibration, int? speedKmh) =>
+  static RideTracker _newTracker(Tariff tariff, int calibrationPermille, int? speedKmh) =>
       RideTracker(
         tariff: tariff,
-        calibrationMultiplier: calibration,
+        calibrationPermille: calibrationPermille,
         waiter: SmartWaiter(
           waitingSpeedThresholdKmh:
               (speedKmh ?? defaultWaitingSpeedKmh).toDouble(),
@@ -192,7 +193,17 @@ class RideEngine {
         waitingParaPerMin: data['waiting_para_per_min'] as int,
         minPrice: data['min_price'] as int,
       );
-      final calibration = (data['calibration'] as num?)?.toDouble() ?? 1.0;
+      final calibration =
+          (data['calibration_permille'] as num?)?.toInt() ?? Calibration.neutralPermille;
+      if (!Calibration.isValid(calibration)) {
+        _send({
+          'event': 'error',
+          'cmd': 'start',
+          'message':
+              'Kalibracija mora biti od ${Calibration.minPermille} do ${Calibration.maxPermille} promila.',
+        });
+        return;
+      }
 
       final speedKmh = (data['waiting_speed_kmh'] as num?)?.toInt();
       if (speedKmh != null &&
@@ -224,7 +235,8 @@ class RideEngine {
         'waiting_price': 0,
         'total_price': tariff.startPrice,
         'tariff_id': tariff.id,
-        'applied_calibration': calibration,
+        // REAL kolona iz stare šeme: promili / 1000 (npr. 1025 → 1.025)
+        'applied_calibration': calibration / 1000.0,
         'waiting_speed_kmh': speedKmh,
         'status': statusActive,
         'tariff_start_price': tariff.startPrice,
@@ -269,7 +281,7 @@ class RideEngine {
         tariff: tracker!.tariff,
         distanceMeters: distanceM,
         waitingSeconds: waitingSec,
-        calibrationMultiplier: tracker!.calibrationMultiplier,
+        calibrationPermille: tracker!.calibrationPermille,
       );
 
       final db = await _database();
@@ -367,6 +379,9 @@ class RideEngine {
     return snaps.isEmpty ? null : snaps.first;
   }
 
+  int _permilleOf(Map<String, Object?> ride) =>
+      ((ride['applied_calibration'] as num) * 1000).round();
+
   Tariff _tariffFromRide(Map<String, Object?> ride) => Tariff(
         id: ride['tariff_id'] as int,
         startPrice: ride['tariff_start_price'] as int,
@@ -395,7 +410,7 @@ class RideEngine {
           tariff: _tariffFromRide(ride),
           distanceMeters: distanceM,
           waitingSeconds: waitingSec,
-          calibrationMultiplier: (ride['applied_calibration'] as num).toDouble(),
+          calibrationPermille: _permilleOf(ride),
         );
         values['km_price'] = fare.kmPrice;
         values['waiting_price'] = fare.waitingPrice;
@@ -437,7 +452,7 @@ class RideEngine {
       currentRideId = rId;
       tracker = _newTracker(
         _tariffFromRide(ride),
-        (ride['applied_calibration'] as num).toDouble(),
+        _permilleOf(ride),
         ride['waiting_speed_kmh'] as int?,
       );
       _send({'event': 'recovered', 'ride_id': rId, ..._rideValues()});
@@ -457,7 +472,7 @@ class RideEngine {
 
     final restored = _newTracker(
       tariff,
-      (ride['applied_calibration'] as num).toDouble(),
+      _permilleOf(ride),
       ride['waiting_speed_kmh'] as int?,
     );
     restored.restoreFromSnapshot(
