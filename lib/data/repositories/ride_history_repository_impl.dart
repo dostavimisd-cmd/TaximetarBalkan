@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../../domain/repositories/ride_history_repository.dart';
 
@@ -18,6 +19,24 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
       limit: limit,
     );
     return rows.map(_fromRow).toList();
+  }
+
+  @override
+  Future<List<GapInfo>> getGaps(int rideId) async {
+    final db = await _database();
+    final rows = await db.query('ride_gaps',
+        where: 'ride_id = ?', whereArgs: [rideId], orderBy: 'started_at, id');
+    return rows
+        .map((r) => GapInfo(
+              startedAt: DateTime.fromMillisecondsSinceEpoch(
+                  r['started_at'] as int,
+                  isUtc: true),
+              durationMs: r['duration_ms'] as int,
+              kind: r['kind'] as String,
+              addedDistanceMeters: r['added_distance_m'] as int,
+              addedWaitingMs: r['added_waiting_ms'] as int,
+            ))
+        .toList();
   }
 
   RideRecord _fromRow(Map<String, Object?> r) {

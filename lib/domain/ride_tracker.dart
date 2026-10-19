@@ -1,6 +1,7 @@
 import 'models/location_point.dart';
 import 'models/tariff.dart';
 import 'models/fare_result.dart';
+import 'models/gap_info.dart';
 import 'location_filter.dart';
 import 'smart_waiter.dart';
 import 'fare_calculator.dart';
@@ -12,6 +13,9 @@ class RideTracker {
 
   /// Poslednji obrađeni korak je bio čekanje (a ne vožnja).
   bool isWaitingNow = false;
+
+  /// Rupa u signalu koju je prikazala poslednja obrađena tačka; null ako nije bilo.
+  GapInfo? lastGap;
   LocationPoint? _lastValidPoint;
   
   final List<LocationPoint> _recentPoints = [];
@@ -34,6 +38,7 @@ class RideTracker {
   LocationPoint? get lastValidPoint => _lastValidPoint;
 
   void processLocation(LocationPoint newPoint) {
+    lastGap = null;
     if (!filter.isValid(newPoint, _lastValidPoint)) return;
 
     if (_lastValidPoint != null) {
@@ -47,6 +52,11 @@ class RideTracker {
       if (calculatedSpeedKmh > filter.maxSpeedKmh && (msPassed / 1000.0) >= filter.resetGapSeconds) {
         // Reset tačka - praznimo istoriju
         _recentPoints.clear();
+        lastGap = GapInfo(
+          startedAt: _lastValidPoint!.timestamp,
+          durationMs: msPassed,
+          kind: GapInfo.kindSkipped,
+        );
       } else {
         // Tražimo windowStart (najnoviju tačku koja je stara bar windowMs)
         LocationPoint windowStart = _lastValidPoint!;
@@ -67,6 +77,15 @@ class RideTracker {
         totalDistanceMeters += result.addedDistanceMeters;
         totalWaitingMs += result.addedWaitingMs;
         isWaitingNow = result.addedWaitingMs > 0;
+        if (msPassed > waiter.gapThresholdMs) {
+          lastGap = GapInfo(
+            startedAt: _lastValidPoint!.timestamp,
+            durationMs: msPassed,
+            kind: result.addedWaitingMs > 0 ? GapInfo.kindWaiting : GapInfo.kindDistance,
+            addedDistanceMeters: result.addedDistanceMeters.round(),
+            addedWaitingMs: result.addedWaitingMs,
+          );
+        }
       }
     }
 

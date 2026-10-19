@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -35,6 +35,22 @@ class DatabaseHelper {
     await db.rawQuery('PRAGMA journal_mode=WAL');
     await db.rawQuery('PRAGMA busy_timeout=5000');
     await db.execute('PRAGMA foreign_keys=ON');
+  }
+
+  /// V12: prekidi GPS signala tokom vožnje i kako su obračunati.
+  static Future<void> _createGapsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE ride_gaps (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ride_id INTEGER NOT NULL,
+        started_at INTEGER NOT NULL,
+        duration_ms INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        added_distance_m INTEGER NOT NULL,
+        added_waiting_ms INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_gaps_ride ON ride_gaps(ride_id)');
   }
 
   static Future<void> _createDB(Database db, int version) async {
@@ -110,6 +126,8 @@ class DatabaseHelper {
     await db.execute(
         'CREATE INDEX idx_snapshots_ride ON ride_snapshots(ride_id)');
 
+    await _createGapsTable(db);
+
     await db.execute('''
       CREATE TABLE fixed_routes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,6 +187,9 @@ class DatabaseHelper {
           db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+    if (oldVersion < 6) {
+      await _createGapsTable(db);
     }
     if (oldVersion < 5) {
       // Prag brzine za čekanje (km/h) koji je važio za vožnju; null = podrazumevani.

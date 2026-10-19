@@ -433,6 +433,64 @@ void main() {
     expect(await h.rides(), isEmpty);
   });
 
+  test('V12: rupa u signalu → gap događaj, red u ride_gaps, brojač u update', () async {
+    await h.engine.receive(startCmd);
+    h.drive(10);
+    final last = h.engine.tracker!.lastValidPoint!;
+    // rupa 60 s, stoji u mestu
+    h.now = last.timestamp.millisecondsSinceEpoch + 60 * 1000;
+    h.engine.onPosition(LocationPoint(
+      latitude: last.latitude, longitude: last.longitude, accuracy: 5, speed: 0,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(h.now, isUtc: true),
+    ));
+    await h.engine.receive({'command': 'status'}); // posle upisa u redu
+
+    final gap = h.of('gap').single;
+    expect(gap['kind'], 'waiting');
+    expect(gap['duration_ms'], 60000);
+    expect(h.of('update').last['gap_count'], 1);
+    expect(h.of('update').last['gap_ms'], 60000);
+
+    final rows = await h.db.query('ride_gaps');
+    expect(rows.single['kind'], 'waiting');
+    expect(rows.single['added_waiting_ms'], 60000);
+    expect(rows.single['ride_id'], h.engine.currentRideId);
+  });
+
+  test('V12: oporavak upisuje rupu "servis zaustavljen" i vraća brojač', () async {
+    await h.engine.receive(startCmd);
+    h.drive(30);
+    await h.engine.saveSnapshot();
+
+    h.now += 2 * min;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+
+    final rows = await h.db.query('ride_gaps');
+    expect(rows.single['kind'], 'service_restart');
+    expect(rows.single['duration_ms'], 2 * min);
+    expect(rows.single['added_distance_m'], 0);
+    expect(h.of('recovered').single['gap_count'], 1);
+    expect(h.of('recovered').single['gap_ms'], 2 * min);
+  });
+
+  test('V12: nova vožnja kreće sa brojačem 0', () async {
+    await h.engine.receive(startCmd);
+    h.drive(5);
+    final last = h.engine.tracker!.lastValidPoint!;
+    h.now = last.timestamp.millisecondsSinceEpoch + 40 * 1000;
+    h.engine.onPosition(LocationPoint(
+      latitude: last.latitude, longitude: last.longitude, accuracy: 5, speed: 0,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(h.now, isUtc: true),
+    ));
+    await h.engine.receive({'command': 'stop'});
+    h.events.clear();
+
+    await h.engine.receive(startCmd);
+    h.drive(5, fromMs: h.now + 1000);
+    expect(h.of('update').last['gap_count'], 0);
+  });
+
   test('status odražava aktivnu vožnju', () async {
     await h.engine.receive({'command': 'status'});
     expect(h.of('status').last['active'], false);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/currency_converter.dart';
+import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../providers/history_provider.dart';
 import '../providers/tariffs_provider.dart';
@@ -9,6 +10,20 @@ String formatDateTime(DateTime utc) {
   final t = utc.toLocal();
   String two(int v) => v.toString().padLeft(2, '0');
   return '${two(t.day)}.${two(t.month)}.${t.year} ${two(t.hour)}:${two(t.minute)}';
+}
+
+/// Šta je obračunato za rupu u signalu.
+String gapDescription(GapInfo g) {
+  switch (g.kind) {
+    case GapInfo.kindWaiting:
+      return 'naplaćeno kao čekanje (${formatClock(g.addedWaitingMs ~/ 1000)})';
+    case GapInfo.kindDistance:
+      return 'dodata vazdušna linija ${g.addedDistanceMeters} m';
+    case GapInfo.kindServiceRestart:
+      return 'servis zaustavljen, nije mereno';
+    default:
+      return 'nije obračunato';
+  }
 }
 
 String formatClock(int totalSeconds) {
@@ -106,7 +121,7 @@ class _RideTile extends StatelessWidget {
   }
 }
 
-class _RideDetailsDialog extends StatelessWidget {
+class _RideDetailsDialog extends ConsumerWidget {
   final RideRecord ride;
   final int? eurRate;
 
@@ -130,8 +145,9 @@ class _RideDetailsDialog extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final duration = ride.duration;
+    final gaps = ref.watch(rideGapsProvider(ride.id)).value ?? const <GapInfo>[];
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
       title: Text(formatDateTime(ride.startTime),
@@ -160,6 +176,25 @@ class _RideDetailsDialog extends StatelessWidget {
           _line('UKUPNO', '${ride.totalPrice} din', bold: true),
           if (eurRate != null)
             _line('', '${CurrencyConverter.formatForeign(ride.totalPrice, eurRate!)} EUR'),
+          if (gaps.isNotEmpty) ...[
+            const Divider(color: Colors.white12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Prekidi GPS signala: ${gaps.length} '
+                '(ukupno ${formatClock(gaps.fold<int>(0, (a, g) => a + g.durationMs) ~/ 1000)})',
+                style: const TextStyle(color: Colors.amberAccent, fontSize: 12),
+              ),
+            ),
+            ...gaps.map((g) => Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '${formatDateTime(g.startedAt).substring(11)} · '
+                    '${formatClock(g.durationMs ~/ 1000)} · ${gapDescription(g)}',
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                )),
+          ],
         ],
       ),
       actions: [

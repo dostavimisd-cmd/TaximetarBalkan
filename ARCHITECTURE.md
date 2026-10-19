@@ -34,6 +34,11 @@ GPS Senzor -> Foreground Service -> Odbacivanje šuma -> FareCalculator -> Ažur
 - GPS tačka se odbacuje ako: tačnost je loša/0/NaN, vreme je dalje od ±30 s od sata telefona (N1), ili je lažna lokacija u release build-u (U6).
 - Tehnički dug: `RideTracker.processLocation` meri čekanje GPS vremenom (N1/U3 ublaženo proverom sata).
 
+## Prekidi GPS signala (V12)
+- `RideTracker.lastGap` (`GapInfo`) opisuje rupu veću od praga (10 s) koju je pokazala poslednja tačka i kako je obračunata. `RideEngine` je upisuje u `ride_gaps` (kroz red komandi), šalje događaj `gap` i nosi `gap_count`/`gap_ms` u `update`/`status`/`recovered`.
+- Pri oporavku engine upisuje rupu `service_restart` za vreme dok servis nije radio (to vreme se ne naplaćuje).
+- UI: tokom vožnje amber red "GPS signal prekidan N×"; u istoriji detalji vožnje navode svaku rupu i šta je naplaćeno.
+
 ## Rizici i Tehnički Dug
 - **Rizik 1 (Baterija):** Android agresivno gasi servise (Xiaomi, Huawei). Moramo obezbediti ekran koji vodi vozača da isključi Battery Optimization.
 - **Rizik 2 (GPS Šum):** Stajanje u mestu može generisati mikropomake.

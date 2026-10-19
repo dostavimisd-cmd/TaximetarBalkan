@@ -2,7 +2,7 @@
 
 **Pravila:** Novac se čuva kao `INTEGER` (najmanja jedinica valute; za RSD dinar, za EUR cent — vidi N17 u `docs/AUDIT_2026-10-19.md`). Vreme se čuva kao `INTEGER` (UTC milisekunde). Logičke vrednosti (boolean) kao 0 ili 1.
 
-**Verzija šeme: 5** (`DatabaseHelper.openAt`). `onConfigure`: WAL, `busy_timeout=5000`, `foreign_keys=ON`.
+**Verzija šeme: 6** (`DatabaseHelper.openAt`). `onConfigure`: WAL, `busy_timeout=5000`, `foreign_keys=ON`.
 Servis (`RideEngine`) je jedini pisac u `rides` i `ride_snapshots`.
 
 ## Tabele
@@ -13,6 +13,7 @@ Servis (`RideEngine`) je jedini pisac u `rides` i `ride_snapshots`.
   - *Vrednosti za status:* `active` (u toku), `completed` (završena), `interrupted` (prekinuta; iznosi su iz poslednjeg snapshot-a, `end_time` = vreme snapshot-a ili `start_time`), `cancelled` (rezervisano).
   - `total_price = start_price + km_price + waiting_price + min_price_adjustment`.
 - `ride_snapshots`: id, ride_id, current_distance (REAL, metri), current_waiting_ms, current_price, last_lat, last_lon, timestamp (GPS vreme poslednje tačke), **saved_at** (v3, vreme upisa; starost se meri njime). Najviše jedan red po vožnji; briše se pri stop-u i pri prekidu. Indeks `idx_snapshots_ride`.
+- `ride_gaps` (v6): id, ride_id, started_at (UTC ms, poslednja važeća tačka pre rupe), duration_ms, kind, added_distance_m, added_waiting_ms. Prekidi GPS signala duži od 10 s tokom vožnje. `kind`: `waiting` (rupa naplaćena kao čekanje), `distance` (dodata vazdušna linija), `skipped` (skok nemoguće brzine, ništa dodato), `service_restart` (servis je bio zaustavljen, nije mereno). Indeks `idx_gaps_ride`.
 - `fixed_routes`: id, name, from_label, to_label, conditions, fixed_price.
 
 ## Migracije
@@ -20,3 +21,4 @@ Servis (`RideEngine`) je jedini pisac u `rides` i `ride_snapshots`.
 - v2→v3: `saved_at`, `client_uuid`, indeksi.
 - v3→v4: cena čekanja po minutu se čuva u **para** (1/100 dinara; 13,4 din = 1340): `tariffs.waiting_para_per_min` i `rides.tariff_waiting_para_per_min` preimenovane i pomnožene sa 100.
 - v4→v5: `rides.waiting_speed_kmh`.
+- v5→v6: tabela `ride_gaps`.

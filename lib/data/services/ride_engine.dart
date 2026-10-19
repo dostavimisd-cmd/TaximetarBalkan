@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/calibration.dart';
 import '../../domain/fare_calculator.dart';
+import '../../domain/models/gap_info.dart';
 import '../../domain/models/fare_result.dart';
 import '../../domain/models/location_point.dart';
 import '../../domain/models/tariff.dart';
@@ -62,6 +63,8 @@ class RideEngine {
   RideTracker? tracker;
   int? currentRideId;
   int _snapshotFailures = 0;
+  int _gapCount = 0;
+  int _gapMs = 0;
   // Dok traje zatvaranje vožnje snapshot ne sme da upiše novi red.
   bool _closing = false;
 
@@ -127,10 +130,40 @@ class RideEngine {
     }
     try {
       tracker!.processLocation(point);
+      final gap = tracker!.lastGap;
+      if (gap != null) _recordGap(gap);
       _send({'event': 'update', ..._rideValues()});
     } catch (e) {
       _send({'event': 'error', 'message': 'Greška pri obradi GPS tačke: $e'});
     }
+  }
+
+  /// V12: rupa u signalu se broji odmah (za prikaz), a upis ide kroz red
+  /// komandi, pa ne može da stigne posle zatvaranja vožnje.
+  void _recordGap(GapInfo gap) {
+    final rideId = currentRideId;
+    if (rideId == null) return;
+    _gapCount++;
+    _gapMs += gap.durationMs;
+    _enqueue(() async {
+      final db = await _database();
+      await db.insert('ride_gaps', {
+        'ride_id': rideId,
+        'started_at': gap.startedAt.millisecondsSinceEpoch,
+        'duration_ms': gap.durationMs,
+        'kind': gap.kind,
+        'added_distance_m': gap.addedDistanceMeters,
+        'added_waiting_ms': gap.addedWaitingMs,
+      });
+    });
+    _send({
+      'event': 'gap',
+      'ride_id': rideId,
+      'duration_ms': gap.durationMs,
+      'kind': gap.kind,
+      'added_distance_m': gap.addedDistanceMeters,
+      'added_waiting_ms': gap.addedWaitingMs,
+    });
   }
 
   /// Tekuće vrednosti vožnje za događaje; N11: nose i tarifu vožnje, da UI
@@ -149,6 +182,8 @@ class RideEngine {
       'start_price': t.tariff.startPrice,
       'waiting_speed_kmh':
           t.waiter.waitingSpeedThresholdKmh.round(),
+      'gap_count': _gapCount,
+      'gap_ms': _gapMs,
     };
   }
 
@@ -249,6 +284,8 @@ class RideEngine {
       currentRideId = rideId;
       tracker = _newTracker(tariff, calibration, speedKmh);
       _snapshotFailures = 0;
+      _gapCount = 0;
+      _gapMs = 0;
       onTrackingStart?.call();
 
       _send({'event': 'started', 'ride_id': currentRideId});
@@ -428,6 +465,33 @@ class RideEngine {
     });
   }
 
+  Future<void> _loadGaps(Database db, int rideId) async {
+    final row = (await db.rawQuery(
+            'SELECT COUNT(*) AS n, COALESCE(SUM(duration_ms), 0) AS ms '
+            'FROM ride_gaps WHERE ride_id = ?',
+            [rideId]))
+        .first;
+    _gapCount = row['n'] as int;
+    _gapMs = row['ms'] as int;
+  }
+
+  /// Vreme dok je servis bio zaustavljen nije mereno ni naplaćeno; beležimo ga
+  /// kao rupu da vozač zna da je deo vožnje bez merenja.
+  Future<void> _addRestartGap(Database db, int rideId, int fromMs) async {
+    final duration = _nowMs() - fromMs;
+    if (duration <= 0) return;
+    await db.insert('ride_gaps', {
+      'ride_id': rideId,
+      'started_at': fromMs,
+      'duration_ms': duration,
+      'kind': GapInfo.kindServiceRestart,
+      'added_distance_m': 0,
+      'added_waiting_ms': 0,
+    });
+    _gapCount++;
+    _gapMs += duration;
+  }
+
   /// Vraća true ako je vožnja oporavljena i treba nastaviti praćenje.
   Future<bool> _recoverActiveRide() async {
     final db = await _database();
@@ -489,6 +553,8 @@ class RideEngine {
 
     currentRideId = rId;
     tracker = restored;
+    await _loadGaps(db, rId);
+    await _addRestartGap(db, rId, savedAt);
 
     _send({'event': 'recovered', 'ride_id': currentRideId, ..._rideValues()});
     return true;

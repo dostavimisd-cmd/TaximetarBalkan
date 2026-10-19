@@ -59,6 +59,10 @@ class TaximeterState {
 
   /// Prag brzine za čekanje (km/h) vožnje u toku; null dok servis ne javi.
   final int? waitingSpeedKmh;
+
+  /// Broj prekida GPS signala u vožnji u toku i njihovo ukupno trajanje.
+  final int gapCount;
+  final int gapMs;
   final String currency; // 'RSD', 'EUR'
   final String language; // 'sr', 'en'
   final String? errorMessage;
@@ -75,6 +79,8 @@ class TaximeterState {
     this.rideStartPrice,
     this.isWaitingNow = false,
     this.waitingSpeedKmh,
+    this.gapCount = 0,
+    this.gapMs = 0,
     this.currency = 'RSD',
     this.language = 'sr',
     this.errorMessage,
@@ -102,6 +108,8 @@ class TaximeterState {
     int? rideStartPrice,
     bool? isWaitingNow,
     int? waitingSpeedKmh,
+    int? gapCount,
+    int? gapMs,
     bool clearRideStartPrice = false,
     String? currency,
     String? language,
@@ -124,6 +132,8 @@ class TaximeterState {
           : (rideStartPrice ?? this.rideStartPrice),
       isWaitingNow: isWaitingNow ?? this.isWaitingNow,
       waitingSpeedKmh: waitingSpeedKmh ?? this.waitingSpeedKmh,
+      gapCount: gapCount ?? this.gapCount,
+      gapMs: gapMs ?? this.gapMs,
       currency: currency ?? this.currency,
       language: language ?? this.language,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -208,6 +218,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           rideStartPrice: event['start_price'] as int?,
           isWaitingNow: event['mode'] == 'waiting',
           waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
+          gapCount: event['gap_count'] as int?,
+          gapMs: event['gap_ms'] as int?,
           clearError: true,
         );
         break;
@@ -227,6 +239,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           rideStartPrice: event['start_price'] as int?,
           isWaitingNow: event['mode'] == 'waiting',
           waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
+          gapCount: event['gap_count'] as int?,
+          gapMs: event['gap_ms'] as int?,
           warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
           clearResult: true,
           clearError: true,
@@ -246,6 +260,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           currentPrice: event['price'] as int? ?? state.currentPrice,
           isWaitingNow: event['mode'] == 'waiting',
           waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
+          gapCount: event['gap_count'] as int?,
+          gapMs: event['gap_ms'] as int?,
         );
         break;
       case 'stopped':
@@ -256,6 +272,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
             currentWaitingMs: 0,
             currentPrice: 0,
             isWaitingNow: false,
+            gapCount: 0,
+            gapMs: 0,
             clearRideStartPrice: true,
             clearError: true,
           );
@@ -268,6 +286,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
             currentWaitingMs: result.waitingSeconds * 1000,
             currentPrice: result.totalPrice,
             isWaitingNow: false,
+            gapCount: 0,
+            gapMs: 0,
             clearRideStartPrice: true,
             clearError: true,
           );
@@ -362,6 +382,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       currentWaitingMs: 0,
       currentPrice: 0,
       isWaitingNow: false,
+      gapCount: 0,
+      gapMs: 0,
       clearRideStartPrice: true,
       clearResult: true,
       clearError: true,

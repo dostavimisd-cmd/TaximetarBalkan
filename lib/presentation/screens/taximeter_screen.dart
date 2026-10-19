@@ -281,6 +281,19 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                   ),
                 ),
 
+              // V12: vozač vidi da je bilo prekida GPS signala
+              if (state.isRunning && state.gapCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: Text(
+                    isSr
+                        ? 'GPS signal prekidan ${state.gapCount}× (ukupno ${formatClock(state.gapMs ~/ 1000)})'
+                        : 'GPS signal lost ${state.gapCount}× (total ${formatClock(state.gapMs ~/ 1000)})',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.amberAccent, fontSize: 13),
+                  ),
+                ),
+
               // Poruke o grešci ili upozorenja
               if (state.warningMessage != null)
                 Padding(

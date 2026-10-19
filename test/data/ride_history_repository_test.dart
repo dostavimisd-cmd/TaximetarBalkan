@@ -71,6 +71,24 @@ void main() {
     expect(r.isInterrupted, true);
   });
 
+  test('getGaps: po redu nastanka, samo za tu vožnju', () async {
+    await ride(1000, 'completed', end: 2000);
+    await ride(3000, 'completed', end: 4000);
+    Future<void> gap(int rideId, int at, String kind, int ms) => db.insert('ride_gaps', {
+          'ride_id': rideId, 'started_at': at, 'duration_ms': ms, 'kind': kind,
+          'added_distance_m': 0, 'added_waiting_ms': kind == 'waiting' ? ms : 0,
+        });
+    await gap(1, 5000, 'waiting', 60000);
+    await gap(1, 2000, 'service_restart', 120000);
+    await gap(2, 3500, 'distance', 20000);
+
+    final gaps = await repo.getGaps(1);
+    expect(gaps.map((g) => g.kind), ['service_restart', 'waiting']);
+    expect(gaps.last.addedWaitingMs, 60000);
+    expect(gaps.first.startedAt.isUtc, true);
+    expect(await repo.getGaps(99), isEmpty);
+  });
+
   test('limit', () async {
     for (var i = 0; i < 5; i++) {
       await ride(1000 + i, 'completed', end: 2000 + i);
