@@ -23,7 +23,8 @@ class NavigationService {
       'q': q,
       'format': 'jsonv2',
       'limit': '6',
-      'accept-language': 'sr,en',
+      // latinica kao u ostatku aplikacije, pa ćirilica/engleski gde nema latinice
+      'accept-language': 'sr-Latn,sr,en',
       if (nearLat != null && nearLon != null) ...{
         // okvir ~±0,5° oko vozača: prednost bližim rezultatima, ne isključuje dalje
         'viewbox': '${nearLon - 0.5},${nearLat + 0.5},${nearLon + 0.5},${nearLat - 0.5}',
