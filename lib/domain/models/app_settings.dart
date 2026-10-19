@@ -27,6 +27,8 @@ class AppSettings {
   static const String keyKeepScreenOn = 'keep_screen_on';
   static const String keyPriceColor = 'price_color';
   static const String keyPriceScale = 'price_scale';
+  static const String keyDisclaimer = 'disclaimer_accepted';
+  static const String keyBatteryGuide = 'battery_guide_shown';
 
   /// Boje cene kao na taksimetrima (LED displeji); prikaz je u UI sloju.
   static const List<String> priceColors = ['bela', 'crvena', 'zelena', 'plava', 'zuta', 'narandzasta'];
@@ -97,6 +99,12 @@ class AppSettings {
   /// Veličina cene u procentima (60–200); cena se ipak smanjuje ako nema mesta.
   final int priceScale;
 
+  /// Korisnik je prihvatio napomenu pri prvom pokretanju (nije overeni taksimetar).
+  final bool disclaimerAccepted;
+
+  /// Uputstvo za rad u pozadini je već prikazano pri prvom pokretanju.
+  final bool batteryGuideShown;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -119,6 +127,8 @@ class AppSettings {
     this.keepScreenOn = true,
     this.priceColor = 'bela',
     this.priceScale = 100,
+    this.disclaimerAccepted = false,
+    this.batteryGuideShown = false,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -164,6 +174,8 @@ class AppSettings {
       keepScreenOn: m[keyKeepScreenOn] != '0',
       priceColor: priceColors.contains(m[keyPriceColor]) ? m[keyPriceColor]! : 'bela',
       priceScale: inRange(keyPriceScale, 100, minPriceScale, maxPriceScale),
+      disclaimerAccepted: m[keyDisclaimer] == '1',
+      batteryGuideShown: m[keyBatteryGuide] == '1',
     );
   }
 
@@ -190,6 +202,8 @@ class AppSettings {
         keyKeepScreenOn: keepScreenOn ? '1' : '0',
         keyPriceColor: priceColor,
         keyPriceScale: '$priceScale',
+        keyDisclaimer: disclaimerAccepted ? '1' : '0',
+        keyBatteryGuide: batteryGuideShown ? '1' : '0',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -242,6 +256,8 @@ class AppSettings {
     bool? keepScreenOn,
     String? priceColor,
     int? priceScale,
+    bool? disclaimerAccepted,
+    bool? batteryGuideShown,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -267,6 +283,8 @@ class AppSettings {
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
       priceColor: priceColor ?? this.priceColor,
       priceScale: priceScale ?? this.priceScale,
+      disclaimerAccepted: disclaimerAccepted ?? this.disclaimerAccepted,
+      batteryGuideShown: batteryGuideShown ?? this.batteryGuideShown,
     );
   }
 }

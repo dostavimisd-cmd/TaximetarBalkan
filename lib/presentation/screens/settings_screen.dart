@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../domain/calibration.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
 import '../printing/receipt_printer.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/battery_guide.dart';
 import '../widgets/price_colors.dart';
 import 'fixed_routes_screen.dart';
 import 'holidays_screen.dart';
@@ -683,13 +683,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
-                onPressed: openAppSettings,
+                onPressed: () => showBatteryGuide(context, ref),
                 icon: const Icon(
                   Icons.battery_charging_full,
                   color: Colors.amberAccent,
                 ),
                 label: Text(
-                  t('Otvori podešavanja aplikacije'),
+                  t('Uputstvo za rad u pozadini'),
                   style: TextStyle(color: Colors.amberAccent),
                 ),
               ),

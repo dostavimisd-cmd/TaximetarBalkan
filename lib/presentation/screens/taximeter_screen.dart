@@ -21,6 +21,7 @@ import 'ride_summary_screen.dart';
 import '../providers/history_provider.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/first_launch.dart';
 import '../widgets/fixed_route_picker.dart';
 import '../widgets/price_colors.dart';
 import '../widgets/ride_map.dart';
@@ -55,6 +56,13 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     // Osvežava prikaz cene i kad GPS ne šalje nove tačke (npr. tunel).
     _priceTick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && ref.read(taximeterProvider).isRunning) setState(() {});
+    });
+    // prvo pokretanje: napomena (nije overeni taksimetar), pa uputstvo za bateriju
+    ref.read(appSettingsProvider.future).then((s) {
+      if (!mounted || s.disclaimerAccepted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showFirstLaunch(context, ref);
+      });
     });
     _clock = Timer.periodic(const Duration(seconds: 30), (_) {
       final auto = ref.read(appSettingsProvider).value?.autoTariff ?? false;

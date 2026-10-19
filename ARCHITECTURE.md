@@ -15,6 +15,8 @@
 7. **Mapa i navigacija:** `RideMap` (flutter_map, OpenStreetMap podloge), `NavigationService` (Nominatim pretraga, OSRM ruta). Samo za orijentaciju; obračun ne zavisi od mape ni interneta.
 8. **Podešavanja:** `AppSettings` (domain, tipizirano i provereno) u `app_settings`; jedan `appSettingsProvider`.
 
+9. **Prvo pokretanje i rad u pozadini:** `showFirstLaunch` (widgets/first_launch.dart) pri prvom startu traži prihvatanje napomene (nije overeni taksimetar), pa jednom prikazuje uputstvo za bateriju. `showBatteryGuide` (widgets/battery_guide.dart) otvara sistemski ekran optimizacije baterije (`ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`, bez dozvole `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) i prikazuje korake po proizvođaču (`batteryGroupFor`, domain/battery_guide.dart). Proizvođač i sistemski ekran dolaze preko `MethodChannel` `rs.taksimetar.balkan/device` (`MainActivity.kt`, `DeviceService`). Ekran `AboutScreen` (verzija preko `package_info_plus`, napomena, adresa politike privatnosti `privacyPolicyUrl` — još prazna).
+
 ## Ko piše u bazu
 - `rides`, `ride_snapshots`, `ride_gaps` za vožnju u toku: samo servis (`RideEngine`).
 - UI isolate: `tariffs`, `holidays`, `app_settings`, i brisanje **završenih** vožnji iz istorije (kratka transakcija; WAL + `busy_timeout` sprečavaju sudar sa servisom).

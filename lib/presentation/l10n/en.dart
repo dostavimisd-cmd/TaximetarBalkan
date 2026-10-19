@@ -1,6 +1,62 @@
 /// Engleski prevodi (ključ = srpski tekst iz aplikacije).
 /// Test test/presentation/translations_test.dart pada ako neki tekst nema prevod.
 const Map<String, String> enStrings = {
+  // ---- prvo pokretanje, O aplikaciji, uputstvo za bateriju
+  'Pre nego što počneš':
+      'Before you start',
+  'Pomoćni program za evidenciju vožnji. Nije overeni taksimetar niti fiskalni uređaj.':
+      'Auxiliary program for recording rides. It is not a certified taximeter or a fiscal device.',
+  'PRIHVATAM':
+      'I ACCEPT',
+  'O aplikaciji':
+      'About',
+  'Verzija {0} ({1})':
+      'Version {0} ({1})',
+  'Politika privatnosti':
+      'Privacy policy',
+  'Adresa će biti objavljena pre izlaska u prodavnicu.':
+      'The address will be published before the store release.',
+  'Podaci mape':
+      'Map data',
+  'Telefon može da ugasi taksimetar kad je ekran zaključan. Da se to ne desi, isključi ograničenja baterije za ovu aplikaciju.':
+      'The phone may shut the taximeter down while the screen is locked. To prevent that, turn off battery restrictions for this app.',
+  'OTVORI PODEŠAVANJA BATERIJE':
+      'OPEN BATTERY SETTINGS',
+  'Samsung':
+      'Samsung',
+  'Xiaomi / Redmi / POCO':
+      'Xiaomi / Redmi / POCO',
+  'Honor / Huawei':
+      'Honor / Huawei',
+  'Motorola':
+      'Motorola',
+  'Lenovo':
+      'Lenovo',
+  'Ostali telefoni':
+      'Other phones',
+  'Podešavanja → Aplikacije → Taksimetar Balkan → Baterija → izaberi "Neograničeno".':
+      'Settings → Apps → Taksimetar Balkan → Battery → choose "Unrestricted".',
+  'Podešavanja → Baterija → Ograničenja pozadinske upotrebe → "Aplikacije koje nikad ne spavaju" → dodaj Taksimetar Balkan.':
+      'Settings → Battery → Background usage limits → "Never sleeping apps" → add Taksimetar Balkan.',
+  'Zaključaj aplikaciju u listi nedavnih aplikacija.':
+      'Lock the app in the recent apps list.',
+  'Podešavanja → Aplikacije → Upravljanje aplikacijama → Taksimetar Balkan → uključi "Autostart".':
+      'Settings → Apps → Manage apps → Taksimetar Balkan → turn on "Autostart".',
+  'Isto mesto → Ušteda baterije → izaberi "Bez ograničenja".':
+      'Same place → Battery saver → choose "No restrictions".',
+  'Podešavanja → Baterija → Pokretanje aplikacija → Taksimetar Balkan → isključi "Upravljaj automatski".':
+      'Settings → Battery → App launch → Taksimetar Balkan → turn off "Manage automatically".',
+  'Uključi sva tri prekidača: automatsko pokretanje, pokretanje iz druge aplikacije i rad u pozadini.':
+      'Turn on all three switches: auto-launch, secondary launch and run in background.',
+  'Podešavanja → Baterija → Optimizacija baterije → Sve aplikacije → Taksimetar Balkan → "Ne optimizuj".':
+      'Settings → Battery → Battery optimization → All apps → Taksimetar Balkan → "Don’t optimize".',
+  'Ako postoji "Upravljanje energijom" ili "Rad u pozadini", dozvoli radu aplikacije u pozadini.':
+      'If there is "Power management" or "Background activity", allow the app to run in the background.',
+  'Podešavanja → Aplikacije → Taksimetar Balkan → Baterija → izaberi "Bez ograničenja" (ili "Ne optimizuj").':
+      'Settings → Apps → Taksimetar Balkan → Battery → choose "Unrestricted" (or "Don’t optimize").',
+  'Ako telefon ima "Autostart" ili "Rad u pozadini", uključi ga za ovu aplikaciju.':
+      'If the phone has "Autostart" or "Background activity", turn it on for this app.',
+
   // ---- glavni ekran
   'POMOĆNI TAKSIMETAR': 'AUXILIARY METER',
   'PAUZIRANO': 'PAUSED',
@@ -71,8 +127,10 @@ const Map<String, String> enStrings = {
   'Vožnja': 'Ride',
   'Obriši vožnju': 'Delete ride',
   'Obrisati vožnju?': 'Delete this ride?',
-  '{0} · {1} din\nBrisanje se ne može poništiti.': '{0} · {1} RSD\nThis cannot be undone.',
-  'VOŽNJA PREKINUTA · iznos do poslednjeg snimka': 'RIDE INTERRUPTED · amount up to the last save',
+  '{0} · {1} din\nBrisanje se ne može poništiti.':
+      '{0} · {1} RSD\nThis cannot be undone.',
+  'VOŽNJA PREKINUTA · iznos do poslednjeg snimka':
+      'RIDE INTERRUPTED · amount up to the last save',
   'TRAJANJE': 'DURATION',
   'PROSEČNA BRZINA': 'AVERAGE SPEED',
   'POČETAK': 'START',
@@ -108,8 +166,10 @@ const Map<String, String> enStrings = {
   // ---- tarife
   'TARIFE': 'TARIFFS',
   'NOVA TARIFA': 'NEW TARIFF',
-  'Još nema tarifa. Unesi tarifu koju primenjuješ.': 'No tariffs yet. Enter the tariff you use.',
-  'Start: {0} | Km: {1} | Čekanje/min: {2} | Min: {3}': 'Base: {0} | Km: {1} | Waiting/min: {2} | Min: {3}',
+  'Još nema tarifa. Unesi tarifu koju primenjuješ.':
+      'No tariffs yet. Enter the tariff you use.',
+  'Start: {0} | Km: {1} | Čekanje/min: {2} | Min: {3}':
+      'Base: {0} | Km: {1} | Waiting/min: {2} | Min: {3}',
   'Raspored': 'Schedule',
   'Automatski izbor je uključen: pri startu važe praznici pa raspored. Ručno izabrana tarifa važi kad nijedno pravilo ne važi.':
       'Automatic selection is on: at start, holidays apply first, then the schedule. The manually chosen tariff applies when no rule matches.',
@@ -122,7 +182,8 @@ const Map<String, String> enStrings = {
   'Minimalna cena (din)': 'Minimum fare (RSD)',
   'Popuni sva polja. Čekanje može sa zarezom (npr. 13,4), ostalo celim brojevima.':
       'Fill in all fields. Waiting may have decimals (e.g. 13.4); the rest must be whole numbers.',
-  'Izaberi bar jedan dan rasporeda ili isključi raspored.': 'Choose at least one schedule day or turn the schedule off.',
+  'Izaberi bar jedan dan rasporeda ili isključi raspored.':
+      'Choose at least one schedule day or turn the schedule off.',
   'Raspored (automatski izbor)': 'Schedule (automatic selection)',
   'Važi kad je u podešavanjima uključen automatski izbor tarife.':
       'Applies when automatic tariff selection is on in Settings.',
@@ -145,10 +206,12 @@ const Map<String, String> enStrings = {
   'Uvezi spisak': 'Import list',
   'Obriši sve': 'Delete all',
   'Obrisati sve relacije?': 'Delete all routes?',
-  'Biće obrisano {0} relacija. Istorija vožnji ostaje.': '{0} routes will be deleted. Ride history stays.',
+  'Biće obrisano {0} relacija. Istorija vožnji ostaje.':
+      '{0} routes will be deleted. Ride history stays.',
   'Nema relacija. Dodaj ih ručno (+) ili uvezi ceo spisak odjednom (gore).':
       'No routes. Add them by hand (+) or import a whole list at once (top).',
-  'Nema relacija (Podešavanja → Fiksne relacije)': 'No routes (Settings → Fixed routes)',
+  'Nema relacija (Podešavanja → Fiksne relacije)':
+      'No routes (Settings → Fixed routes)',
   'Pretraga ({0} relacija)': 'Search ({0} routes)',
   'Pretraga ({0})': 'Search ({0})',
   'Nova relacija': 'New route',
@@ -170,7 +233,8 @@ const Map<String, String> enStrings = {
   'Preskočeno redova: {0}': 'Lines skipped: {0}',
   'red {0}: {1}': 'line {0}: {1}',
   'UVEZI ({0})': 'IMPORT ({0})',
-  'Uvezeno: {0} novih, {1} izmenjenih (cena).': 'Imported: {0} new, {1} updated (price).',
+  'Uvezeno: {0} novih, {1} izmenjenih (cena).':
+      'Imported: {0} new, {1} updated (price).',
   'Uvoz nije uspeo: {0}': 'Import failed: {0}',
 
   // ---- podešavanja
@@ -192,7 +256,8 @@ const Map<String, String> enStrings = {
   'Jezik': 'Language',
   'Valuta prikaza': 'Display currency',
   'Kurs: dinara za 1 EUR': 'Exchange rate: RSD per 1 EUR',
-  'Samo za prikaz u EUR. Obračun je uvek u dinarima.': 'Only for showing EUR. Fares are always calculated in RSD.',
+  'Samo za prikaz u EUR. Obračun je uvek u dinarima.':
+      'Only for showing EUR. Fares are always calculated in RSD.',
   'EKRAN': 'SCREEN',
   'Osvežavanje cene (s)': 'Price refresh (s)',
   '1 = odmah. Duže osvežavanje samo usporava prikaz; obračun i konačna cena su isti.':
@@ -234,10 +299,14 @@ const Map<String, String> enStrings = {
   'Da taksimetar ne bi bio ugašen na zaključanom ekranu, isključi optimizaciju baterije za aplikaciju i dozvoli rad u pozadini.':
       'To keep the meter running while the screen is locked, turn off battery optimization for the app and allow background activity.',
   'Otvori podešavanja aplikacije': 'Open app settings',
-  'Unesi brzinu za čekanje (ceo broj km/h).': 'Enter the waiting speed (whole number, km/h).',
-  'Kalibracija: procenat od -50 do 50, npr. 2,5 ili -1.': 'Calibration: a percentage from -50 to 50, e.g. 2.5 or -1.',
-  'Unesi GPS tačnost (ceo broj metara).': 'Enter the GPS accuracy (whole number of metres).',
-  'Kurs: npr. 117,2 (najviše 3 decimale).': 'Exchange rate: e.g. 117.2 (up to 3 decimals).',
+  'Unesi brzinu za čekanje (ceo broj km/h).':
+      'Enter the waiting speed (whole number, km/h).',
+  'Kalibracija: procenat od -50 do 50, npr. 2,5 ili -1.':
+      'Calibration: a percentage from -50 to 50, e.g. 2.5 or -1.',
+  'Unesi GPS tačnost (ceo broj metara).':
+      'Enter the GPS accuracy (whole number of metres).',
+  'Kurs: npr. 117,2 (najviše 3 decimale).':
+      'Exchange rate: e.g. 117.2 (up to 3 decimals).',
   'Za prikaz u EUR unesi kurs.': 'Enter an exchange rate to show EUR.',
 
   // ---- boje cene
@@ -252,16 +321,19 @@ const Map<String, String> enStrings = {
   'Kuda se vozi?': 'Where to?',
   'Ulica i broj, grad': 'Street and number, city',
   'Unesi bar 3 slova adrese.': 'Enter at least 3 letters of the address.',
-  'Ništa nije pronađeno. Probaj sa nazivom grada.': 'Nothing found. Try adding the city name.',
+  'Ništa nije pronađeno. Probaj sa nazivom grada.':
+      'Nothing found. Try adding the city name.',
   'Pretraga nije uspela (internet?): {0}': 'Search failed (internet?): {0}',
   'ZATVORI': 'CLOSE',
-  'Trenutna lokacija nije poznata; prikazujem samo odredište.': 'Current location unknown; showing the destination only.',
+  'Trenutna lokacija nije poznata; prikazujem samo odredište.':
+      'Current location unknown; showing the destination only.',
   'Ruta nije dostupna (internet?): {0}': 'Route unavailable (internet?): {0}',
   '\nFiksna cena: {0} din': '\nFixed fare: {0} RSD',
   '\n≈ {0} din (bez čekanja)': '\n≈ {0} RSD (without waiting)',
 
   // ---- dopuna (naslovi i dugmad)
-  'Nije moguće menjati tarifu tokom aktivne vožnje!': 'The tariff cannot be changed during a ride!',
+  'Nije moguće menjati tarifu tokom aktivne vožnje!':
+      'The tariff cannot be changed during a ride!',
   'Nova tarifa': 'New tariff',
   'PODELI': 'SHARE',
   'ŠTAMPAJ': 'PRINT',
@@ -278,19 +350,26 @@ const Map<String, String> enStrings = {
 
   // ---- poruke servisa i kontrolera (cele)
   'Servis ne odgovara.': 'The meter service is not responding.',
-  'Servis nije radio; vožnja nije nastavljena.': 'The service was not running; the ride was not resumed.',
-  'Servis nije radio; vožnja nije zatvorena u bazi.': 'The service was not running; the ride was not closed in the database.',
-  'GPS je isključen. Uključi lokaciju na telefonu.': 'GPS is off. Turn on location on the phone.',
+  'Servis nije radio; vožnja nije nastavljena.':
+      'The service was not running; the ride was not resumed.',
+  'Servis nije radio; vožnja nije zatvorena u bazi.':
+      'The service was not running; the ride was not closed in the database.',
+  'GPS je isključen. Uključi lokaciju na telefonu.':
+      'GPS is off. Turn on location on the phone.',
   'Dozvola za lokaciju je trajno odbijena. Uključi je u podešavanjima telefona.':
       'Location permission is permanently denied. Enable it in the phone settings.',
-  'Za rad taksimetra potrebna je dozvola za lokaciju.': 'The taximeter needs location permission.',
+  'Za rad taksimetra potrebna je dozvola za lokaciju.':
+      'The taximeter needs location permission.',
   'Uključi "Preciznu lokaciju" za ovu aplikaciju u podešavanjima telefona.':
       'Turn on "Precise location" for this app in the phone settings.',
   'Notifikacije su isključene; obaveštenje o aktivnom taksimetru neće biti prikazano.':
       'Notifications are off; the "meter running" notification will not be shown.',
-  'Vožnja je nastavljena posle prekida servisa.': 'The ride was resumed after the service was interrupted.',
-  'Vožnja je već bila aktivna u pozadini.': 'A ride was already running in the background.',
-  'Upozorenje: Problem sa periodičnim čuvanjem u bazu.': 'Warning: problem with periodic saving to the database.',
+  'Vožnja je nastavljena posle prekida servisa.':
+      'The ride was resumed after the service was interrupted.',
+  'Vožnja je već bila aktivna u pozadini.':
+      'A ride was already running in the background.',
+  'Upozorenje: Problem sa periodičnim čuvanjem u bazu.':
+      'Warning: problem with periodic saving to the database.',
   'Neispravna fiksna cena.': 'Invalid fixed fare.',
 
   // ---- provera unosa (domen)
@@ -303,7 +382,8 @@ const Map<String, String> enStrings = {
   'Neispravan datum.': 'Invalid date.',
   'Neispravan mesec.': 'Invalid month.',
   'Neispravni dani rasporeda.': 'Invalid schedule days.',
-  'Vreme rasporeda mora biti od 00:00 do 23:59.': 'Schedule time must be between 00:00 and 23:59.',
+  'Vreme rasporeda mora biti od 00:00 do 23:59.':
+      'Schedule time must be between 00:00 and 23:59.',
   'Kurs mora biti veći od 0.': 'The exchange rate must be greater than 0.',
   'Kalibracija: od -50 do 50 %.': 'Calibration: from -50 to 50 %.',
   'Nepoznat jezik.': 'Unknown language.',

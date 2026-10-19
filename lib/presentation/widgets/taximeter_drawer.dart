@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/tr.dart';
+import '../screens/about_screen.dart';
+import 'battery_guide.dart';
 
 class TaximeterDrawer extends ConsumerWidget {
   final VoidCallback onTariffsTap;
@@ -126,7 +128,20 @@ class TaximeterDrawer extends ConsumerWidget {
               ),
               onTap: () {
                 Navigator.pop(context);
-                _showBatteryDialog(context, t);
+                showBatteryGuide(context, ref);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: Colors.white70),
+              title: Text(
+                t('O aplikaciji'),
+                style: const TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const AboutScreen()),
+                );
               },
             ),
             const Spacer(),
@@ -162,32 +177,6 @@ class TaximeterDrawer extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showBatteryDialog(BuildContext context, Tr t) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Color(0xFF1E1E1E),
-        title: Text(
-          t('Rad u pozadini bez prekida'),
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          t('Za neprekidan rad kada je ekran zaključan:\n\n1. Isključite "Battery Optimization" za ovu aplikaciju.\n2. Dozvolite "Autostart" / rad u pozadini (posebno za Xiaomi, Huawei i Samsung uređaje).\n3. Zaključajte aplikaciju u listi nedavnih aplikacija.'),
-          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              t('RAZUMEM'),
-              style: TextStyle(color: Colors.amberAccent),
-            ),
-          ),
-        ],
       ),
     );
   }
