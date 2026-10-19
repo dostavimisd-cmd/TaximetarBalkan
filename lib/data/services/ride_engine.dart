@@ -69,6 +69,9 @@ class RideEngine {
   int? currentRideId;
   int _snapshotFailures = 0;
   int _gapCount = 0;
+  // Fiksna relacija vožnje u toku; null = obračun po tarifi.
+  int? _fixedPrice;
+  String? _fixedRouteName;
   int _gapMs = 0;
   // Dok traje zatvaranje vožnje snapshot ne sme da upiše novi red.
   bool _closing = false;
@@ -143,6 +146,10 @@ class RideEngine {
     }
   }
 
+  /// Cena vožnje u toku: fiksna relacija ili taksimetar po tarifi.
+  int _currentPrice(RideTracker t) =>
+      _fixedPrice ?? t.currentFare?.totalPrice ?? t.tariff.startPrice;
+
   /// V12: rupa u signalu se broji odmah (za prikaz), a upis ide kroz red
   /// komandi, pa ne može da stigne posle zatvaranja vožnje.
   void _recordGap(GapInfo gap) {
@@ -181,7 +188,8 @@ class RideEngine {
     return {
       'distance': t.totalDistanceMeters,
       'waitingMs': t.totalWaitingMs,
-      'price': t.currentFare?.totalPrice ?? t.tariff.startPrice,
+      'price': _currentPrice(t),
+      'fixed_route_name': ?_fixedRouteName,
       'mode': t.isWaitingNow ? 'waiting' : 'driving',
       'tariff_id': t.tariff.id,
       'start_price': t.tariff.startPrice,
@@ -277,6 +285,12 @@ class RideEngine {
         _send({'event': 'error', 'cmd': 'start', 'message': invalid});
         return;
       }
+      final fixedPrice = (data['fixed_price'] as num?)?.toInt();
+      final fixedName = data['fixed_route_name'] as String?;
+      if (fixedPrice != null && (fixedPrice <= 0 || fixedPrice > Tariff.maxPrice)) {
+        _send({'event': 'error', 'cmd': 'start', 'message': 'Neispravna fiksna cena.'});
+        return;
+      }
 
       final db = await _database();
       await _cleanupOldActiveRides(db);
@@ -285,10 +299,12 @@ class RideEngine {
         'start_time': _nowMs(),
         'distance_m': 0,
         'waiting_time_sec': 0,
-        'start_price': tariff.startPrice,
+        'start_price': fixedPrice ?? tariff.startPrice,
         'km_price': 0,
         'waiting_price': 0,
-        'total_price': tariff.startPrice,
+        'total_price': fixedPrice ?? tariff.startPrice,
+        'fixed_price': fixedPrice,
+        'fixed_route_name': fixedPrice == null ? null : fixedName,
         'tariff_id': tariff.id,
         // REAL kolona iz stare šeme: promili / 1000 (npr. 1025 → 1.025)
         'applied_calibration': calibration / 1000.0,
@@ -304,6 +320,8 @@ class RideEngine {
 
       currentRideId = rideId;
       tracker = _newTracker(tariff, calibration, speedKmh, gpsAccuracyM);
+      _fixedPrice = fixedPrice;
+      _fixedRouteName = fixedPrice == null ? null : fixedName;
       _snapshotFailures = 0;
       _gapCount = 0;
       _gapMs = 0;
@@ -335,12 +353,14 @@ class RideEngine {
     _closing = true;
     final FareResult fare;
     try {
-      fare = FareCalculator.calculate(
-        tariff: tracker!.tariff,
-        distanceMeters: distanceM,
-        waitingSeconds: waitingSec,
-        calibrationPermille: tracker!.calibrationPermille,
-      );
+      fare = _fixedPrice != null
+          ? FareCalculator.fixed(_fixedPrice!)
+          : FareCalculator.calculate(
+              tariff: tracker!.tariff,
+              distanceMeters: distanceM,
+              waitingSeconds: waitingSec,
+              calibrationPermille: tracker!.calibrationPermille,
+            );
 
       final db = await _database();
       await db.transaction((txn) async {
@@ -370,13 +390,17 @@ class RideEngine {
       return;
     }
 
+    final fixedName = _fixedRouteName;
     tracker = null;
     currentRideId = null;
+    _fixedPrice = null;
+    _fixedRouteName = null;
     _closing = false;
     await onTrackingStop?.call();
     _send({
       'event': 'stopped',
       'ride_id': rideId,
+      'fixed_route_name': ?fixedName,
       'distance_m': distanceM,
       'waiting_sec': waitingSec,
       'start_price': fare.startPrice,
@@ -404,7 +428,7 @@ class RideEngine {
           'ride_id': rideId,
           'current_distance': t.totalDistanceMeters,
           'current_waiting_ms': t.totalWaitingMs,
-          'current_price': t.currentFare?.totalPrice ?? t.tariff.startPrice,
+          'current_price': _currentPrice(t),
           'last_lat': t.lastValidPoint!.latitude,
           'last_lon': t.lastValidPoint!.longitude,
           'timestamp': t.lastValidPoint!.timestamp.millisecondsSinceEpoch,
@@ -464,12 +488,15 @@ class RideEngine {
       values['distance_m'] = distanceM;
       values['waiting_time_sec'] = waitingSec;
       try {
-        final fare = FareCalculator.calculate(
-          tariff: _tariffFromRide(ride),
-          distanceMeters: distanceM,
-          waitingSeconds: waitingSec,
-          calibrationPermille: _permilleOf(ride),
-        );
+        final fixed = ride['fixed_price'] as int?;
+        final fare = fixed != null
+            ? FareCalculator.fixed(fixed)
+            : FareCalculator.calculate(
+                tariff: _tariffFromRide(ride),
+                distanceMeters: distanceM,
+                waitingSeconds: waitingSec,
+                calibrationPermille: _permilleOf(ride),
+              );
         values['km_price'] = fare.kmPrice;
         values['waiting_price'] = fare.waitingPrice;
         values['total_price'] = fare.totalPrice;
@@ -535,6 +562,8 @@ class RideEngine {
         return false;
       }
       currentRideId = rId;
+      _fixedPrice = ride['fixed_price'] as int?;
+      _fixedRouteName = ride['fixed_route_name'] as String?;
       tracker = _newTracker(
         _tariffFromRide(ride),
         _permilleOf(ride),
@@ -576,6 +605,8 @@ class RideEngine {
 
     currentRideId = rId;
     tracker = restored;
+    _fixedPrice = ride['fixed_price'] as int?;
+    _fixedRouteName = ride['fixed_route_name'] as String?;
     await _loadGaps(db, rId);
     await _addRestartGap(db, rId, savedAt);
 

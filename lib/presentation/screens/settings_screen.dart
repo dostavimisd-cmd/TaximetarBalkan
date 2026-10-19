@@ -11,6 +11,7 @@ import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
 import '../printing/receipt_printer.dart';
 import '../providers/settings_provider.dart';
+import 'fixed_routes_screen.dart';
 import 'holidays_screen.dart';
 
 /// Podešavanja korisnika. Vrednosti važe od sledećeg starta vožnje; vožnja u
@@ -302,6 +303,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     .push(MaterialPageRoute<void>(builder: (_) => const HolidaysScreen())),
                 icon: const Icon(Icons.event, color: Colors.amberAccent),
                 label: const Text('Praznici', style: TextStyle(color: Colors.amberAccent)),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => const FixedRoutesScreen())),
+                icon: const Icon(Icons.route, color: Colors.amberAccent),
+                label: const Text('Fiksne relacije', style: TextStyle(color: Colors.amberAccent)),
               ),
               _section('GPS'),
               _number('Najveća dozvoljena nepreciznost (m)', _gps,

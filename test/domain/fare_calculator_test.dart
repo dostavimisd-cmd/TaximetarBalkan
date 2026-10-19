@@ -127,4 +127,12 @@ void main() {
     const hourly = Tariff(startPrice: 0, pricePerKm: 0, waitingParaPerMin: 1333, minPrice: 0);
     expect(FareCalculator.calculate(tariff: hourly, distanceMeters: 0, waitingSeconds: 3600).waitingPrice, 800);
   });
+
+  test('fiksna cena: jedna stavka, bez km i čekanja', () {
+    final f = FareCalculator.fixed(2000);
+    expect(f.totalPrice, 2000);
+    expect(f.startPrice, 2000);
+    expect(f.kmPrice + f.waitingPrice + f.minPriceAdjustment, 0);
+    expect(() => FareCalculator.fixed(0), throwsArgumentError);
+  });
 }

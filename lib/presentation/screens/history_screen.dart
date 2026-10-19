@@ -59,19 +59,24 @@ class HistoryScreen extends ConsumerWidget {
       body: rides.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-          child: Text('Greška pri čitanju istorije: $e',
-              style: const TextStyle(color: Colors.redAccent)),
+          child: Text(
+            'Greška pri čitanju istorije: $e',
+            style: const TextStyle(color: Colors.redAccent),
+          ),
         ),
         data: (list) {
           if (list.isEmpty) {
             return const Center(
-              child: Text('Još nema završenih vožnji.',
-                  style: TextStyle(color: Colors.white54)),
+              child: Text(
+                'Još nema završenih vožnji.',
+                style: TextStyle(color: Colors.white54),
+              ),
             );
           }
           return ListView.separated(
             itemCount: list.length,
-            separatorBuilder: (_, _) => const Divider(height: 1, color: Colors.white10),
+            separatorBuilder: (_, _) =>
+                const Divider(height: 1, color: Colors.white10),
             itemBuilder: (_, i) => _RideTile(ride: list[i], eurRate: eurRate),
           );
         },
@@ -99,25 +104,38 @@ class _RideTile extends StatelessWidget {
         context: context,
         builder: (_) => _RideDetailsDialog(ride: ride, eurRate: eurRate),
       ),
-      title: Text(formatDateTime(ride.startTime),
-          style: const TextStyle(color: Colors.white)),
+      title: Text(
+        formatDateTime(ride.startTime),
+        style: const TextStyle(color: Colors.white),
+      ),
       subtitle: Row(
         children: [
-          Text(details, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          Text(
+            details,
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
           if (ride.isInterrupted) ...[
             const SizedBox(width: 8),
-            const Text('PREKINUTA',
-                style: TextStyle(
-                    color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+            const Text(
+              'PREKINUTA',
+              style: TextStyle(
+                color: Colors.amberAccent,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ],
       ),
-      trailing: Text('${ride.totalPrice}',
-          style: const TextStyle(
-              fontFamily: 'monospace',
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold)),
+      trailing: Text(
+        '${ride.totalPrice}',
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
@@ -148,11 +166,14 @@ class _RideDetailsDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final duration = ride.duration;
-    final gaps = ref.watch(rideGapsProvider(ride.id)).value ?? const <GapInfo>[];
+    final gaps =
+        ref.watch(rideGapsProvider(ride.id)).value ?? const <GapInfo>[];
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
-      title: Text(formatDateTime(ride.startTime),
-          style: const TextStyle(color: Colors.white, fontSize: 16)),
+      title: Text(
+        formatDateTime(ride.startTime),
+        style: const TextStyle(color: Colors.white, fontSize: 16),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -164,19 +185,30 @@ class _RideDetailsDialog extends ConsumerWidget {
                 style: TextStyle(color: Colors.amberAccent, fontSize: 12),
               ),
             ),
-          _line('Distanca', '${(ride.distanceMeters / 1000).toStringAsFixed(2)} km'),
-          if (duration != null) _line('Trajanje', formatClock(duration.inSeconds)),
+          _line(
+            'Distanca',
+            '${(ride.distanceMeters / 1000).toStringAsFixed(2)} km',
+          ),
+          if (duration != null)
+            _line('Trajanje', formatClock(duration.inSeconds)),
           _line('Čekanje', formatClock(ride.waitingSeconds)),
           const Divider(color: Colors.white12),
-          _line('Start', '${ride.startPrice}'),
-          _line('Kilometraža', '${ride.kmPrice}'),
-          _line('Čekanje', '${ride.waitingPrice}'),
-          if (ride.minPriceAdjustment > 0)
-            _line('Dopuna do minimalne', '${ride.minPriceAdjustment}'),
+          if (ride.fixedRouteName != null)
+            _line('Fiksno: ${ride.fixedRouteName}', '${ride.totalPrice}')
+          else ...[
+            _line('Start', '${ride.startPrice}'),
+            _line('Kilometraža', '${ride.kmPrice}'),
+            _line('Čekanje', '${ride.waitingPrice}'),
+            if (ride.minPriceAdjustment > 0)
+              _line('Dopuna do minimalne', '${ride.minPriceAdjustment}'),
+          ],
           const Divider(color: Colors.white12),
           _line('UKUPNO', '${ride.totalPrice} din', bold: true),
           if (eurRate != null)
-            _line('', '${CurrencyConverter.formatForeign(ride.totalPrice, eurRate!)} EUR'),
+            _line(
+              '',
+              '${CurrencyConverter.formatForeign(ride.totalPrice, eurRate!)} EUR',
+            ),
           if (gaps.isNotEmpty) ...[
             const Divider(color: Colors.white12),
             Align(
@@ -187,14 +219,16 @@ class _RideDetailsDialog extends ConsumerWidget {
                 style: const TextStyle(color: Colors.amberAccent, fontSize: 12),
               ),
             ),
-            ...gaps.map((g) => Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '${formatDateTime(g.startedAt).substring(11)} · '
-                    '${formatClock(g.durationMs ~/ 1000)} · ${gapDescription(g)}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
-                  ),
-                )),
+            ...gaps.map(
+              (g) => Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '${formatDateTime(g.startedAt).substring(11)} · '
+                  '${formatClock(g.durationMs ~/ 1000)} · ${gapDescription(g)}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ),
+            ),
           ],
         ],
       ),
@@ -207,7 +241,10 @@ class _RideDetailsDialog extends ConsumerWidget {
               context: context,
               builder: (ctx) => AlertDialog(
                 backgroundColor: const Color(0xFF1E1E1E),
-                title: const Text('Obrisati vožnju?', style: TextStyle(color: Colors.white)),
+                title: const Text(
+                  'Obrisati vožnju?',
+                  style: TextStyle(color: Colors.white),
+                ),
                 content: Text(
                   '${formatDateTime(ride.startTime)} · ${ride.totalPrice} din\nBrisanje se ne može poništiti.',
                   style: const TextStyle(color: Colors.white70),
@@ -215,11 +252,17 @@ class _RideDetailsDialog extends ConsumerWidget {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('ODUSTANI', style: TextStyle(color: Colors.white54)),
+                    child: const Text(
+                      'ODUSTANI',
+                      style: TextStyle(color: Colors.white54),
+                    ),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('OBRIŠI', style: TextStyle(color: Colors.redAccent)),
+                    child: const Text(
+                      'OBRIŠI',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
                   ),
                 ],
               ),
@@ -234,11 +277,17 @@ class _RideDetailsDialog extends ConsumerWidget {
           TextButton.icon(
             onPressed: () => printRideReceipt(context, ref, ride.id),
             icon: const Icon(Icons.print, color: Colors.amberAccent, size: 18),
-            label: const Text('ŠTAMPAJ', style: TextStyle(color: Colors.amberAccent)),
+            label: const Text(
+              'ŠTAMPAJ',
+              style: TextStyle(color: Colors.amberAccent),
+            ),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('ZATVORI', style: TextStyle(color: Colors.amberAccent)),
+          child: const Text(
+            'ZATVORI',
+            style: TextStyle(color: Colors.amberAccent),
+          ),
         ),
       ],
     );

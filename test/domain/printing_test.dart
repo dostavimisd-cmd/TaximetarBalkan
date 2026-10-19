@@ -3,7 +3,7 @@ import 'package:taksimetar_balkan/domain/models/ride_record.dart';
 import 'package:taksimetar_balkan/domain/printing/escpos.dart';
 import 'package:taksimetar_balkan/domain/printing/receipt.dart';
 
-RideRecord ride({int adj = 0, String status = 'completed'}) => RideRecord(
+RideRecord ride({int adj = 0, String status = 'completed', String? fixed}) => RideRecord(
       id: 7,
       startTime: DateTime.utc(2026, 10, 19, 10, 0),
       endTime: DateTime.utc(2026, 10, 19, 10, 25, 30),
@@ -15,6 +15,7 @@ RideRecord ride({int adj = 0, String status = 'completed'}) => RideRecord(
       minPriceAdjustment: adj,
       totalPrice: 1279 + adj,
       status: status,
+      fixedRouteName: fixed,
     );
 
 void main() {
@@ -96,6 +97,13 @@ void main() {
       for (final l in Receipt.forRide(ride(adj: 21, status: 'interrupted'))) {
         expect(l.text.length, lessThanOrEqualTo(l.large ? 16 : 32), reason: l.text);
       }
+    });
+
+    test('fiksna relacija: jedna stavka umesto start/km/čekanje', () {
+      final lines = Receipt.forRide(ride(fixed: 'Aerodrom')).map((l) => l.text).toList();
+      expect(lines, contains('Relacija: Aerodrom'));
+      expect(lines, contains(Receipt.twoColumns('Fiksna cena', '1279 din', 32)));
+      expect(lines.any((l) => l.startsWith('Kilometraža')), false);
     });
 
     test('bez zaglavlja nema praznog separatora na vrhu', () {

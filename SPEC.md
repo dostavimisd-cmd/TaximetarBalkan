@@ -24,7 +24,7 @@ Pomoćna aplikacija za vozača (offline-first) koja računa cenu vožnje. Pomaž
 | 2 | Korisnički definisani praznici | urađeno |
 | 3 | Istorija vožnji | urađeno (brisanje odloženo) |
 | 3 | Izveštaji (dan / nedelja / mesec) | urađeno |
-| 3 | Fiksne relacije | čeka |
+| 3 | Fiksne relacije (cena za jednu vožnju, put se meri) | urađeno |
 | 3 | Smene (izveštaj po smeni) | urađeno |
 | 3 | Brisanje vožnje iz istorije | urađeno |
 | 4 | Kalibracija | urađeno |

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/currency_converter.dart';
+import '../../domain/models/fixed_route.dart';
 import '../../domain/models/tariff.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tariffs_provider.dart';
@@ -11,16 +12,23 @@ class TariffSelectionSheet extends ConsumerWidget {
   final int currentTariffId;
   final void Function(Tariff selected) onTariffSelected;
 
+  /// Izabrana fiksna relacija za sledeću vožnju (null = taksimetar).
+  final int? currentFixedRouteId;
+  final void Function(FixedRoute? route)? onFixedRouteSelected;
+
   const TariffSelectionSheet({
     super.key,
     required this.currentTariffId,
     required this.onTariffSelected,
+    this.currentFixedRouteId,
+    this.onFixedRouteSelected,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
     final auto = ref.watch(appSettingsProvider).value?.autoTariff ?? false;
+    final routes = ref.watch(fixedRoutesProvider).value ?? const <FixedRoute>[];
 
     return Container(
       decoration: const BoxDecoration(
@@ -131,6 +139,39 @@ class TariffSelectionSheet extends ConsumerWidget {
               label: const Text('NOVA TARIFA',
                   style: TextStyle(color: Colors.amberAccent)),
             ),
+            if (routes.isNotEmpty && onFixedRouteSelected != null) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'FIKSNA RELACIJA (sledeća vožnja)',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.2),
+              ),
+              const SizedBox(height: 8),
+              for (final r in routes)
+                ListTile(
+                  dense: true,
+                  leading: Icon(Icons.route,
+                      color: r.id == currentFixedRouteId ? Colors.amberAccent : Colors.white38),
+                  title: Text(r.name,
+                      style: TextStyle(
+                          color: r.id == currentFixedRouteId ? Colors.amberAccent : Colors.white)),
+                  subtitle: Text(r.describe(),
+                      style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  onTap: () {
+                    onFixedRouteSelected!(r.id == currentFixedRouteId ? null : r);
+                    Navigator.pop(context);
+                  },
+                ),
+              if (currentFixedRouteId != null)
+                TextButton(
+                  onPressed: () {
+                    onFixedRouteSelected!(null);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Bez fiksne relacije (taksimetar)',
+                      style: TextStyle(color: Colors.white54)),
+                ),
+            ],
             const SizedBox(height: 8),
           ],
         ),

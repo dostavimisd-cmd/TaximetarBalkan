@@ -1,0 +1,48 @@
+import 'package:sqflite/sqflite.dart';
+import '../../domain/models/fixed_route.dart';
+import '../../domain/repositories/fixed_route_repository.dart';
+
+class FixedRouteRepositoryImpl implements FixedRouteRepository {
+  FixedRouteRepositoryImpl(this._database);
+
+  final Future<Database> Function() _database;
+
+  @override
+  Future<List<FixedRoute>> getAll() async {
+    final db = await _database();
+    final rows = await db.query('fixed_routes', orderBy: 'name, id');
+    return [
+      for (final r in rows)
+        FixedRoute(
+          id: r['id'] as int,
+          name: r['name'] as String,
+          fromLabel: r['from_label'] as String,
+          toLabel: r['to_label'] as String,
+          price: r['fixed_price'] as int,
+        ),
+    ];
+  }
+
+  @override
+  Future<int> save(FixedRoute route) async {
+    final error = route.validate();
+    if (error != null) throw ArgumentError(error);
+    final db = await _database();
+    final values = {
+      'name': route.name.trim(),
+      'from_label': route.fromLabel.trim(),
+      'to_label': route.toLabel.trim(),
+      'fixed_price': route.price,
+    };
+    if (route.id == 0) return db.insert('fixed_routes', values);
+    await db.update('fixed_routes', values, where: 'id = ?', whereArgs: [route.id]);
+    return route.id;
+  }
+
+  @override
+  Future<void> delete(int id) async {
+    final db = await _database();
+    // Vožnje čuvaju naziv i cenu relacije (rides.fixed_*), pa istorija ostaje.
+    await db.delete('fixed_routes', where: 'id = ?', whereArgs: [id]);
+  }
+}

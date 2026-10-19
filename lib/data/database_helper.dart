@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 9,
+      version: 10,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -120,7 +120,9 @@ class DatabaseHelper {
         min_price_adjustment INTEGER DEFAULT 0,
         client_uuid TEXT,
         waiting_speed_kmh INTEGER,
-        gps_accuracy_m INTEGER
+        gps_accuracy_m INTEGER,
+        fixed_price INTEGER,
+        fixed_route_name TEXT
       )
     ''');
     await db.execute(
@@ -204,6 +206,11 @@ class DatabaseHelper {
           db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+    if (oldVersion < 10) {
+      // Fiksna relacija: cena i naziv koji su važili za vožnju (NULL = taksimetar).
+      await _addColumn(db, 'rides', 'fixed_price', 'INTEGER');
+      await _addColumn(db, 'rides', 'fixed_route_name', 'TEXT');
     }
     if (oldVersion < 9) {
       await _createShiftsTable(db);

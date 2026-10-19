@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/database_helper.dart';
+import '../../data/repositories/fixed_route_repository_impl.dart';
 import '../../data/repositories/holiday_repository_impl.dart';
 import '../../data/repositories/settings_repository_impl.dart';
 import '../../data/repositories/tariff_repository_impl.dart';
+import '../../domain/models/fixed_route.dart';
 import '../../domain/models/holiday.dart';
 import '../../domain/models/tariff.dart';
+import '../../domain/repositories/fixed_route_repository.dart';
 import '../../domain/repositories/holiday_repository.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../domain/repositories/tariff_repository.dart';
@@ -65,3 +68,28 @@ class HolidaysNotifier extends AsyncNotifier<List<Holiday>> {
 
 final holidaysProvider =
     AsyncNotifierProvider<HolidaysNotifier, List<Holiday>>(HolidaysNotifier.new);
+
+final fixedRouteRepositoryProvider = Provider<FixedRouteRepository>(
+  (ref) => FixedRouteRepositoryImpl(() => DatabaseHelper.instance.database),
+);
+
+/// Fiksne relacije koje je korisnik uneo (nema ugrađenih — Pravilo 3).
+class FixedRoutesNotifier extends AsyncNotifier<List<FixedRoute>> {
+  FixedRouteRepository get _repo => ref.read(fixedRouteRepositoryProvider);
+
+  @override
+  Future<List<FixedRoute>> build() => _repo.getAll();
+
+  Future<void> save(FixedRoute route) async {
+    await _repo.save(route);
+    state = AsyncData(await _repo.getAll());
+  }
+
+  Future<void> remove(int id) async {
+    await _repo.delete(id);
+    state = AsyncData(await _repo.getAll());
+  }
+}
+
+final fixedRoutesProvider =
+    AsyncNotifierProvider<FixedRoutesNotifier, List<FixedRoute>>(FixedRoutesNotifier.new);

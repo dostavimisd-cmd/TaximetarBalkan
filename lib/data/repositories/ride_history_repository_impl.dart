@@ -87,6 +87,7 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
       minPriceAdjustment: (r['min_price_adjustment'] as int?) ?? 0,
       totalPrice: r['total_price'] as int,
       status: r['status'] as String,
+      fixedRouteName: r['fixed_route_name'] as String?,
     );
   }
 }

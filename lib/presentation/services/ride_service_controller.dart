@@ -162,6 +162,8 @@ class RideServiceController {
     required int calibrationPermille,
     int? waitingSpeedKmh,
     int? gpsAccuracyM,
+    int? fixedPrice,
+    String? fixedRouteName,
   }) =>
       _serialized(() async {
         if (_disposed) return false;
@@ -217,6 +219,8 @@ class RideServiceController {
           'calibration_permille': calibrationPermille,
           'waiting_speed_kmh': ?waitingSpeedKmh,
           'gps_accuracy_m': ?gpsAccuracyM,
+          'fixed_price': ?fixedPrice,
+          'fixed_route_name': ?fixedRouteName,
         });
         return true;
       });

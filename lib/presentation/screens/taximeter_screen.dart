@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
+import '../../domain/models/fixed_route.dart';
 import '../../domain/models/holiday.dart';
 import '../../domain/models/tariff.dart';
 import '../../domain/tariff_selector.dart';
@@ -29,6 +30,9 @@ class TaximeterScreen extends ConsumerStatefulWidget {
 class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
   /// Automatski izbor zavisi od sata: ekran se osvežava dok čeka start.
   Timer? _clock;
+
+  /// Fiksna relacija izabrana za sledeću vožnju; null = taksimetar.
+  FixedRoute? _fixedRoute;
 
   @override
   void initState() {
@@ -110,6 +114,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       builder: (_) => TariffSelectionSheet(
         currentTariffId: _activeTariff?.id ?? 0,
         onTariffSelected: (selected) => _selectTariff(selected.id),
+        currentFixedRouteId: _fixedRoute?.id,
+        onFixedRouteSelected: (route) => setState(() => _fixedRoute = route),
       ),
     );
   }
@@ -433,18 +439,27 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                             ),
                             child: Column(
                               children: [
-                                _ResultLine(
-                                  isSr ? 'Start' : 'Base',
-                                  result.startPrice,
-                                ),
-                                _ResultLine(
-                                  isSr ? 'Kilometraža' : 'Distance',
-                                  result.kmPrice,
-                                ),
-                                _ResultLine(
-                                  isSr ? 'Čekanje' : 'Waiting',
-                                  result.waitingPrice,
-                                ),
+                                if (state.fixedRouteName != null)
+                                  _ResultLine(
+                                    isSr
+                                        ? 'Fiksno: ${state.fixedRouteName}'
+                                        : 'Fixed: ${state.fixedRouteName}',
+                                    result.totalPrice,
+                                  )
+                                else ...[
+                                  _ResultLine(
+                                    isSr ? 'Start' : 'Base',
+                                    result.startPrice,
+                                  ),
+                                  _ResultLine(
+                                    isSr ? 'Kilometraža' : 'Distance',
+                                    result.kmPrice,
+                                  ),
+                                  _ResultLine(
+                                    isSr ? 'Čekanje' : 'Waiting',
+                                    result.waitingPrice,
+                                  ),
+                                ],
                                 if (result.minPriceAdjustment > 0)
                                   _ResultLine(
                                     isSr
@@ -467,7 +482,9 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                         size: 18,
                                       ),
                                       label: Text(
-                                        isSr ? 'ŠTAMPAJ RAČUN' : 'PRINT RECEIPT',
+                                        isSr
+                                            ? 'ŠTAMPAJ RAČUN'
+                                            : 'PRINT RECEIPT',
                                         style: const TextStyle(
                                           color: Colors.amberAccent,
                                         ),
@@ -559,7 +576,15 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                         fontSize: 14,
                                       ),
                                     ),
-                                    if (autoPicked)
+                                    if (_fixedRoute != null && !state.isRunning)
+                                      const Text(
+                                        'FIKSNO',
+                                        style: TextStyle(
+                                          color: Colors.amberAccent,
+                                          fontSize: 9,
+                                        ),
+                                      )
+                                    else if (autoPicked)
                                       Text(
                                         choice.reason ==
                                                 TariffChoiceReason.holiday
@@ -632,6 +657,14 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                       .calibrationPermille,
                                                   gpsAccuracyM:
                                                       settings.gpsAccuracyM,
+                                                  fixedPrice:
+                                                      _fixedRoute?.price,
+                                                  fixedRouteName:
+                                                      _fixedRoute?.name,
+                                                );
+                                                // relacija važi za jednu vožnju
+                                                setState(
+                                                  () => _fixedRoute = null,
                                                 );
                                               },
                                         style: _mainButtonStyle(

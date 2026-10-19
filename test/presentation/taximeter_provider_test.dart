@@ -34,6 +34,8 @@ class FakeController extends RideServiceController {
     required int calibrationPermille,
     int? waitingSpeedKmh,
     int? gpsAccuracyM,
+    int? fixedPrice,
+    String? fixedRouteName,
   }) async {
     startCalls++;
     return startResult;

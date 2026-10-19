@@ -64,6 +64,9 @@ class TaximeterState {
   final int gapCount;
   final int gapMs;
 
+  /// Fiksna relacija vožnje u toku/završene; null = taksimetar po tarifi.
+  final String? fixedRouteName;
+
   /// Poslednja važeća GPS tačka vožnje (za mapu); null dok je nema.
   final double? lat;
   final double? lon;
@@ -85,6 +88,7 @@ class TaximeterState {
     this.gapMs = 0,
     this.lat,
     this.lon,
+    this.fixedRouteName,
     this.errorMessage,
     this.warningMessage,
   });
@@ -114,6 +118,8 @@ class TaximeterState {
     int? gapMs,
     double? lat,
     double? lon,
+    String? fixedRouteName,
+    bool clearFixedRoute = false,
     bool clearRideStartPrice = false,
     String? errorMessage,
     String? warningMessage,
@@ -138,6 +144,8 @@ class TaximeterState {
       gapMs: gapMs ?? this.gapMs,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
+      fixedRouteName:
+          clearFixedRoute ? null : (fixedRouteName ?? this.fixedRouteName),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       warningMessage:
           clearWarning ? null : (warningMessage ?? this.warningMessage),
@@ -224,6 +232,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           gapMs: event['gap_ms'] as int?,
           lat: (event['lat'] as num?)?.toDouble(),
           lon: (event['lon'] as num?)?.toDouble(),
+          fixedRouteName: event['fixed_route_name'] as String?,
           clearError: true,
         );
         break;
@@ -247,6 +256,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           gapMs: event['gap_ms'] as int?,
           lat: (event['lat'] as num?)?.toDouble(),
           lon: (event['lon'] as num?)?.toDouble(),
+          fixedRouteName: event['fixed_route_name'] as String?,
           warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
           clearResult: true,
           clearError: true,
@@ -270,6 +280,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           gapMs: event['gap_ms'] as int?,
           lat: (event['lat'] as num?)?.toDouble(),
           lon: (event['lon'] as num?)?.toDouble(),
+          fixedRouteName: event['fixed_route_name'] as String?,
         );
         break;
       case 'stopped':
@@ -334,6 +345,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     int calibrationPermille = 1000,
     int? waitingSpeedKmh,
     int? gpsAccuracyM,
+    int? fixedPrice,
+    String? fixedRouteName,
   }) async {
     if (!state.isReady ||
         (state.phase != RidePhase.idle && state.phase != RidePhase.finished)) {
@@ -344,7 +357,9 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     final previous = state;
     state = state.copyWith(
       phase: RidePhase.starting,
-      rideStartPrice: startPrice,
+      rideStartPrice: fixedPrice ?? startPrice,
+      fixedRouteName: fixedRouteName,
+      clearFixedRoute: fixedPrice == null,
       currentDistanceMeters: 0.0,
       currentWaitingMs: 0,
       currentPrice: 0,
@@ -362,6 +377,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       calibrationPermille: calibrationPermille,
       waitingSpeedKmh: waitingSpeedKmh,
       gpsAccuracyM: gpsAccuracyM,
+      fixedPrice: fixedPrice,
+      fixedRouteName: fixedRouteName,
     );
 
     // Komanda nije poslata, a nijedan događaj nije promenio fazu.
@@ -395,6 +412,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       gapCount: 0,
       gapMs: 0,
       clearRideStartPrice: true,
+      clearFixedRoute: true,
       clearResult: true,
       clearError: true,
       clearWarning: true,

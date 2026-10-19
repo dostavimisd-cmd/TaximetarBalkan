@@ -2,6 +2,20 @@ import 'models/fare_result.dart';
 import 'models/tariff.dart';
 
 class FareCalculator {
+  /// Fiksna cena (fiksna relacija): ceo iznos je jedna stavka, bez km,
+  /// čekanja i minimalne cene.
+  static FareResult fixed(int price) {
+    if (price <= 0) throw ArgumentError('Fiksna cena mora biti veća od 0.');
+    return FareResult(
+      startPrice: price,
+      kmPrice: 0,
+      waitingPrice: 0,
+      minPriceAdjustment: 0,
+      totalPrice: price,
+      isMinPriceApplied: false,
+    );
+  }
+
   /// Jedino mesto u aplikaciji za finansijsko celobrojno zaokruživanje (.5 naviše)
   /// Koristi matematički pristup: (brojilac + (imenilac / 2)) / imenilac
   static int _roundHalfUp(int numerator, int denominator) {

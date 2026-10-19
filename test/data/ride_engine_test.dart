@@ -528,6 +528,59 @@ void main() {
     expect(await h.rides(), isEmpty);
   });
 
+  test('fiksna relacija: meri se put, naplaćuje fiksna cena', () async {
+    await h.engine.receive({...startCmd, 'fixed_price': 2000, 'fixed_route_name': 'Aerodrom'});
+    h.drive(60);
+    expect(h.of('update').last['price'], 2000);
+    expect(h.of('update').last['fixed_route_name'], 'Aerodrom');
+    await h.engine.receive({'command': 'stop'});
+
+    final stopped = h.of('stopped').single;
+    expect(stopped['total_price'], 2000);
+    expect(stopped['km_price'], 0);
+    expect(stopped['distance_m'] as int, greaterThan(500)); // put se ipak meri
+    expect(stopped['fixed_route_name'], 'Aerodrom');
+    final ride = (await h.rides()).single;
+    expect(ride['fixed_price'], 2000);
+    expect(ride['fixed_route_name'], 'Aerodrom');
+    expect(ride['total_price'], 2000);
+
+    // sledeća vožnja je opet po tarifi
+    h.events.clear();
+    await h.engine.receive(startCmd);
+    h.drive(10, fromMs: h.now + 1000);
+    expect(h.of('update').last['price'], isNot(2000));
+    expect(h.of('update').last.containsKey('fixed_route_name'), false);
+  });
+
+  test('fiksna relacija se oporavlja i prekid zadržava fiksnu cenu', () async {
+    await h.engine.receive({...startCmd, 'fixed_price': 1500, 'fixed_route_name': 'Novi Sad'});
+    h.drive(30);
+    await h.engine.saveSnapshot();
+
+    h.now += 60 * 1000;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+    expect(h.of('recovered').single['price'], 1500);
+    expect(h.of('recovered').single['fixed_route_name'], 'Novi Sad');
+
+    // pad posle oporavka, pa novi start: prekinuta vožnja dobija fiksnu cenu
+    await engine2.saveSnapshot();
+    h.now += 60 * 1000;
+    final engine3 = h.newEngine();
+    await engine3.receive(startCmd);
+    final first = (await h.rides()).first;
+    expect(first['status'], RideEngine.statusInterrupted);
+    expect(first['total_price'], 1500);
+  });
+
+  test('neispravna fiksna cena → error{cmd:start}', () async {
+    await h.engine.receive({...startCmd, 'fixed_price': 0});
+    await h.engine.receive({...startCmd, 'fixed_price': -5});
+    expect(h.of('error').length, 2);
+    expect(await h.rides(), isEmpty);
+  });
+
   test('status odražava aktivnu vožnju', () async {
     await h.engine.receive({'command': 'status'});
     expect(h.of('status').last['active'], false);

@@ -12,6 +12,9 @@ class RideRecord {
   final int totalPrice;
   final String status; // completed | interrupted | cancelled
 
+  /// Fiksna relacija (cena je fiksna); null = taksimetar po tarifi.
+  final String? fixedRouteName;
+
   const RideRecord({
     required this.id,
     required this.startTime,
@@ -24,6 +27,7 @@ class RideRecord {
     required this.minPriceAdjustment,
     required this.totalPrice,
     required this.status,
+    this.fixedRouteName,
   });
 
   bool get isInterrupted => status == 'interrupted';
