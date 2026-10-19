@@ -161,6 +161,7 @@ class RideServiceController {
     required int minPrice,
     required int calibrationPermille,
     int? waitingSpeedKmh,
+    int? gpsAccuracyM,
   }) =>
       _serialized(() async {
         if (_disposed) return false;
@@ -215,6 +216,7 @@ class RideServiceController {
           'min_price': minPrice,
           'calibration_permille': calibrationPermille,
           'waiting_speed_kmh': ?waitingSpeedKmh,
+          'gps_accuracy_m': ?gpsAccuracyM,
         });
         return true;
       });

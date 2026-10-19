@@ -63,8 +63,6 @@ class TaximeterState {
   /// Broj prekida GPS signala u vožnji u toku i njihovo ukupno trajanje.
   final int gapCount;
   final int gapMs;
-  final String currency; // 'RSD', 'EUR'
-  final String language; // 'sr', 'en'
   final String? errorMessage;
   final String? warningMessage;
 
@@ -81,8 +79,6 @@ class TaximeterState {
     this.waitingSpeedKmh,
     this.gapCount = 0,
     this.gapMs = 0,
-    this.currency = 'RSD',
-    this.language = 'sr',
     this.errorMessage,
     this.warningMessage,
   });
@@ -111,8 +107,6 @@ class TaximeterState {
     int? gapCount,
     int? gapMs,
     bool clearRideStartPrice = false,
-    String? currency,
-    String? language,
     String? errorMessage,
     String? warningMessage,
     bool clearError = false,
@@ -134,8 +128,6 @@ class TaximeterState {
       waitingSpeedKmh: waitingSpeedKmh ?? this.waitingSpeedKmh,
       gapCount: gapCount ?? this.gapCount,
       gapMs: gapMs ?? this.gapMs,
-      currency: currency ?? this.currency,
-      language: language ?? this.language,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       warningMessage:
           clearWarning ? null : (warningMessage ?? this.warningMessage),
@@ -325,6 +317,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     required int minPrice,
     int calibrationPermille = 1000,
     int? waitingSpeedKmh,
+    int? gpsAccuracyM,
   }) async {
     if (!state.isReady ||
         (state.phase != RidePhase.idle && state.phase != RidePhase.finished)) {
@@ -352,6 +345,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       minPrice: minPrice,
       calibrationPermille: calibrationPermille,
       waitingSpeedKmh: waitingSpeedKmh,
+      gpsAccuracyM: gpsAccuracyM,
     );
 
     // Komanda nije poslata, a nijedan događaj nije promenio fazu.
@@ -394,16 +388,6 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
   void setTariff(int tariffId) {
     if (state.isRunning) return;
     state = state.copyWith(selectedTariffId: tariffId);
-  }
-
-  void toggleCurrency() {
-    final nextCurrency = state.currency == 'RSD' ? 'EUR' : 'RSD';
-    state = state.copyWith(currency: nextCurrency);
-  }
-
-  void toggleLanguage() {
-    final nextLang = state.language == 'sr' ? 'en' : 'sr';
-    state = state.copyWith(language: nextLang);
   }
 }
 

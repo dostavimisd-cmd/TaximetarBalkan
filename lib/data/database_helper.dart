@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -104,7 +104,8 @@ class DatabaseHelper {
         tariff_min_price INTEGER DEFAULT 0,
         min_price_adjustment INTEGER DEFAULT 0,
         client_uuid TEXT,
-        waiting_speed_kmh INTEGER
+        waiting_speed_kmh INTEGER,
+        gps_accuracy_m INTEGER
       )
     ''');
     await db.execute(
@@ -187,6 +188,10 @@ class DatabaseHelper {
           db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+    if (oldVersion < 7) {
+      // Prag GPS tačnosti (m) koji je važio za vožnju; null = podrazumevani.
+      await db.execute('ALTER TABLE rides ADD COLUMN gps_accuracy_m INTEGER');
     }
     if (oldVersion < 6) {
       await _createGapsTable(db);

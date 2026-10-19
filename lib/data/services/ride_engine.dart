@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/calibration.dart';
 import '../../domain/fare_calculator.dart';
+import '../../domain/location_filter.dart';
+import '../../domain/models/app_settings.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/fare_result.dart';
 import '../../domain/models/location_point.dart';
@@ -34,16 +36,19 @@ class RideEngine {
   // Oporavak dozvoljen samo ako je snapshot mlađi od 5 minuta
   static const int maxSnapshotAgeMs = 5 * 60 * 1000;
 
-  /// Prag brzine ispod koje se računa čekanje (km/h). Korisnik ga podešava;
-  /// podrazumevana vrednost je dosadašnje ponašanje aplikacije.
-  static const int defaultWaitingSpeedKmh = 8;
-  static const int minWaitingSpeedKmh = 1;
-  static const int maxWaitingSpeedKmh = 50;
+  /// Prag brzine ispod koje se računa čekanje (km/h) i prag GPS tačnosti (m)
+  /// podešava korisnik; podrazumevane vrednosti su u [AppSettings].
+  static const int defaultWaitingSpeedKmh = AppSettings.defaultWaitingSpeedKmh;
 
-  static RideTracker _newTracker(Tariff tariff, int calibrationPermille, int? speedKmh) =>
+  static RideTracker _newTracker(Tariff tariff, int calibrationPermille,
+          int? speedKmh, int? gpsAccuracyM) =>
       RideTracker(
         tariff: tariff,
         calibrationPermille: calibrationPermille,
+        filter: LocationFilter(
+          accuracyThresholdMeters:
+              (gpsAccuracyM ?? AppSettings.defaultGpsAccuracyM).toDouble(),
+        ),
         waiter: SmartWaiter(
           waitingSpeedThresholdKmh:
               (speedKmh ?? defaultWaitingSpeedKmh).toDouble(),
@@ -242,12 +247,25 @@ class RideEngine {
 
       final speedKmh = (data['waiting_speed_kmh'] as num?)?.toInt();
       if (speedKmh != null &&
-          (speedKmh < minWaitingSpeedKmh || speedKmh > maxWaitingSpeedKmh)) {
+          (speedKmh < AppSettings.minWaitingSpeedKmh ||
+              speedKmh > AppSettings.maxWaitingSpeedKmh)) {
         _send({
           'event': 'error',
           'cmd': 'start',
           'message':
-              'Brzina za čekanje mora biti od $minWaitingSpeedKmh do $maxWaitingSpeedKmh km/h.',
+              'Brzina za čekanje mora biti od ${AppSettings.minWaitingSpeedKmh} do ${AppSettings.maxWaitingSpeedKmh} km/h.',
+        });
+        return;
+      }
+      final gpsAccuracyM = (data['gps_accuracy_m'] as num?)?.toInt();
+      if (gpsAccuracyM != null &&
+          (gpsAccuracyM < AppSettings.minGpsAccuracyM ||
+              gpsAccuracyM > AppSettings.maxGpsAccuracyM)) {
+        _send({
+          'event': 'error',
+          'cmd': 'start',
+          'message':
+              'GPS tačnost mora biti od ${AppSettings.minGpsAccuracyM} do ${AppSettings.maxGpsAccuracyM} m.',
         });
         return;
       }
@@ -273,6 +291,7 @@ class RideEngine {
         // REAL kolona iz stare šeme: promili / 1000 (npr. 1025 → 1.025)
         'applied_calibration': calibration / 1000.0,
         'waiting_speed_kmh': speedKmh,
+        'gps_accuracy_m': gpsAccuracyM,
         'status': statusActive,
         'tariff_start_price': tariff.startPrice,
         'tariff_price_per_km': tariff.pricePerKm,
@@ -282,7 +301,7 @@ class RideEngine {
       });
 
       currentRideId = rideId;
-      tracker = _newTracker(tariff, calibration, speedKmh);
+      tracker = _newTracker(tariff, calibration, speedKmh, gpsAccuracyM);
       _snapshotFailures = 0;
       _gapCount = 0;
       _gapMs = 0;
@@ -518,6 +537,7 @@ class RideEngine {
         _tariffFromRide(ride),
         _permilleOf(ride),
         ride['waiting_speed_kmh'] as int?,
+        ride['gps_accuracy_m'] as int?,
       );
       _send({'event': 'recovered', 'ride_id': rId, ..._rideValues()});
       return true;
@@ -538,6 +558,7 @@ class RideEngine {
       tariff,
       _permilleOf(ride),
       ride['waiting_speed_kmh'] as int?,
+      ride['gps_accuracy_m'] as int?,
     );
     restored.restoreFromSnapshot(
       restoredDistance: (snap['current_distance'] as num).toDouble(),

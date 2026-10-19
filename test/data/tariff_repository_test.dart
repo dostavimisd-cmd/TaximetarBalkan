@@ -70,6 +70,17 @@ void main() {
     expect(ride['tariff_price_per_km'], 50);
   });
 
+  test('getAll / saveAll: sve u jednoj transakciji, zamena postojećih', () async {
+    final settings = SettingsRepositoryImpl(_TestHelper(db));
+    final before = await settings.getAll();
+    expect(before['waiting_speed_threshold'], '8.0'); // podrazumevani iz _createDB
+    await settings.saveAll({'language': 'en', 'gps_accuracy_m': '20'});
+    await settings.saveAll({'gps_accuracy_m': '25'});
+    final after = await settings.getAll();
+    expect(after['language'], 'en');
+    expect(after['gps_accuracy_m'], '25');
+  });
+
   test('kurs se čuva kao podešavanje', () async {
     final settings = SettingsRepositoryImpl(_TestHelper(db));
     expect(await settings.getSetting('eur_rate_milli'), isNull);

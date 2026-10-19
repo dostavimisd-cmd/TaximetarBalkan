@@ -30,4 +30,22 @@ class SettingsRepositoryImpl implements SettingsRepository {
     }
     return null;
   }
+
+  @override
+  Future<Map<String, String>> getAll() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('app_settings');
+    return {for (final r in rows) r['key'] as String: r['value'] as String};
+  }
+
+  @override
+  Future<void> saveAll(Map<String, String> values) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      for (final e in values.entries) {
+        await txn.insert('app_settings', {'key': e.key, 'value': e.value},
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
 }

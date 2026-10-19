@@ -28,7 +28,7 @@ Pomoćna aplikacija za vozača (offline-first) koja računa cenu vožnje. Pomaž
 | 4 | Kalibracija | urađeno |
 | 4 | ESC/POS štampač (č,ć,ž,š,đ) | čeka |
 | 4 | Glasovna najava cene | čeka |
-| — | Podešavanja (ekran, GPS prag tačnosti, pamćenje jezika/valute/tarife) | u radu |
+| — | Podešavanja (ekran, GPS prag tačnosti, pamćenje jezika/valute/tarife) | urađeno |
 
 ---
 

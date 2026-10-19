@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/services/ride_engine.dart';
-import '../../domain/calibration.dart';
 import '../../domain/currency_converter.dart';
+import '../../domain/models/app_settings.dart';
 import '../../domain/models/tariff.dart';
 import '../providers/taximeter_provider.dart';
 import '../providers/tariffs_provider.dart';
-import '../widgets/settings_dialog.dart';
+import '../providers/settings_provider.dart';
 import 'history_screen.dart';
+import 'settings_screen.dart';
 import '../widgets/tariff_edit_dialog.dart';
 import '../widgets/tariff_selection_sheet.dart';
 import '../widgets/taximeter_drawer.dart';
@@ -20,15 +20,30 @@ class TaximeterScreen extends ConsumerStatefulWidget {
 }
 
 class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
-  /// Tarifa se drži samo u provider-u (selectedTariffId); servis je vraća
-  /// u status/recovered, pa ekran posle oporavka prikazuje pravu. Tarife
-  /// unosi korisnik; dok ih nema, vraća null.
+  /// Tokom (i posle) vožnje tarifu javlja servis (status/recovered), pa ekran
+  /// posle oporavka prikazuje pravu. Između vožnji važi izbor iz podešavanja
+  /// (pamti se). Tarife unosi korisnik; dok ih nema, vraća null.
   Tariff? get _activeTariff {
     final tariffs = ref.read(tariffsProvider).value ?? const <Tariff>[];
     if (tariffs.isEmpty) return null;
-    final id = ref.read(taximeterProvider).selectedTariffId;
+    final state = ref.read(taximeterProvider);
+    final fromRide = state.isRunning || state.phase == RidePhase.finished;
+    final id = fromRide
+        ? state.selectedTariffId
+        : ref.read(appSettingsProvider).value?.selectedTariffId;
     return tariffs.firstWhere((t) => t.id == id, orElse: () => tariffs.first);
   }
+
+  Future<void> _selectTariff(int id) async {
+    ref.read(taximeterProvider.notifier).setTariff(id);
+    await ref
+        .read(appSettingsProvider.notifier)
+        .change((s) => s.copyWith(selectedTariffId: id));
+  }
+
+  Future<void> _openSettings() => Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+      );
 
   String _formatDuration(int ms) {
     final duration = Duration(milliseconds: ms);
@@ -55,9 +70,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => TariffSelectionSheet(
         currentTariffId: _activeTariff?.id ?? 0,
-        onTariffSelected: (selected) {
-          ref.read(taximeterProvider.notifier).setTariff(selected.id);
-        },
+        onTariffSelected: (selected) => _selectTariff(selected.id),
       ),
     );
   }
@@ -67,17 +80,16 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     final state = ref.watch(taximeterProvider);
     final notifier = ref.read(taximeterProvider.notifier);
 
-    final isSr = state.language == 'sr';
+    final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
+    final isSr = settings.language == 'sr';
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
-    final eurRate = ref.watch(eurRateProvider).value;
-    final speedSetting = ref.watch(waitingSpeedProvider).value ??
-        RideEngine.defaultWaitingSpeedKmh;
-    final calibration = ref.watch(calibrationProvider).value ?? Calibration.neutralPermille;
-    final badgeSpeed = state.waitingSpeedKmh ?? speedSetting;
+    final eurRate = settings.eurRateMilli;
+    final badgeSpeed = state.waitingSpeedKmh ?? settings.waitingSpeedKmh;
     final tariff = _activeTariff;
     // EUR samo uz kurs koji je korisnik uneo; račun je celobrojan.
-    final displayPrice = (state.currency == 'EUR' && eurRate != null)
-        ? CurrencyConverter.formatForeign(state.currentPrice, eurRate)
+    final currency = (settings.currency == 'EUR' && eurRate != null) ? 'EUR' : 'RSD';
+    final displayPrice = (currency == 'EUR')
+        ? CurrencyConverter.formatForeign(state.currentPrice, eurRate!)
         : state.currentPrice.toString();
 
     // Trenutno stajanje (servis javlja mode), ne ukupno čekanje
@@ -92,7 +104,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
           MaterialPageRoute<void>(builder: (_) => const HistoryScreen()),
         ),
         onTariffsTap: () => _openTariffSheet(context),
-        onSettingsTap: () => showSettingsDialog(context, ref),
+        onSettingsTap: _openSettings,
       ),
       body: SafeArea(
         child: Padding(
@@ -124,25 +136,26 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: notifier.toggleLanguage,
+                    onPressed: () => ref.read(appSettingsProvider.notifier).change(
+                        (s) => s.copyWith(language: s.language == 'sr' ? 'en' : 'sr')),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white70,
                       backgroundColor: Colors.white10,
                       minimumSize: const Size(36, 28),
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                     ),
-                    child: Text(state.language.toUpperCase(), style: const TextStyle(fontSize: 12)),
+                    child: Text(settings.language.toUpperCase(), style: const TextStyle(fontSize: 12)),
                   ),
                   const SizedBox(width: 6),
                   TextButton(
                     onPressed: () async {
-                      if (state.currency == 'RSD' && eurRate == null) {
-                        // Nema ugrađenog kursa: prvo ga korisnik unosi.
-                        await showSettingsDialog(context, ref);
-                        // Bez unetog kursa EUR prikaz ne postoji.
-                        if (ref.read(eurRateProvider).value == null) return;
+                      if (currency == 'RSD' && eurRate == null) {
+                        // Nema ugrađenog kursa: prvo ga korisnik unosi u podešavanjima.
+                        await _openSettings();
+                        return;
                       }
-                      notifier.toggleCurrency();
+                      await ref.read(appSettingsProvider.notifier).change(
+                          (s) => s.copyWith(currency: currency == 'RSD' ? 'EUR' : 'RSD'));
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.amberAccent,
@@ -150,7 +163,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                       minimumSize: const Size(44, 28),
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                     ),
-                    child: Text(state.currency, style: const TextStyle(fontSize: 12)),
+                    child: Text(currency, style: const TextStyle(fontSize: 12)),
                   ),
                 ],
               ),
@@ -214,7 +227,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                       ),
                     ),
                     Text(
-                      state.currency,
+                      currency,
                       style: const TextStyle(
                         color: Colors.white38,
                         fontSize: 18,
@@ -373,7 +386,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                       : tariffs.isEmpty
                                           ? () async {
                                               final id = await showTariffEditor(context, ref);
-                                              if (id != null && id > 0) notifier.setTariff(id);
+                                              if (id != null && id > 0) await _selectTariff(id);
                                             }
                                           : () {
                                               final t = tariff!;
@@ -383,8 +396,9 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                 pricePerKm: t.pricePerKm,
                                                 waitingParaPerMin: t.waitingParaPerMin,
                                                 minPrice: t.minPrice,
-                                                waitingSpeedKmh: speedSetting,
-                                                calibrationPermille: calibration,
+                                                waitingSpeedKmh: settings.waitingSpeedKmh,
+                                                calibrationPermille: settings.calibrationPermille,
+                                                gpsAccuracyM: settings.gpsAccuracyM,
                                               );
                                             },
                                   style: _mainButtonStyle(const Color(0xFF2E7D32)),

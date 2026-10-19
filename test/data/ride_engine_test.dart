@@ -491,6 +491,43 @@ void main() {
     expect(h.of('update').last['gap_count'], 0);
   });
 
+  test('GPS prag tačnosti: tačka 20 m se odbacuje pri pragu 15, prihvata pri 25', () async {
+    LocationPoint p(int i, double acc) => LocationPoint(
+          latitude: 44.8 + i * 0.00009, longitude: 20.46, accuracy: acc, speed: 10,
+          timestamp: DateTime.fromMillisecondsSinceEpoch(t0 + i * 1000, isUtc: true),
+        );
+    await h.engine.receive(startCmd); // bez gps_accuracy_m → 15 m
+    for (var i = 0; i <= 10; i++) {
+      h.now = t0 + i * 1000;
+      h.engine.onPosition(p(i, 20));
+    }
+    expect(h.engine.tracker!.lastValidPoint, isNull);
+    await h.engine.receive({'command': 'stop'});
+
+    await h.engine.receive({...startCmd, 'gps_accuracy_m': 25});
+    for (var i = 0; i <= 10; i++) {
+      h.now = t0 + i * 1000;
+      h.engine.onPosition(p(i, 20));
+    }
+    expect(h.engine.tracker!.totalDistanceMeters, greaterThan(50));
+    expect((await h.rides()).last['gps_accuracy_m'], 25);
+
+    // oporavak zadržava prag vožnje
+    await h.engine.saveSnapshot();
+    h.now += 30 * 1000;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+    expect(engine2.tracker!.filter.accuracyThresholdMeters, 25.0);
+  });
+
+  test('GPS prag van opsega → error{cmd:start}', () async {
+    for (final bad in [0, 4, 51]) {
+      await h.engine.receive({...startCmd, 'gps_accuracy_m': bad});
+    }
+    expect(h.of('error').length, 3);
+    expect(await h.rides(), isEmpty);
+  });
+
   test('status odražava aktivnu vožnju', () async {
     await h.engine.receive({'command': 'status'});
     expect(h.of('status').last['active'], false);

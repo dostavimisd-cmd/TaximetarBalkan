@@ -33,6 +33,7 @@ class FakeController extends RideServiceController {
     required int minPrice,
     required int calibrationPermille,
     int? waitingSpeedKmh,
+    int? gpsAccuracyM,
   }) async {
     startCalls++;
     return startResult;

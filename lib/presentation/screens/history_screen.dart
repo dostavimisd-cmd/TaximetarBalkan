@@ -4,7 +4,7 @@ import '../../domain/currency_converter.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../providers/history_provider.dart';
-import '../providers/tariffs_provider.dart';
+import '../providers/settings_provider.dart';
 
 String formatDateTime(DateTime utc) {
   final t = utc.toLocal();
@@ -41,7 +41,7 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rides = ref.watch(rideHistoryProvider);
-    final eurRate = ref.watch(eurRateProvider).value;
+    final eurRate = ref.watch(appSettingsProvider).value?.eurRateMilli;
 
     return Scaffold(
       backgroundColor: Colors.black,
