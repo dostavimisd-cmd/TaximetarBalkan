@@ -32,8 +32,7 @@ void main() {
       printerName: 'PT-210',
       printMode: PrintMode.cp1250,
       printCodePage: 45,
-      receiptHeader: 'TAXI
-060 123',
+      receiptHeader: 'TAXI\n060 123',
     );
     final back = AppSettings.fromMap(s.toMap());
     expect(back.toMap(), s.toMap());
