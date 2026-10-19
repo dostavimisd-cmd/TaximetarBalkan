@@ -174,63 +174,70 @@ class _RideDetailsDialog extends ConsumerWidget {
         formatDateTime(ride.startTime),
         style: const TextStyle(color: Colors.white, fontSize: 16),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (ride.isInterrupted)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Text(
-                'Vožnja je prekinuta (servis zaustavljen). Iznos je do poslednjeg snimka.',
-                style: TextStyle(color: Colors.amberAccent, fontSize: 12),
-              ),
-            ),
-          _line(
-            'Distanca',
-            '${(ride.distanceMeters / 1000).toStringAsFixed(2)} km',
-          ),
-          if (duration != null)
-            _line('Trajanje', formatClock(duration.inSeconds)),
-          _line('Čekanje', formatClock(ride.waitingSeconds)),
-          const Divider(color: Colors.white12),
-          if (ride.fixedRouteName != null)
-            _line('Fiksno: ${ride.fixedRouteName}', '${ride.totalPrice}')
-          else ...[
-            _line('Start', '${ride.startPrice}'),
-            _line('Kilometraža', '${ride.kmPrice}'),
-            _line('Čekanje', '${ride.waitingPrice}'),
-            if (ride.minPriceAdjustment > 0)
-              _line('Dopuna do minimalne', '${ride.minPriceAdjustment}'),
-          ],
-          const Divider(color: Colors.white12),
-          _line('UKUPNO', '${ride.totalPrice} din', bold: true),
-          if (eurRate != null)
-            _line(
-              '',
-              '${CurrencyConverter.formatForeign(ride.totalPrice, eurRate!)} EUR',
-            ),
-          if (gaps.isNotEmpty) ...[
-            const Divider(color: Colors.white12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Prekidi GPS signala: ${gaps.length} '
-                '(ukupno ${formatClock(gaps.fold<int>(0, (a, g) => a + g.durationMs) ~/ 1000)})',
-                style: const TextStyle(color: Colors.amberAccent, fontSize: 12),
-              ),
-            ),
-            ...gaps.map(
-              (g) => Align(
-                alignment: Alignment.centerLeft,
+      // Sadržaj se pomera: u horizontalnom položaju ne staje, pa su se dugmad
+      // (obriši, štampaj, zatvori) preklapala sa njim.
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (ride.isInterrupted)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
                 child: Text(
-                  '${formatDateTime(g.startedAt).substring(11)} · '
-                  '${formatClock(g.durationMs ~/ 1000)} · ${gapDescription(g)}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  'Vožnja je prekinuta (servis zaustavljen). Iznos je do poslednjeg snimka.',
+                  style: TextStyle(color: Colors.amberAccent, fontSize: 12),
                 ),
               ),
+            _line(
+              'Distanca',
+              '${(ride.distanceMeters / 1000).toStringAsFixed(2)} km',
             ),
+            if (duration != null)
+              _line('Trajanje', formatClock(duration.inSeconds)),
+            _line('Čekanje', formatClock(ride.waitingSeconds)),
+            const Divider(color: Colors.white12),
+            if (ride.fixedRouteName != null)
+              _line('Fiksno: ${ride.fixedRouteName}', '${ride.totalPrice}')
+            else ...[
+              _line('Start', '${ride.startPrice}'),
+              _line('Kilometraža', '${ride.kmPrice}'),
+              _line('Čekanje', '${ride.waitingPrice}'),
+              if (ride.minPriceAdjustment > 0)
+                _line('Dopuna do minimalne', '${ride.minPriceAdjustment}'),
+            ],
+            const Divider(color: Colors.white12),
+            _line('UKUPNO', '${ride.totalPrice} din', bold: true),
+            if (eurRate != null)
+              _line(
+                '',
+                '${CurrencyConverter.formatForeign(ride.totalPrice, eurRate!)} EUR',
+              ),
+            if (gaps.isNotEmpty) ...[
+              const Divider(color: Colors.white12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Prekidi GPS signala: ${gaps.length} '
+                  '(ukupno ${formatClock(gaps.fold<int>(0, (a, g) => a + g.durationMs) ~/ 1000)})',
+                  style: const TextStyle(
+                    color: Colors.amberAccent,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              ...gaps.map(
+                (g) => Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '${formatDateTime(g.startedAt).substring(11)} · '
+                    '${formatClock(g.durationMs ~/ 1000)} · ${gapDescription(g)}',
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
       actions: [
         IconButton(
