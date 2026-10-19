@@ -18,7 +18,8 @@ class ForegroundBridge {
       serviceId: 256,
       serviceTypes: [ForegroundServiceTypes.location],
       notificationTitle: 'Taksimetar Balkan',
-      notificationText: 'Taksimetar je aktivan',
+      // neutralno (SR/EN): obaveštenje servisa se pravi pre nego što se zna jezik
+      notificationText: 'Taksimetar / Taximeter',
       callback: startCallback,
     );
     return result is ServiceRequestFailure ? '${result.error}' : null;
@@ -40,7 +41,7 @@ class ForegroundBridge {
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: 'taksimetar_balkan_service',
         channelName: 'Taksimetar Balkan',
-        channelDescription: 'Prikazuje da je taksimetar aktivan.',
+        channelDescription: 'Taksimetar / Taximeter',
         channelImportance: NotificationChannelImportance.LOW,
         priority: NotificationPriority.LOW,
         onlyAlertOnce: true,
