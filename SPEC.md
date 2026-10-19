@@ -29,7 +29,7 @@ Pomoćna aplikacija za vozača (offline-first) koja računa cenu vožnje. Pomaž
 | 3 | Brisanje vožnje iz istorije | urađeno |
 | 4 | Kalibracija | urađeno |
 | 4 | ESC/POS štampač (č,ć,ž,š,đ), PT-210 58 mm | urađeno u kodu, čeka test na štampaču |
-| 4 | Glasovna najava cene | čeka |
+| 4 | Glasovna najava cene (kraj vožnje, uključuje se u Podešavanjima) | urađeno |
 | UI | Besplatna open-source mapa (OpenStreetMap), tamna, linija vožnje | urađeno |
 | UI | Pretraga adrese i predlog rute (Nominatim + OSRM) | urađeno |
 | UI | Pozadina: crna ili logo slika | urađeno |

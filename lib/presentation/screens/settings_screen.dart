@@ -33,6 +33,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _currency = 'RSD';
   bool _autoTariff = false;
   bool _showMap = true;
+  bool _voice = false;
   String? _logoPath;
   String? _receiptLogoPath;
   String? _printerMac;
@@ -59,6 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _currency = s.currency;
     _autoTariff = s.autoTariff;
     _showMap = s.showMap;
+    _voice = s.voiceAnnounce;
     _logoPath = s.backgroundLogoPath;
     _receiptLogoPath = s.receiptLogoPath;
     _printerMac = s.printerMac;
@@ -102,6 +104,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       selectedTariffId: current.selectedTariffId,
       autoTariff: _autoTariff,
       showMap: _showMap,
+      voiceAnnounce: _voice,
       backgroundLogoPath: _logoPath,
       printerMac: _printerMac,
       printerName: _printerName,
@@ -321,6 +324,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   allow: r'[0-9.,]',
                   decimal: true,
                   helper: 'Samo za prikaz u EUR. Obračun je uvek u dinarima.'),
+              _section('GLAS'),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _voice,
+                onChanged: (v) => setState(() => _voice = v),
+                title: const Text('Najavi cenu na kraju vožnje',
+                    style: TextStyle(color: Colors.white)),
+                subtitle: const Text(
+                    'Telefon izgovori ukupan iznos. Koristi sintetizator govora telefona.',
+                    style: TextStyle(color: Colors.white38, fontSize: 11)),
+              ),
               _section('IZGLED'),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

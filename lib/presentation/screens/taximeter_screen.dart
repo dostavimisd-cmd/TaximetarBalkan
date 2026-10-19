@@ -10,7 +10,9 @@ import '../../domain/models/tariff.dart';
 import '../../domain/tariff_selector.dart';
 import '../providers/taximeter_provider.dart';
 import '../providers/tariffs_provider.dart';
+import '../../domain/announcement.dart';
 import '../printing/receipt_printer.dart';
+import '../services/voice_service.dart';
 import '../providers/settings_provider.dart';
 import 'history_screen.dart';
 import 'reports_screen.dart';
@@ -122,6 +124,27 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<TaximeterState>(taximeterProvider, (prev, next) {
+      final finishedNow =
+          next.phase == RidePhase.finished && prev?.phase != RidePhase.finished;
+      final s = ref.read(appSettingsProvider).value;
+      if (!finishedNow ||
+          s == null ||
+          !s.voiceAnnounce ||
+          next.lastResult == null) {
+        return;
+      }
+      ref
+          .read(voiceServiceProvider)
+          .speak(
+            Announcement.rideFinished(
+              next.lastResult!.totalPrice,
+              language: s.language,
+              fixedRouteName: next.fixedRouteName,
+            ),
+            language: s.language,
+          );
+    });
     final state = ref.watch(taximeterProvider);
     final notifier = ref.read(taximeterProvider.notifier);
 

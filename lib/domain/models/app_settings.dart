@@ -21,6 +21,7 @@ class AppSettings {
   static const String keyPrintCodePage = 'print_codepage';
   static const String keyReceiptHeader = 'receipt_header';
   static const String keyReceiptLogo = 'receipt_logo';
+  static const String keyVoice = 'voice_announce';
 
   static const int defaultWaitingSpeedKmh = 8;
   static const int minWaitingSpeedKmh = 1;
@@ -71,6 +72,9 @@ class AppSettings {
   /// Slika logoa firme na vrhu računa; null = bez logoa.
   final String? receiptLogoPath;
 
+  /// Glasovna najava cene na kraju vožnje.
+  final bool voiceAnnounce;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -88,6 +92,7 @@ class AppSettings {
     this.printCodePage = 18,
     this.receiptHeader = '',
     this.receiptLogoPath,
+    this.voiceAnnounce = false,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -126,6 +131,7 @@ class AppSettings {
       printCodePage: inRange(keyPrintCodePage, 18, 0, 255),
       receiptHeader: m[keyReceiptHeader] ?? '',
       receiptLogoPath: (m[keyReceiptLogo] ?? '').isEmpty ? null : m[keyReceiptLogo],
+      voiceAnnounce: m[keyVoice] == '1',
     );
   }
 
@@ -147,6 +153,7 @@ class AppSettings {
         keyPrintCodePage: '$printCodePage',
         keyReceiptHeader: receiptHeader,
         keyReceiptLogo: receiptLogoPath ?? '',
+        keyVoice: voiceAnnounce ? '1' : '0',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -187,6 +194,7 @@ class AppSettings {
     String? receiptHeader,
     String? receiptLogoPath,
     bool clearReceiptLogo = false,
+    bool? voiceAnnounce,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -207,6 +215,7 @@ class AppSettings {
       printCodePage: printCodePage ?? this.printCodePage,
       receiptHeader: receiptHeader ?? this.receiptHeader,
       receiptLogoPath: clearReceiptLogo ? null : (receiptLogoPath ?? this.receiptLogoPath),
+      voiceAnnounce: voiceAnnounce ?? this.voiceAnnounce,
     );
   }
 }
