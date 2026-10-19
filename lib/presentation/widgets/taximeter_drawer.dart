@@ -35,7 +35,11 @@ class TaximeterDrawer extends StatelessWidget {
                       color: Colors.amberAccent.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.local_taxi, color: Colors.amberAccent, size: 28),
+                    child: const Icon(
+                      Icons.local_taxi,
+                      color: Colors.amberAccent,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   const Column(
@@ -62,7 +66,10 @@ class TaximeterDrawer extends StatelessWidget {
             const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.history, color: Colors.white70),
-              title: const Text('Istorija vožnji', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Istorija vožnji',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 onHistoryTap();
@@ -70,7 +77,10 @@ class TaximeterDrawer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.bar_chart, color: Colors.white70),
-              title: const Text('Izveštaji', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Izveštaji',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 onReportsTap();
@@ -78,7 +88,10 @@ class TaximeterDrawer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.receipt_long, color: Colors.white70),
-              title: const Text('Tarife', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Tarife',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 onTariffsTap();
@@ -86,16 +99,28 @@ class TaximeterDrawer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.tune, color: Colors.white70),
-              title: const Text('Podešavanja', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Podešavanja',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 onSettingsTap();
               },
             ),
             ListTile(
-              leading: const Icon(Icons.battery_charging_full, color: Colors.white70),
-              title: const Text('Optimizacija baterije', style: TextStyle(color: Colors.white)),
-              subtitle: const Text('Uputstvo za rad u pozadini', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              leading: const Icon(
+                Icons.battery_charging_full,
+                color: Colors.white70,
+              ),
+              title: const Text(
+                'Optimizacija baterije',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: const Text(
+                'Uputstvo za rad u pozadini',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _showBatteryDialog(context);
@@ -114,12 +139,20 @@ class TaximeterDrawer extends StatelessWidget {
                 children: [
                   Text(
                     'Pravna napomena:',
-                    style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   SizedBox(height: 4),
                   Text(
                     'Ova aplikacija je pomoćni alat za internu evidenciju i procenu troškova, a ne overeni službeni taksimetar.',
-                    style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.3),
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      height: 1.3,
+                    ),
                   ),
                 ],
               ),
@@ -135,7 +168,10 @@ class TaximeterDrawer extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text('Rad u pozadini bez prekida', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Rad u pozadini bez prekida',
+          style: TextStyle(color: Colors.white),
+        ),
         content: const Text(
           'Za neprekidan rad kada je ekran zaključan:\n\n'
           '1. Isključite "Battery Optimization" za ovu aplikaciju.\n'
@@ -146,7 +182,10 @@ class TaximeterDrawer extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('RAZUMEM', style: TextStyle(color: Colors.amberAccent)),
+            child: const Text(
+              'RAZUMEM',
+              style: TextStyle(color: Colors.amberAccent),
+            ),
           ),
         ],
       ),

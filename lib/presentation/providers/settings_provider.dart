@@ -8,7 +8,8 @@ class AppSettingsNotifier extends AsyncNotifier<AppSettings> {
   SettingsRepository get _repo => ref.read(settingsRepositoryProvider);
 
   @override
-  Future<AppSettings> build() async => AppSettings.fromMap(await _repo.getAll());
+  Future<AppSettings> build() async =>
+      AppSettings.fromMap(await _repo.getAll());
 
   /// Proverava i čuva; baca ArgumentError sa opisom ako nešto nije ispravno.
   Future<void> save(AppSettings settings) async {
@@ -25,4 +26,6 @@ class AppSettingsNotifier extends AsyncNotifier<AppSettings> {
 }
 
 final appSettingsProvider =
-    AsyncNotifierProvider<AppSettingsNotifier, AppSettings>(AppSettingsNotifier.new);
+    AsyncNotifierProvider<AppSettingsNotifier, AppSettings>(
+      AppSettingsNotifier.new,
+    );

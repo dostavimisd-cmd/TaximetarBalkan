@@ -14,11 +14,15 @@ class HolidaysScreen extends ConsumerWidget {
     final holidays = ref.watch(holidaysProvider);
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
     String tariffName(int id) =>
-        tariffs.where((t) => t.id == id).firstOrNull?.name ?? '(obrisana tarifa)';
+        tariffs.where((t) => t.id == id).firstOrNull?.name ??
+        '(obrisana tarifa)';
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(backgroundColor: Colors.black, title: const Text('Praznici')),
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: const Text('Praznici'),
+      ),
       floatingActionButton: tariffs.isEmpty
           ? null
           : FloatingActionButton(
@@ -28,12 +32,19 @@ class HolidaysScreen extends ConsumerWidget {
             ),
       body: holidays.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) =>
-            Center(child: Text('Greška: $e', style: const TextStyle(color: Colors.redAccent))),
+        error: (e, _) => Center(
+          child: Text(
+            'Greška: $e',
+            style: const TextStyle(color: Colors.redAccent),
+          ),
+        ),
         data: (list) {
           if (tariffs.isEmpty) {
             return const Center(
-              child: Text('Prvo unesi bar jednu tarifu.', style: TextStyle(color: Colors.white54)),
+              child: Text(
+                'Prvo unesi bar jednu tarifu.',
+                style: TextStyle(color: Colors.white54),
+              ),
             );
           }
           if (list.isEmpty) {
@@ -52,9 +63,14 @@ class HolidaysScreen extends ConsumerWidget {
             children: [
               for (final h in list)
                 ListTile(
-                  title: Text(h.name, style: const TextStyle(color: Colors.white)),
-                  subtitle: Text('${h.describe()} · ${tariffName(h.tariffId)}',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  title: Text(
+                    h.name,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  subtitle: Text(
+                    '${h.describe()} · ${tariffName(h.tariffId)}',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
                   onTap: () => _edit(context, tariffs, existing: h),
                 ),
             ],
@@ -98,7 +114,9 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
     _date = h == null ? now : DateTime(h.year ?? now.year, h.month, h.day);
     _recurring = h?.recurring ?? true;
     _tariffId = h?.tariffId ?? widget.tariffs.first.id;
-    if (!widget.tariffs.any((t) => t.id == _tariffId)) _tariffId = widget.tariffs.first.id;
+    if (!widget.tariffs.any((t) => t.id == _tariffId)) {
+      _tariffId = widget.tariffs.first.id;
+    }
   }
 
   @override
@@ -148,8 +166,10 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
         : '${two(_date.day)}.${two(_date.month)}.${_date.year}.';
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
-      title: Text(widget.existing == null ? 'Novi praznik' : 'Izmena praznika',
-          style: const TextStyle(color: Colors.white)),
+      title: Text(
+        widget.existing == null ? 'Novi praznik' : 'Izmena praznika',
+        style: const TextStyle(color: Colors.white),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -174,7 +194,10 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
               contentPadding: EdgeInsets.zero,
               value: _recurring,
               onChanged: (v) => setState(() => _recurring = v ?? true),
-              title: const Text('Svake godine', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Svake godine',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             DropdownButton<int>(
               value: _tariffId,
@@ -183,12 +206,20 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
               items: [
                 for (final t in widget.tariffs)
                   DropdownMenuItem(
-                      value: t.id, child: Text(t.name, style: const TextStyle(color: Colors.white))),
+                    value: t.id,
+                    child: Text(
+                      t.name,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
               ],
               onChanged: (v) => setState(() => _tariffId = v ?? _tariffId),
             ),
             if (_error != null)
-              Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+              Text(
+                _error!,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+              ),
           ],
         ),
       ),
@@ -196,15 +227,24 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
         if (widget.existing != null)
           TextButton(
             onPressed: _delete,
-            child: const Text('OBRIŠI', style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'OBRIŠI',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('ODUSTANI', style: TextStyle(color: Colors.white54)),
+          child: const Text(
+            'ODUSTANI',
+            style: TextStyle(color: Colors.white54),
+          ),
         ),
         TextButton(
           onPressed: _save,
-          child: const Text('SAČUVAJ', style: TextStyle(color: Colors.amberAccent)),
+          child: const Text(
+            'SAČUVAJ',
+            style: TextStyle(color: Colors.amberAccent),
+          ),
         ),
       ],
     );

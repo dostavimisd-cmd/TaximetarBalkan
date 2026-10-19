@@ -40,4 +40,29 @@ void main() {
     expect(() => repo.save(const FixedRoute(name: ' ', price: 100)), throwsArgumentError);
     expect(() => repo.save(const FixedRoute(name: 'x', price: 0)), throwsArgumentError);
   });
+
+  test('importAll: nove relacije, a postojeća (isto ime/od/do) menja cenu', () async {
+    await repo.save(const FixedRoute(name: 'Aerodrom', fromLabel: 'Centar', toLabel: 'Surčin', price: 2500));
+    final r = await repo.importAll(const [
+      FixedRoute(name: 'aerodrom', fromLabel: 'centar', toLabel: 'surčin', price: 2800),
+      FixedRoute(name: 'Novi Sad', price: 4500),
+      FixedRoute(name: 'Novi Sad', fromLabel: 'Centar', price: 4700),
+    ]);
+    expect(r.added, 2);
+    expect(r.updated, 1);
+    final all = await repo.getAll();
+    expect(all.length, 3);
+    expect(all.firstWhere((x) => x.name.toLowerCase() == 'aerodrom').price, 2800);
+  });
+
+  test('importAll: nevalidna relacija poništava ceo uvoz', () async {
+    expect(
+      () => repo.importAll(const [
+        FixedRoute(name: 'Dobra', price: 100),
+        FixedRoute(name: 'Loša', price: 0),
+      ]),
+      throwsArgumentError,
+    );
+    expect(await repo.getAll(), isEmpty);
+  });
 }

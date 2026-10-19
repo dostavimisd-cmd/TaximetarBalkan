@@ -100,8 +100,7 @@ class TaximeterState {
       phase == RidePhase.stopping;
 
   /// Prelazna faza: komanda je poslata, čeka se odgovor servisa.
-  bool get isBusy =>
-      phase == RidePhase.starting || phase == RidePhase.stopping;
+  bool get isBusy => phase == RidePhase.starting || phase == RidePhase.stopping;
 
   TaximeterState copyWith({
     bool? isReady,
@@ -132,7 +131,8 @@ class TaximeterState {
       phase: phase ?? this.phase,
       lastResult: clearResult ? null : (lastResult ?? this.lastResult),
       currentPrice: currentPrice ?? this.currentPrice,
-      currentDistanceMeters: currentDistanceMeters ?? this.currentDistanceMeters,
+      currentDistanceMeters:
+          currentDistanceMeters ?? this.currentDistanceMeters,
       currentWaitingMs: currentWaitingMs ?? this.currentWaitingMs,
       selectedTariffId: selectedTariffId ?? this.selectedTariffId,
       rideStartPrice: clearRideStartPrice
@@ -144,11 +144,13 @@ class TaximeterState {
       gapMs: gapMs ?? this.gapMs,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
-      fixedRouteName:
-          clearFixedRoute ? null : (fixedRouteName ?? this.fixedRouteName),
+      fixedRouteName: clearFixedRoute
+          ? null
+          : (fixedRouteName ?? this.fixedRouteName),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      warningMessage:
-          clearWarning ? null : (warningMessage ?? this.warningMessage),
+      warningMessage: clearWarning
+          ? null
+          : (warningMessage ?? this.warningMessage),
     );
   }
 }
@@ -186,13 +188,16 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     }
   }
 
-  Future<void> _initConnection(RideServiceController controller,
-      {bool requestPermissions = true}) async {
+  Future<void> _initConnection(
+    RideServiceController controller, {
+    bool requestPermissions = true,
+  }) async {
     if (_connecting) return;
     _connecting = true;
     try {
-      final connected =
-          await controller.connect(requestPermissions: requestPermissions);
+      final connected = await controller.connect(
+        requestPermissions: requestPermissions,
+      );
       state = state.copyWith(isReady: connected);
     } finally {
       _connecting = false;
@@ -203,8 +208,10 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
   /// uključenog GPS-a); poziva se i pri povratku aplikacije u prvi plan.
   Future<void> retryConnect({bool requestPermissions = true}) {
     if (state.isBusy) return Future.value();
-    return _initConnection(ref.read(rideServiceControllerProvider),
-        requestPermissions: requestPermissions);
+    return _initConnection(
+      ref.read(rideServiceControllerProvider),
+      requestPermissions: requestPermissions,
+    );
   }
 
   void _handleServiceEvent(Map<String, dynamic> event) {
@@ -219,8 +226,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           phase: event['active'] == true
               ? RidePhase.running
               : (state.phase == RidePhase.finished
-                  ? RidePhase.finished
-                  : RidePhase.idle),
+                    ? RidePhase.finished
+                    : RidePhase.idle),
           currentDistanceMeters: (event['distance'] as num?)?.toDouble() ?? 0.0,
           currentWaitingMs: event['waitingMs'] as int? ?? 0,
           currentPrice: event['price'] as int? ?? 0,
@@ -238,15 +245,20 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
         break;
       case 'started':
         state = state.copyWith(
-            phase: RidePhase.running, clearResult: true, clearError: true);
+          phase: RidePhase.running,
+          clearResult: true,
+          clearError: true,
+        );
         break;
       case 'recovered':
         // V7: vožnja nastavljena posle prekida servisa; preuzimamo tekuće vrednosti.
         state = state.copyWith(
           phase: RidePhase.running,
           currentDistanceMeters:
-              (event['distance'] as num?)?.toDouble() ?? state.currentDistanceMeters,
-          currentWaitingMs: event['waitingMs'] as int? ?? state.currentWaitingMs,
+              (event['distance'] as num?)?.toDouble() ??
+              state.currentDistanceMeters,
+          currentWaitingMs:
+              event['waitingMs'] as int? ?? state.currentWaitingMs,
           currentPrice: event['price'] as int? ?? state.currentPrice,
           selectedTariffId: event['tariff_id'] as int?,
           rideStartPrice: event['start_price'] as int?,
@@ -271,8 +283,11 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       case 'update':
         if (state.phase == RidePhase.finished) break; // zakasneli događaj
         state = state.copyWith(
-          currentDistanceMeters: (event['distance'] as num?)?.toDouble() ?? state.currentDistanceMeters,
-          currentWaitingMs: event['waitingMs'] as int? ?? state.currentWaitingMs,
+          currentDistanceMeters:
+              (event['distance'] as num?)?.toDouble() ??
+              state.currentDistanceMeters,
+          currentWaitingMs:
+              event['waitingMs'] as int? ?? state.currentWaitingMs,
           currentPrice: event['price'] as int? ?? state.currentPrice,
           isWaitingNow: event['mode'] == 'waiting',
           waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
@@ -318,9 +333,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
         );
         break;
       case 'warning':
-        state = state.copyWith(
-          warningMessage: event['message'] as String?,
-        );
+        state = state.copyWith(warningMessage: event['message'] as String?);
         break;
       case 'error':
         // K6: neuspeo start vraća UI u mirovanje; neuspeo stop ostavlja

@@ -8,8 +8,11 @@ import '../providers/tariffs_provider.dart';
 
 /// Forma za unos/izmenu tarife. [existing] == null znači nova (prazna) tarifa.
 /// Vraća id sačuvane tarife, -1 ako je obrisana, ili null ako je korisnik odustao.
-Future<int?> showTariffEditor(BuildContext context, WidgetRef ref,
-    {Tariff? existing}) {
+Future<int?> showTariffEditor(
+  BuildContext context,
+  WidgetRef ref, {
+  Tariff? existing,
+}) {
   return showDialog<int>(
     context: context,
     builder: (_) => _TariffEditDialog(existing: existing),
@@ -47,7 +50,8 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
     _start = TextEditingController(text: n(t?.startPrice));
     _perKm = TextEditingController(text: n(t?.pricePerKm));
     _waiting = TextEditingController(
-        text: t == null ? '' : CurrencyConverter.formatPara(t.waitingParaPerMin));
+      text: t == null ? '' : CurrencyConverter.formatPara(t.waitingParaPerMin),
+    );
     _min = TextEditingController(text: n(t?.minPrice));
     final s = t?.schedule;
     if (s != null) {
@@ -74,8 +78,10 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
           : int.tryParse(c.text.trim());
     }).toList();
     if (values.any((v) => v == null)) {
-      setState(() => _error =
-          'Popuni sva polja. Čekanje može sa zarezom (npr. 13,4), ostalo celim brojevima.');
+      setState(
+        () => _error =
+            'Popuni sva polja. Čekanje može sa zarezom (npr. 13,4), ostalo celim brojevima.',
+      );
       return;
     }
     final tariff = Tariff(
@@ -86,11 +92,17 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
       waitingParaPerMin: values[2]!,
       minPrice: values[3]!,
       schedule: _scheduled
-          ? TariffSchedule(days: _days, startMinute: _startMinute, endMinute: _endMinute)
+          ? TariffSchedule(
+              days: _days,
+              startMinute: _startMinute,
+              endMinute: _endMinute,
+            )
           : null,
     );
     if (_scheduled && _days == 0) {
-      setState(() => _error = 'Izaberi bar jedan dan rasporeda ili isključi raspored.');
+      setState(
+        () => _error = 'Izaberi bar jedan dan rasporeda ili isključi raspored.',
+      );
       return;
     }
     final error = tariff.validate();
@@ -129,7 +141,11 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
   }
 
   Widget _scheduleSection() {
-    final preview = TariffSchedule(days: _days, startMinute: _startMinute, endMinute: _endMinute);
+    final preview = TariffSchedule(
+      days: _days,
+      startMinute: _startMinute,
+      endMinute: _endMinute,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -137,10 +153,14 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
           contentPadding: EdgeInsets.zero,
           value: _scheduled,
           onChanged: (v) => setState(() => _scheduled = v),
-          title: const Text('Raspored (automatski izbor)',
-              style: TextStyle(color: Colors.white, fontSize: 14)),
-          subtitle: const Text('Važi kad je u podešavanjima uključen automatski izbor tarife.',
-              style: TextStyle(color: Colors.white38, fontSize: 11)),
+          title: const Text(
+            'Raspored (automatski izbor)',
+            style: TextStyle(color: Colors.white, fontSize: 14),
+          ),
+          subtitle: const Text(
+            'Važi kad je u podešavanjima uključen automatski izbor tarife.',
+            style: TextStyle(color: Colors.white38, fontSize: 11),
+          ),
         ),
         if (_scheduled) ...[
           Wrap(
@@ -152,7 +172,9 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
                   selected: _days & (1 << i) != 0,
                   showCheckmark: false,
                   visualDensity: VisualDensity.compact,
-                  onSelected: (on) => setState(() => _days = on ? _days | (1 << i) : _days & ~(1 << i)),
+                  onSelected: (on) => setState(
+                    () => _days = on ? _days | (1 << i) : _days & ~(1 << i),
+                  ),
                 ),
             ],
           ),
@@ -177,8 +199,12 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
     );
   }
 
-  Widget _field(String label, TextEditingController c,
-      {bool number = true, bool decimal = false}) {
+  Widget _field(
+    String label,
+    TextEditingController c, {
+    bool number = true,
+    bool decimal = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
@@ -203,8 +229,10 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
-      title: Text(widget.existing == null ? 'Nova tarifa' : 'Izmena tarife',
-          style: const TextStyle(color: Colors.white)),
+      title: Text(
+        widget.existing == null ? 'Nova tarifa' : 'Izmena tarife',
+        style: const TextStyle(color: Colors.white),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -212,12 +240,18 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
             _field('Naziv', _name, number: false),
             _field('Start (din)', _start),
             _field('Cena po km (din)', _perKm),
-            _field('Čekanje po minutu (din, npr. 13,4)', _waiting, decimal: true),
+            _field(
+              'Čekanje po minutu (din, npr. 13,4)',
+              _waiting,
+              decimal: true,
+            ),
             _field('Minimalna cena (din)', _min),
             _scheduleSection(),
             if (_error != null)
-              Text(_error!,
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+              Text(
+                _error!,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+              ),
           ],
         ),
       ),
@@ -225,15 +259,24 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
         if (widget.existing != null)
           TextButton(
             onPressed: _delete,
-            child: const Text('OBRIŠI', style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'OBRIŠI',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('ODUSTANI', style: TextStyle(color: Colors.white54)),
+          child: const Text(
+            'ODUSTANI',
+            style: TextStyle(color: Colors.white54),
+          ),
         ),
         TextButton(
           onPressed: _save,
-          child: const Text('SAČUVAJ', style: TextStyle(color: Colors.amberAccent)),
+          child: const Text(
+            'SAČUVAJ',
+            style: TextStyle(color: Colors.amberAccent),
+          ),
         ),
       ],
     );

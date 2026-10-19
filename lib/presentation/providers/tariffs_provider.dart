@@ -12,7 +12,6 @@ import '../../domain/repositories/holiday_repository.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../domain/repositories/tariff_repository.dart';
 
-
 final tariffRepositoryProvider = Provider<TariffRepository>(
   (ref) => TariffRepositoryImpl(() => DatabaseHelper.instance.database),
 );
@@ -41,8 +40,9 @@ class TariffsNotifier extends AsyncNotifier<List<Tariff>> {
   }
 }
 
-final tariffsProvider =
-    AsyncNotifierProvider<TariffsNotifier, List<Tariff>>(TariffsNotifier.new);
+final tariffsProvider = AsyncNotifierProvider<TariffsNotifier, List<Tariff>>(
+  TariffsNotifier.new,
+);
 
 final holidayRepositoryProvider = Provider<HolidayRepository>(
   (ref) => HolidayRepositoryImpl(() => DatabaseHelper.instance.database),
@@ -66,8 +66,9 @@ class HolidaysNotifier extends AsyncNotifier<List<Holiday>> {
   }
 }
 
-final holidaysProvider =
-    AsyncNotifierProvider<HolidaysNotifier, List<Holiday>>(HolidaysNotifier.new);
+final holidaysProvider = AsyncNotifierProvider<HolidaysNotifier, List<Holiday>>(
+  HolidaysNotifier.new,
+);
 
 final fixedRouteRepositoryProvider = Provider<FixedRouteRepository>(
   (ref) => FixedRouteRepositoryImpl(() => DatabaseHelper.instance.database),
@@ -89,7 +90,23 @@ class FixedRoutesNotifier extends AsyncNotifier<List<FixedRoute>> {
     await _repo.delete(id);
     state = AsyncData(await _repo.getAll());
   }
+
+  Future<({int added, int updated})> importAll(List<FixedRoute> routes) async {
+    final result = await _repo.importAll(routes);
+    state = AsyncData(await _repo.getAll());
+    return result;
+  }
+
+  Future<void> removeAll() async {
+    final all = state.value ?? await _repo.getAll();
+    for (final r in all) {
+      await _repo.delete(r.id);
+    }
+    state = AsyncData(await _repo.getAll());
+  }
 }
 
 final fixedRoutesProvider =
-    AsyncNotifierProvider<FixedRoutesNotifier, List<FixedRoute>>(FixedRoutesNotifier.new);
+    AsyncNotifierProvider<FixedRoutesNotifier, List<FixedRoute>>(
+      FixedRoutesNotifier.new,
+    );

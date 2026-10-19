@@ -4,11 +4,19 @@ import '../../domain/models/navigation.dart';
 
 /// Pretraga adrese: upit ide tek na "Traži" (ne pri svakom slovu), jer javni
 /// Nominatim dozvoljava najviše jedan upit u sekundi.
-Future<Place?> showAddressSearch(BuildContext context, NavigationService service,
-    {double? nearLat, double? nearLon}) {
+Future<Place?> showAddressSearch(
+  BuildContext context,
+  NavigationService service, {
+  double? nearLat,
+  double? nearLon,
+}) {
   return showDialog<Place>(
     context: context,
-    builder: (_) => _AddressSearchDialog(service: service, nearLat: nearLat, nearLon: nearLon),
+    builder: (_) => _AddressSearchDialog(
+      service: service,
+      nearLat: nearLat,
+      nearLon: nearLon,
+    ),
   );
 }
 
@@ -17,7 +25,11 @@ class _AddressSearchDialog extends StatefulWidget {
   final double? nearLat;
   final double? nearLon;
 
-  const _AddressSearchDialog({required this.service, this.nearLat, this.nearLon});
+  const _AddressSearchDialog({
+    required this.service,
+    this.nearLat,
+    this.nearLon,
+  });
 
   @override
   State<_AddressSearchDialog> createState() => _AddressSearchDialogState();
@@ -45,15 +57,22 @@ class _AddressSearchDialogState extends State<_AddressSearchDialog> {
       _message = null;
     });
     try {
-      final r = await widget.service
-          .search(_query.text, nearLat: widget.nearLat, nearLon: widget.nearLon);
+      final r = await widget.service.search(
+        _query.text,
+        nearLat: widget.nearLat,
+        nearLon: widget.nearLon,
+      );
       if (!mounted) return;
       setState(() {
         _results = r;
-        _message = r.isEmpty ? 'Ništa nije pronađeno. Probaj sa nazivom grada.' : null;
+        _message = r.isEmpty
+            ? 'Ništa nije pronađeno. Probaj sa nazivom grada.'
+            : null;
       });
     } catch (e) {
-      if (mounted) setState(() => _message = 'Pretraga nije uspela (internet?): $e');
+      if (mounted) {
+        setState(() => _message = 'Pretraga nije uspela (internet?): $e');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -89,7 +108,10 @@ class _AddressSearchDialogState extends State<_AddressSearchDialog> {
             if (_message != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(_message!, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                child: Text(
+                  _message!,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
               ),
             Flexible(
               child: ListView(
@@ -98,19 +120,29 @@ class _AddressSearchDialogState extends State<_AddressSearchDialog> {
                   for (final p in _results)
                     ListTile(
                       dense: true,
-                      leading: const Icon(Icons.place, color: Colors.amberAccent),
-                      title: Text(p.label,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white, fontSize: 13)),
+                      leading: const Icon(
+                        Icons.place,
+                        color: Colors.amberAccent,
+                      ),
+                      title: Text(
+                        p.label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                      ),
                       onTap: () => Navigator.pop(context, p),
                     ),
                 ],
               ),
             ),
             const SizedBox(height: 6),
-            const Text('Podaci © OpenStreetMap contributors',
-                style: TextStyle(color: Colors.white24, fontSize: 10)),
+            const Text(
+              'Podaci © OpenStreetMap contributors',
+              style: TextStyle(color: Colors.white24, fontSize: 10),
+            ),
           ],
         ),
       ),

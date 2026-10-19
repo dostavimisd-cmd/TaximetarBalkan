@@ -31,9 +31,11 @@ class PrintOption {
   ];
 
   static PrintOption of(AppSettings s) => all.firstWhere(
-        (o) => o.mode == s.printMode && (o.codePage == s.printCodePage || o.codePage == 0),
-        orElse: () => all.first,
-      );
+    (o) =>
+        o.mode == s.printMode &&
+        (o.codePage == s.printCodePage || o.codePage == 0),
+    orElse: () => all.first,
+  );
 }
 
 class PrintException implements Exception {
@@ -48,10 +50,14 @@ class ReceiptPrinter {
   Future<void> _ensurePermission() async {
     // Plugin pri povezivanju poziva cancelDiscovery(), što na Androidu 12+
     // traži i BLUETOOTH_SCAN, a ne samo BLUETOOTH_CONNECT.
-    final result = await [Permission.bluetoothConnect, Permission.bluetoothScan].request();
+    final result = await [
+      Permission.bluetoothConnect,
+      Permission.bluetoothScan,
+    ].request();
     if (result.values.any((s) => !s.isGranted)) {
       throw const PrintException(
-          'Potrebna je dozvola "Uređaji u blizini" (Podešavanja telefona → Aplikacije → Dozvole).');
+        'Potrebna je dozvola "Uređaji u blizini" (Podešavanja telefona → Aplikacije → Dozvole).',
+      );
     }
     if (!await PrintBluetoothThermal.bluetoothEnabled) {
       throw const PrintException('Bluetooth je isključen.');
@@ -69,7 +75,9 @@ class ReceiptPrinter {
       await PrintBluetoothThermal.disconnect;
     }
     if (!await PrintBluetoothThermal.connect(macPrinterAddress: mac)) {
-      throw const PrintException('Štampač nije dostupan. Da li je uključen i uparen?');
+      throw const PrintException(
+        'Štampač nije dostupan. Da li je uključen i uparen?',
+      );
     }
     try {
       if (!await PrintBluetoothThermal.writeBytes(bytes)) {
@@ -89,8 +97,10 @@ class ReceiptPrinter {
   /// se pročita (tada se račun štampa bez logoa).
   static Future<List<int>?> logoBytes(String path) async {
     try {
-      final codec = await ui.instantiateImageCodec(await File(path).readAsBytes(),
-          targetWidth: logoWidth);
+      final codec = await ui.instantiateImageCodec(
+        await File(path).readAsBytes(),
+        targetWidth: logoWidth,
+      );
       final frame = await codec.getNextFrame();
       final image = frame.image;
       final w = image.width, h = image.height;
@@ -100,19 +110,28 @@ class ReceiptPrinter {
       final lum = List<int>.generate(w * h, (i) {
         final o = i * 4;
         final a = rgba[o + 3];
-        final l = (rgba[o] * 299 + rgba[o + 1] * 587 + rgba[o + 2] * 114) ~/ 1000;
+        final l =
+            (rgba[o] * 299 + rgba[o + 1] * 587 + rgba[o + 2] * 114) ~/ 1000;
         return (l * a + 255 * (255 - a)) ~/ 255; // providno = belo
       });
       final pixels = Dither.centerOnWidth(
-          w, h, Dither.floydSteinberg(w, h, lum), EscPos.dotsPerLine);
+        w,
+        h,
+        Dither.floydSteinberg(w, h, lum),
+        EscPos.dotsPerLine,
+      );
       return EscPos.raster(EscPos.dotsPerLine, h, pixels);
     } catch (_) {
       return null;
     }
   }
 
-  static Future<List<int>> receiptBytes(List<ReceiptLine> lines, PrintMode mode, int codePage,
-      {String? logoPath}) async {
+  static Future<List<int>> receiptBytes(
+    List<ReceiptLine> lines,
+    PrintMode mode,
+    int codePage, {
+    String? logoPath,
+  }) async {
     final out = <int>[...EscPos.init];
     if (logoPath != null) {
       final logo = await logoBytes(logoPath);
@@ -151,7 +170,9 @@ class ReceiptPrinter {
     for (final o in PrintOption.all) {
       final label = o.label.split(')').first; // "A", "B", ...
       if (o.mode == PrintMode.image) {
-        final img = await renderLines([ReceiptLine('$label) ${Receipt.sample}')]);
+        final img = await renderLines([
+          ReceiptLine('$label) ${Receipt.sample}'),
+        ]);
         out.addAll(EscPos.raster(img.width, img.height, img.pixels));
       } else {
         if (o.mode != PrintMode.plain) out.addAll(EscPos.codePage(o.codePage));
@@ -166,7 +187,8 @@ class ReceiptPrinter {
 
   /// Crta redove računa u sliku širine štampača (384 tačke), crno-belo.
   static Future<({int width, int height, List<bool> pixels})> renderLines(
-      List<ReceiptLine> lines) async {
+    List<ReceiptLine> lines,
+  ) async {
     const width = EscPos.dotsPerLine;
     final painters = [
       for (final l in lines)
@@ -187,12 +209,16 @@ class ReceiptPrinter {
           )..layout(maxWidth: width.toDouble()),
         ),
     ];
-    final height = painters.fold<double>(4, (h, p) => h + p.$2.height + 2).ceil();
+    final height = painters
+        .fold<double>(4, (h, p) => h + p.$2.height + 2)
+        .ceil();
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    canvas.drawRect(Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-        Paint()..color = Colors.white);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+      Paint()..color = Colors.white,
+    );
     var y = 2.0;
     for (final (line, painter) in painters) {
       final x = switch (line.align) {
@@ -209,17 +235,24 @@ class ReceiptPrinter {
     final bytes = data!.buffer.asUint8List();
     final pixels = List<bool>.generate(width * height, (i) {
       final o = i * 4;
-      final lum = (bytes[o] * 299 + bytes[o + 1] * 587 + bytes[o + 2] * 114) ~/ 1000;
+      final lum =
+          (bytes[o] * 299 + bytes[o + 1] * 587 + bytes[o + 2] * 114) ~/ 1000;
       return lum < 160;
     });
     return (width: width, height: height, pixels: pixels);
   }
 }
 
-final receiptPrinterProvider = Provider<ReceiptPrinter>((ref) => ReceiptPrinter());
+final receiptPrinterProvider = Provider<ReceiptPrinter>(
+  (ref) => ReceiptPrinter(),
+);
 
 /// Štampa račun vožnje sa podešavanjima korisnika i javlja ishod.
-Future<void> printRideReceipt(BuildContext context, WidgetRef ref, int rideId) async {
+Future<void> printRideReceipt(
+  BuildContext context,
+  WidgetRef ref,
+  int rideId,
+) async {
   final messenger = ScaffoldMessenger.of(context);
   void say(String m) => messenger.showSnackBar(SnackBar(content: Text(m)));
   final settings = ref.read(appSettingsProvider).value ?? const AppSettings();
@@ -229,15 +262,21 @@ Future<void> printRideReceipt(BuildContext context, WidgetRef ref, int rideId) a
     return;
   }
   try {
-    final RideRecord? ride = await ref.read(rideHistoryRepositoryProvider).getById(rideId);
+    final RideRecord? ride = await ref
+        .read(rideHistoryRepositoryProvider)
+        .getById(rideId);
     if (ride == null) throw const PrintException('Vožnja nije pronađena.');
     final lines = Receipt.forRide(
       ride,
       header: settings.receiptHeader.split('\n'),
       eurRateMilli: settings.eurRateMilli,
     );
-    final bytes = await ReceiptPrinter.receiptBytes(lines, settings.printMode, settings.printCodePage,
-        logoPath: settings.receiptLogoPath);
+    final bytes = await ReceiptPrinter.receiptBytes(
+      lines,
+      settings.printMode,
+      settings.printCodePage,
+      logoPath: settings.receiptLogoPath,
+    );
     await ref.read(receiptPrinterProvider).send(mac, bytes);
     say('Račun je poslat na štampač.');
   } catch (e) {

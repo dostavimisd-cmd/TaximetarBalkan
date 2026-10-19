@@ -87,7 +87,9 @@ class TariffSelectionSheet extends ConsumerWidget {
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF2A2A2A) : const Color(0xFF141414),
+                  color: isSelected
+                      ? const Color(0xFF2A2A2A)
+                      : const Color(0xFF141414),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected ? Colors.amberAccent : Colors.white10,
@@ -109,12 +111,20 @@ class TariffSelectionSheet extends ConsumerWidget {
                       'Start: ${t.startPrice} | Km: ${t.pricePerKm} | '
                       'Čekanje/min: ${CurrencyConverter.formatPara(t.waitingParaPerMin)} | Min: ${t.minPrice}'
                       '${t.schedule == null ? '' : '\nRaspored: ${t.schedule!.describe()}'}',
-                      style: const TextStyle(color: Colors.white60, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   trailing: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white54, size: 20),
-                    onPressed: () => showTariffEditor(context, ref, existing: t),
+                    icon: const Icon(
+                      Icons.edit,
+                      color: Colors.white54,
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        showTariffEditor(context, ref, existing: t),
                   ),
                   onTap: () {
                     onTariffSelected(t);
@@ -136,29 +146,48 @@ class TariffSelectionSheet extends ConsumerWidget {
                 if (context.mounted) Navigator.pop(context);
               },
               icon: const Icon(Icons.add, color: Colors.amberAccent),
-              label: const Text('NOVA TARIFA',
-                  style: TextStyle(color: Colors.amberAccent)),
+              label: const Text(
+                'NOVA TARIFA',
+                style: TextStyle(color: Colors.amberAccent),
+              ),
             ),
             if (routes.isNotEmpty && onFixedRouteSelected != null) ...[
               const SizedBox(height: 16),
               const Text(
                 'FIKSNA RELACIJA (sledeća vožnja)',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.2),
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  letterSpacing: 1.2,
+                ),
               ),
               const SizedBox(height: 8),
               for (final r in routes)
                 ListTile(
                   dense: true,
-                  leading: Icon(Icons.route,
-                      color: r.id == currentFixedRouteId ? Colors.amberAccent : Colors.white38),
-                  title: Text(r.name,
-                      style: TextStyle(
-                          color: r.id == currentFixedRouteId ? Colors.amberAccent : Colors.white)),
-                  subtitle: Text(r.describe(),
-                      style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  leading: Icon(
+                    Icons.route,
+                    color: r.id == currentFixedRouteId
+                        ? Colors.amberAccent
+                        : Colors.white38,
+                  ),
+                  title: Text(
+                    r.name,
+                    style: TextStyle(
+                      color: r.id == currentFixedRouteId
+                          ? Colors.amberAccent
+                          : Colors.white,
+                    ),
+                  ),
+                  subtitle: Text(
+                    r.describe(),
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
                   onTap: () {
-                    onFixedRouteSelected!(r.id == currentFixedRouteId ? null : r);
+                    onFixedRouteSelected!(
+                      r.id == currentFixedRouteId ? null : r,
+                    );
                     Navigator.pop(context);
                   },
                 ),
@@ -168,8 +197,10 @@ class TariffSelectionSheet extends ConsumerWidget {
                     onFixedRouteSelected!(null);
                     Navigator.pop(context);
                   },
-                  child: const Text('Bez fiksne relacije (taksimetar)',
-                      style: TextStyle(color: Colors.white54)),
+                  child: const Text(
+                    'Bez fiksne relacije (taksimetar)',
+                    style: TextStyle(color: Colors.white54),
+                  ),
                 ),
             ],
             const SizedBox(height: 8),

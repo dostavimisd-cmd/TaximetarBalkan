@@ -23,12 +23,12 @@ final rideGapsProvider = FutureProvider.autoDispose.family<List<GapInfo>, int>(
 );
 
 /// Vožnje u periodu izveštaja (ključ: početak perioda u UTC ms + vrsta).
-final reportRidesProvider =
-    FutureProvider.autoDispose.family<List<RideRecord>, ReportRange>(
-  (ref, range) => ref
-      .read(rideHistoryRepositoryProvider)
-      .getBetween(range.startUtcMs, range.endUtcMs),
-);
+final reportRidesProvider = FutureProvider.autoDispose
+    .family<List<RideRecord>, ReportRange>(
+      (ref, range) => ref
+          .read(rideHistoryRepositoryProvider)
+          .getBetween(range.startUtcMs, range.endUtcMs),
+    );
 
 final shiftRepositoryProvider = Provider<ShiftRepository>(
   (ref) => ShiftRepositoryImpl(() => DatabaseHelper.instance.database),
@@ -40,9 +40,12 @@ final shiftsProvider = FutureProvider.autoDispose<List<Shift>>(
 );
 
 /// Vožnje u smeni; otvorena smena se računa do sada.
-final shiftRidesProvider = FutureProvider.autoDispose.family<List<RideRecord>, Shift>(
-  (ref, shift) => ref.read(rideHistoryRepositoryProvider).getBetween(
-        shift.start.millisecondsSinceEpoch,
-        shift.endOr(DateTime.now().toUtc()).millisecondsSinceEpoch + 1,
-      ),
-);
+final shiftRidesProvider = FutureProvider.autoDispose
+    .family<List<RideRecord>, Shift>(
+      (ref, shift) => ref
+          .read(rideHistoryRepositoryProvider)
+          .getBetween(
+            shift.start.millisecondsSinceEpoch,
+            shift.endOr(DateTime.now().toUtc()).millisecondsSinceEpoch + 1,
+          ),
+    );

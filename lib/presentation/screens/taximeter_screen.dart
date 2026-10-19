@@ -19,6 +19,7 @@ import '../providers/settings_provider.dart';
 import 'history_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/fixed_route_picker.dart';
 import '../widgets/price_colors.dart';
 import '../widgets/ride_map.dart';
 import '../widgets/tariff_edit_dialog.dart';
@@ -649,7 +650,64 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
+
+                            // Fiksne relacije: pretraga i izbor za sledeću vožnju
+                            if (!state.isRunning)
+                              GestureDetector(
+                                onTap: () async {
+                                  final picked = await showFixedRoutePicker(
+                                    context,
+                                    selectedId: _fixedRoute?.id,
+                                  );
+                                  if (picked == null || !mounted) return;
+                                  // id -1 = "bez fiksne relacije"
+                                  setState(
+                                    () => _fixedRoute = picked.id == -1
+                                        ? null
+                                        : picked,
+                                  );
+                                },
+                                child: Container(
+                                  height: 74,
+                                  width: 74,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1C1C1C),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: _fixedRoute == null
+                                          ? Colors.white24
+                                          : Colors.amberAccent,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.route,
+                                        color: _fixedRoute == null
+                                            ? Colors.white54
+                                            : Colors.amberAccent,
+                                        size: 22,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _fixedRoute == null
+                                            ? 'RELACIJE'
+                                            : '${_fixedRoute!.price}',
+                                        style: TextStyle(
+                                          color: _fixedRoute == null
+                                              ? Colors.white54
+                                              : Colors.amberAccent,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
 
                             // Masivno Start / Stop dugme
                             Expanded(

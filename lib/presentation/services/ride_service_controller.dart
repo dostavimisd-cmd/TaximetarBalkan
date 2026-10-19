@@ -77,7 +77,7 @@ class RideServiceController {
   static const Duration _statusTimeout = Duration(seconds: 3);
 
   RideServiceController({ForegroundBridge bridge = const ForegroundBridge()})
-      : _bridge = bridge;
+    : _bridge = bridge;
 
   final ForegroundBridge _bridge;
 
@@ -117,39 +117,40 @@ class RideServiceController {
   ///
   /// [requestPermissions] = false samo proverava dozvole bez dijaloga (za
   /// povratak u prvi plan: dijalog sam izaziva pause/resume i petlju).
-  Future<bool> connect({bool requestPermissions = true}) =>
-      _serialized(() async {
-        if (_disposed) return false;
-        if (!await ensurePermissions(request: requestPermissions)) return false;
-        _prepare();
+  Future<bool> connect({
+    bool requestPermissions = true,
+  }) => _serialized(() async {
+    if (_disposed) return false;
+    if (!await ensurePermissions(request: requestPermissions)) return false;
+    _prepare();
 
-        try {
-          if (await _bridge.isRunningService()) {
-            // Servis već radi (npr. aplikacija ponovo otvorena): pitamo za stanje.
-            final status = await _attach();
-            if (status == null) return false;
-            if (status['active'] != true) await _stopService();
-            return true;
-          }
+    try {
+      if (await _bridge.isRunningService()) {
+        // Servis već radi (npr. aplikacija ponovo otvorena): pitamo za stanje.
+        final status = await _attach();
+        if (status == null) return false;
+        if (status['active'] != true) await _stopService();
+        return true;
+      }
 
-          final ready = await _startServiceAndWait();
-          if (ready == null) return false;
-          if (ready['active'] != true) await _stopService();
-          return true;
-        } on TimeoutException {
-          // Servis koji smo upravo podigli nije javio 'ready': gasimo ga (K5).
-          // Eventualna vožnja ostaje u bazi i oporavlja se pri sledećem podizanju.
-          _emit({'event': 'error', 'message': 'Servis ne odgovara.'});
-          await _stopService();
-          return false;
-        } catch (e) {
-          _emit({
-            'event': 'error',
-            'message': 'Greška pri povezivanju sa servisom: $e',
-          });
-          return false;
-        }
+      final ready = await _startServiceAndWait();
+      if (ready == null) return false;
+      if (ready['active'] != true) await _stopService();
+      return true;
+    } on TimeoutException {
+      // Servis koji smo upravo podigli nije javio 'ready': gasimo ga (K5).
+      // Eventualna vožnja ostaje u bazi i oporavlja se pri sledećem podizanju.
+      _emit({'event': 'error', 'message': 'Servis ne odgovara.'});
+      await _stopService();
+      return false;
+    } catch (e) {
+      _emit({
+        'event': 'error',
+        'message': 'Greška pri povezivanju sa servisom: $e',
       });
+      return false;
+    }
+  });
 
   /// Pokreće vožnju; po potrebi prvo podiže servis (K2).
   /// Vraća false ako komanda nije poslata.
@@ -164,86 +165,82 @@ class RideServiceController {
     int? gpsAccuracyM,
     int? fixedPrice,
     String? fixedRouteName,
-  }) =>
-      _serialized(() async {
-        if (_disposed) return false;
-        if (_startPending) {
-          if (await _bridge.isRunningService()) return false;
-          _startPending = false; // servis je nestao pre odgovora
-        }
-        if (_rideActive) {
-          _emit({'event': 'already_active'});
-          return false;
-        }
-        // Na false provider sam vraća prethodnu fazu, pa greške ovde ne
-        // nose 'cmd' (to je rezervisano za odgovore servisa).
-        if (!await ensurePermissions()) return false;
-        _prepare();
+  }) => _serialized(() async {
+    if (_disposed) return false;
+    if (_startPending) {
+      if (await _bridge.isRunningService()) return false;
+      _startPending = false; // servis je nestao pre odgovora
+    }
+    if (_rideActive) {
+      _emit({'event': 'already_active'});
+      return false;
+    }
+    // Na false provider sam vraća prethodnu fazu, pa greške ovde ne
+    // nose 'cmd' (to je rezervisano za odgovore servisa).
+    if (!await ensurePermissions()) return false;
+    _prepare();
 
-        try {
-          final running = await _bridge.isRunningService();
-          if (!running) {
-            _serviceReady = false; // servis ne radi ili je ubijen spolja
-          } else if (!_serviceReady) {
-            // Servis radi, ali se nismo uspešno priključili: pitamo za stanje.
-            final status = await _attach();
-            if (status == null) return false;
-            if (status['active'] == true) return false; // vožnja već postoji
-          }
-          if (!_serviceReady) {
-            final ready = await _startServiceAndWait();
-            if (ready == null) return false;
-            // Servis je pri podizanju oporavio vožnju: ne pravimo novu.
-            if (ready['active'] == true) return false;
-          }
-        } on TimeoutException {
-          _emit({'event': 'error', 'message': 'Servis ne odgovara.'});
-          await _stopService();
-          return false;
-        } catch (e) {
-          _emit({
-            'event': 'error',
-            'message': 'Greška pri pokretanju servisa: $e',
-          });
-          return false;
-        }
+    try {
+      final running = await _bridge.isRunningService();
+      if (!running) {
+        _serviceReady = false; // servis ne radi ili je ubijen spolja
+      } else if (!_serviceReady) {
+        // Servis radi, ali se nismo uspešno priključili: pitamo za stanje.
+        final status = await _attach();
+        if (status == null) return false;
+        if (status['active'] == true) return false; // vožnja već postoji
+      }
+      if (!_serviceReady) {
+        final ready = await _startServiceAndWait();
+        if (ready == null) return false;
+        // Servis je pri podizanju oporavio vožnju: ne pravimo novu.
+        if (ready['active'] == true) return false;
+      }
+    } on TimeoutException {
+      _emit({'event': 'error', 'message': 'Servis ne odgovara.'});
+      await _stopService();
+      return false;
+    } catch (e) {
+      _emit({'event': 'error', 'message': 'Greška pri pokretanju servisa: $e'});
+      return false;
+    }
 
-        _startPending = true;
-        _bridge.sendToTask({
-          'command': 'start',
-          'tariff_id': tariffId,
-          'start_price': startPrice,
-          'price_per_km': pricePerKm,
-          'waiting_para_per_min': waitingParaPerMin,
-          'min_price': minPrice,
-          'calibration_permille': calibrationPermille,
-          'waiting_speed_kmh': ?waitingSpeedKmh,
-          'gps_accuracy_m': ?gpsAccuracyM,
-          'fixed_price': ?fixedPrice,
-          'fixed_route_name': ?fixedRouteName,
-        });
-        return true;
-      });
+    _startPending = true;
+    _bridge.sendToTask({
+      'command': 'start',
+      'tariff_id': tariffId,
+      'start_price': startPrice,
+      'price_per_km': pricePerKm,
+      'waiting_para_per_min': waitingParaPerMin,
+      'min_price': minPrice,
+      'calibration_permille': calibrationPermille,
+      'waiting_speed_kmh': ?waitingSpeedKmh,
+      'gps_accuracy_m': ?gpsAccuracyM,
+      'fixed_price': ?fixedPrice,
+      'fixed_route_name': ?fixedRouteName,
+    });
+    return true;
+  });
 
   /// Šalje komandu za kraj vožnje. Servis upisuje rezultat, a kontroler
   /// gasi servis kad stigne 'stopped'.
   Future<void> stopRide() => _serialized(() async {
-        // Servis obrađuje komande redom, pa 'stop' šaljemo čim radi, i kad
-        // prethodni 'status' nije stigao na vreme.
-        if (await _bridge.isRunningService()) {
-          _bridge.sendToTask({'command': 'stop'});
-          return;
-        }
-        // Servis ne radi, pa nema ni vožnje u memoriji. Aktivan red u bazi
-        // označiće se kao prekinut pri sledećem startu.
-        _serviceReady = false;
-        _rideActive = false;
-        _emit({'event': 'stopped', 'ride_id': null});
-        _emit({
-          'event': 'warning',
-          'message': 'Servis nije radio; vožnja nije zatvorena u bazi.',
-        });
-      });
+    // Servis obrađuje komande redom, pa 'stop' šaljemo čim radi, i kad
+    // prethodni 'status' nije stigao na vreme.
+    if (await _bridge.isRunningService()) {
+      _bridge.sendToTask({'command': 'stop'});
+      return;
+    }
+    // Servis ne radi, pa nema ni vožnje u memoriji. Aktivan red u bazi
+    // označiće se kao prekinut pri sledećem startu.
+    _serviceReady = false;
+    _rideActive = false;
+    _emit({'event': 'stopped', 'ride_id': null});
+    _emit({
+      'event': 'warning',
+      'message': 'Servis nije radio; vožnja nije zatvorena u bazi.',
+    });
+  });
 
   void dispose() {
     if (_disposed) return;
@@ -276,16 +273,21 @@ class RideServiceController {
     }
 
     if (!await Geolocator.isLocationServiceEnabled()) {
-      _emit({'event': 'error', 'message': 'GPS je isključen. Uključi lokaciju na telefonu.'});
+      _emit({
+        'event': 'error',
+        'message': 'GPS je isključen. Uključi lokaciju na telefonu.',
+      });
       return false;
     }
 
     // V9: "Približna lokacija" daje tačnost od kilometra; vožnja bi bila
     // pogrešno obračunata, pa je ne dozvoljavamo.
-    if (await Geolocator.getLocationAccuracy() == LocationAccuracyStatus.reduced) {
+    if (await Geolocator.getLocationAccuracy() ==
+        LocationAccuracyStatus.reduced) {
       _emit({
         'event': 'error',
-        'message': 'Uključi "Preciznu lokaciju" za ovu aplikaciju u podešavanjima telefona.',
+        'message':
+            'Uključi "Preciznu lokaciju" za ovu aplikaciju u podešavanjima telefona.',
         'permanent': true,
       });
       return false;
@@ -298,7 +300,8 @@ class RideServiceController {
       // Ne blokira rad, ali notifikacija servisa možda neće biti vidljiva.
       _emit({
         'event': 'warning',
-        'message': 'Notifikacije su isključene; obaveštenje o aktivnom taksimetru neće biti prikazano.',
+        'message':
+            'Notifikacije su isključene; obaveštenje o aktivnom taksimetru neće biti prikazano.',
       });
     }
     return true;
@@ -348,7 +351,10 @@ class RideServiceController {
     final error = await _bridge.startService();
     if (error != null) {
       _readyCompleter = null;
-      _emit({'event': 'error', 'message': 'Neuspelo pokretanje servisa: $error'});
+      _emit({
+        'event': 'error',
+        'message': 'Neuspelo pokretanje servisa: $error',
+      });
       return null;
     }
     final ready = await _readyCompleter!.future.timeout(_readyTimeout);
@@ -394,9 +400,11 @@ class RideServiceController {
         if (event['cmd'] == 'start') _startPending = false;
         // Neuspeo start ostavlja servis bez vožnje: gasimo ga.
         if (event['cmd'] == 'start' && !_rideActive) {
-          unawaited(_serialized(() async {
-            if (!_rideActive) await _stopService();
-          }));
+          unawaited(
+            _serialized(() async {
+              if (!_rideActive) await _stopService();
+            }),
+          );
         }
         break;
     }
@@ -404,7 +412,9 @@ class RideServiceController {
   }
 
   void _completeOnce(
-      Completer<Map<String, dynamic>>? completer, Map<String, dynamic> event) {
+    Completer<Map<String, dynamic>>? completer,
+    Map<String, dynamic> event,
+  ) {
     if (completer != null && !completer.isCompleted) completer.complete(event);
   }
 

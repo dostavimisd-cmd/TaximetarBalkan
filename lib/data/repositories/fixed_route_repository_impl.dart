@@ -40,6 +40,44 @@ class FixedRouteRepositoryImpl implements FixedRouteRepository {
   }
 
   @override
+  Future<({int added, int updated})> importAll(List<FixedRoute> routes) async {
+    for (final r in routes) {
+      final error = r.validate();
+      if (error != null) throw ArgumentError('${r.name}: $error');
+    }
+    final db = await _database();
+    var added = 0, updated = 0;
+    await db.transaction((txn) async {
+      final existing = await txn.query('fixed_routes');
+      String key(String n, String f, String t) =>
+          '${n.trim().toLowerCase()}|${f.trim().toLowerCase()}|${t.trim().toLowerCase()}';
+      final byKey = {
+        for (final e in existing)
+          key(e['name'] as String, e['from_label'] as String, e['to_label'] as String):
+              e['id'] as int,
+      };
+      for (final r in routes) {
+        final values = {
+          'name': r.name.trim(),
+          'from_label': r.fromLabel.trim(),
+          'to_label': r.toLabel.trim(),
+          'fixed_price': r.price,
+        };
+        final k = key(r.name, r.fromLabel, r.toLabel);
+        final id = byKey[k];
+        if (id == null) {
+          byKey[k] = await txn.insert('fixed_routes', values);
+          added++;
+        } else {
+          await txn.update('fixed_routes', values, where: 'id = ?', whereArgs: [id]);
+          updated++;
+        }
+      }
+    });
+    return (added: added, updated: updated);
+  }
+
+  @override
   Future<void> delete(int id) async {
     final db = await _database();
     // Vožnje čuvaju naziv i cenu relacije (rides.fixed_*), pa istorija ostaje.
