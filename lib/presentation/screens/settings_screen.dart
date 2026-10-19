@@ -14,6 +14,7 @@ import '../providers/settings_provider.dart';
 import '../widgets/price_colors.dart';
 import 'fixed_routes_screen.dart';
 import 'holidays_screen.dart';
+import '../l10n/tr.dart';
 
 /// Podešavanja korisnika. Vrednosti važe od sledećeg starta vožnje; vožnja u
 /// toku zadržava ono sa čim je počela (upisano je u `rides`).
@@ -25,6 +26,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  Tr get t => ref.read(trProvider);
   final _speed = TextEditingController();
   final _calibration = TextEditingController();
   final _gps = TextEditingController();
@@ -91,16 +93,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         : CurrencyConverter.parseRateMilli(rateText);
 
     String? error;
-    if (speed == null) error = 'Unesi brzinu za čekanje (ceo broj km/h).';
+    if (speed == null) error = t('Unesi brzinu za čekanje (ceo broj km/h).');
     if (calibration == null) {
-      error ??= 'Kalibracija: procenat od -50 do 50, npr. 2,5 ili -1.';
+      error ??= t('Kalibracija: procenat od -50 do 50, npr. 2,5 ili -1.');
     }
-    if (gps == null) error ??= 'Unesi GPS tačnost (ceo broj metara).';
+    if (gps == null) error ??= t('Unesi GPS tačnost (ceo broj metara).');
     if (rateText.isNotEmpty && rate == null) {
-      error ??= 'Kurs: npr. 117,2 (najviše 3 decimale).';
+      error ??= t('Kurs: npr. 117,2 (najviše 3 decimale).');
     }
     if (_currency == 'EUR' && rate == null) {
-      error ??= 'Za prikaz u EUR unesi kurs.';
+      error ??= t('Za prikaz u EUR unesi kurs.');
     }
     if (error != null) {
       setState(() => _error = error);
@@ -185,16 +187,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         context: context,
         builder: (ctx) => SimpleDialog(
           backgroundColor: const Color(0xFF1E1E1E),
-          title: const Text(
-            'Upareni uređaji',
+          title: Text(
+            t('Upareni uređaji'),
             style: TextStyle(color: Colors.white),
           ),
           children: [
             if (devices.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  'Nema uparenih uređaja. Upari štampač u Bluetooth podešavanjima telefona (PIN je obično 0000 ili 1234).',
+                  t('Nema uparenih uređaja. Upari štampač u Bluetooth podešavanjima telefona (PIN je obično 0000 ili 1234).'),
                   style: TextStyle(color: Colors.white54),
                 ),
               ),
@@ -223,14 +225,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             );
       }
     } catch (e) {
-      setState(() => _error = 'Štampač: $e');
+      setState(() => _error = t('Štampač: {0}', [e]));
     }
   }
 
   Future<void> _testPrint() async {
     final mac = _printerMac;
     if (mac == null) {
-      setState(() => _error = 'Prvo izaberi štampač.');
+      setState(() => _error = t('Prvo izaberi štampač.'));
       return;
     }
     setState(() {
@@ -242,7 +244,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           .read(receiptPrinterProvider)
           .send(mac, await ReceiptPrinter.testPageBytes());
     } catch (e) {
-      if (mounted) setState(() => _error = 'Probna štampa nije uspela: $e');
+      if (mounted) setState(() => _error = t('Probna štampa nije uspela: {0}', [e]));
     } finally {
       if (mounted) setState(() => _printing = false);
     }
@@ -320,6 +322,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     final settings = ref.watch(appSettingsProvider);
     return Scaffold(
       backgroundColor: Colors.black,
@@ -329,8 +332,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: settings.hasValue ? () => _save(settings.value!) : null,
-            child: const Text(
-              'SAČUVAJ',
+            child: Text(
+              t('SAČUVAJ'),
               style: TextStyle(color: Colors.amberAccent),
             ),
           ),
@@ -340,7 +343,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Text(
-            'Greška: $e',
+            t('Greška: {0}', [e]),
             style: const TextStyle(color: Colors.redAccent),
           ),
         ),
@@ -349,33 +352,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              _section('OBRAČUN'),
+              _section(t('OBRAČUN')),
               _number(
-                'Čekanje se računa ispod (km/h)',
+                t('Čekanje se računa ispod (km/h)'),
                 _speed,
                 helper:
-                    'Ceo broj ${AppSettings.minWaitingSpeedKmh}–${AppSettings.maxWaitingSpeedKmh}. Ispod ove brzine taksimetar računa čekanje umesto kilometara.',
+                    t('Ceo broj {0}–{1}. Ispod ove brzine taksimetar računa čekanje umesto kilometara.', [AppSettings.minWaitingSpeedKmh, AppSettings.maxWaitingSpeedKmh]),
               ),
               _number(
-                'Kalibracija distance (%)',
+                t('Kalibracija distance (%)'),
                 _calibration,
                 allow: r'[0-9.,+-]',
                 decimal: true,
                 signed: true,
                 helper:
-                    '0 = bez korekcije; 2,5 = distanca +2,5%. Uskladi sa zvaničnim taksimetrom.',
+                    t('0 = bez korekcije; 2,5 = distanca +2,5%. Uskladi sa zvaničnim taksimetrom.'),
               ),
-              _section('TARIFE'),
+              _section(t('TARIFE')),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _autoTariff,
                 onChanged: (v) => setState(() => _autoTariff = v),
-                title: const Text(
-                  'Automatski izbor tarife pri startu',
+                title: Text(
+                  t('Automatski izbor tarife pri startu'),
                   style: TextStyle(color: Colors.white),
                 ),
-                subtitle: const Text(
-                  'Prvo praznici, pa raspored tarife (dani i vreme). Tarifa se ne menja tokom vožnje.',
+                subtitle: Text(
+                  t('Prvo praznici, pa raspored tarife (dani i vreme). Tarifa se ne menja tokom vožnje.'),
                   style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
@@ -386,8 +389,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.event, color: Colors.amberAccent),
-                label: const Text(
-                  'Praznici',
+                label: Text(
+                  t('Praznici'),
                   style: TextStyle(color: Colors.amberAccent),
                 ),
               ),
@@ -398,39 +401,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.route, color: Colors.amberAccent),
-                label: const Text(
-                  'Fiksne relacije',
+                label: Text(
+                  t('Fiksne relacije'),
                   style: TextStyle(color: Colors.amberAccent),
                 ),
               ),
-              _section('GPS'),
+              _section(t('GPS')),
               _number(
-                'Najveća dozvoljena nepreciznost (m)',
+                t('Najveća dozvoljena nepreciznost (m)'),
                 _gps,
                 helper:
-                    'Ceo broj ${AppSettings.minGpsAccuracyM}–${AppSettings.maxGpsAccuracyM}. Tačke sa lošijom procenom tačnosti se odbacuju. Manje = strože.',
+                    t('Ceo broj {0}–{1}. Tačke sa lošijom procenom tačnosti se odbacuju. Manje = strože.', [AppSettings.minGpsAccuracyM, AppSettings.maxGpsAccuracyM]),
               ),
-              _section('PRIKAZ'),
+              _section(t('PRIKAZ')),
               _choice(
-                'Jezik',
+                t('Jezik'),
                 AppSettings.languages,
                 _language,
                 (v) => _language = v,
               ),
               _choice(
-                'Valuta prikaza',
+                t('Valuta prikaza'),
                 AppSettings.currencies,
                 _currency,
                 (v) => _currency = v,
               ),
               _number(
-                'Kurs: dinara za 1 EUR',
+                t('Kurs: dinara za 1 EUR'),
                 _rate,
                 allow: r'[0-9.,]',
                 decimal: true,
-                helper: 'Samo za prikaz u EUR. Obračun je uvek u dinarima.',
+                helper: t('Samo za prikaz u EUR. Obračun je uvek u dinarima.'),
               ),
-              _section('EKRAN'),
+              _section(t('EKRAN')),
               const Text('Boja cene', style: TextStyle(color: Colors.white70)),
               const SizedBox(height: 6),
               Wrap(
@@ -451,7 +454,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Veličina cene: $_priceScale %',
+                t('Veličina cene: {0} %', [_priceScale]),
                 style: const TextStyle(color: Colors.white70),
               ),
               Slider(
@@ -482,58 +485,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               _choice(
-                'Osvežavanje cene (s)',
+                t('Osvežavanje cene (s)'),
                 const ['1', '4', '6', '10'],
                 '$_refresh',
                 (v) => _refresh = int.parse(v),
               ),
-              const Text(
-                '1 = odmah. Duže osvežavanje samo usporava prikaz; obračun i konačna cena su isti.',
+              Text(
+                t('1 = odmah. Duže osvežavanje samo usporava prikaz; obračun i konačna cena su isti.'),
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _keepOn,
                 onChanged: (v) => setState(() => _keepOn = v),
-                title: const Text(
-                  'Ekran uvek uključen',
+                title: Text(
+                  t('Ekran uvek uključen'),
                   style: TextStyle(color: Colors.white),
                 ),
-                subtitle: const Text(
-                  'Dok je aplikacija otvorena ekran se ne gasi, cena se stalno vidi (troši više baterije).',
+                subtitle: Text(
+                  t('Dok je aplikacija otvorena ekran se ne gasi, cena se stalno vidi (troši više baterije).'),
                   style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
-              _section('GLAS'),
+              _section(t('GLAS')),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _voice,
                 onChanged: (v) => setState(() => _voice = v),
-                title: const Text(
-                  'Najavi cenu na kraju vožnje',
+                title: Text(
+                  t('Najavi cenu na kraju vožnje'),
                   style: TextStyle(color: Colors.white),
                 ),
-                subtitle: const Text(
-                  'Telefon izgovori ukupan iznos. Koristi sintetizator govora telefona.',
+                subtitle: Text(
+                  t('Telefon izgovori ukupan iznos. Koristi sintetizator govora telefona.'),
                   style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
-              _section('IZGLED'),
+              _section(t('IZGLED')),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _showMap,
                 onChanged: (v) => setState(() => _showMap = v),
-                title: const Text(
-                  'Prikaži mapu',
+                title: Text(
+                  t('Prikaži mapu'),
                   style: TextStyle(color: Colors.white),
                 ),
-                subtitle: const Text(
-                  'OpenStreetMap (besplatno). Podloge traže internet; obračun radi i bez mape.',
+                subtitle: Text(
+                  t('OpenStreetMap (besplatno). Podloge traže internet; obračun radi i bez mape.'),
                   style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
               _choice(
-                'Pozadina',
+                t('Pozadina'),
                 const ['crna', 'logo'],
                 _logoPath == null ? 'crna' : 'logo',
                 (v) {
@@ -563,29 +566,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(width: 12),
                     TextButton(
                       onPressed: _pickLogo,
-                      child: const Text(
-                        'Promeni sliku',
+                      child: Text(
+                        t('Promeni sliku'),
                         style: TextStyle(color: Colors.amberAccent),
                       ),
                     ),
                   ],
                 ),
-              _section('ŠTAMPAČ RAČUNA'),
+              _section(t('ŠTAMPAČ RAČUNA')),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.print, color: Colors.amberAccent),
                 title: Text(
-                  _printerName ?? 'Štampač nije izabran',
+                  _printerName ?? t('Štampač nije izabran'),
                   style: const TextStyle(color: Colors.white),
                 ),
                 subtitle: Text(
-                  _printerMac ?? 'Bluetooth, 58 mm (npr. PT-210)',
+                  _printerMac ?? t('Bluetooth, 58 mm (npr. PT-210)'),
                   style: const TextStyle(color: Colors.white38, fontSize: 11),
                 ),
                 trailing: TextButton(
                   onPressed: _choosePrinter,
-                  child: const Text(
-                    'IZABERI',
+                  child: Text(
+                    t('IZABERI'),
                     style: TextStyle(color: Colors.amberAccent),
                   ),
                 ),
@@ -607,8 +610,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onChanged: (o) =>
                     setState(() => _printOption = o ?? _printOption),
               ),
-              const Text(
-                'Naša slova (č ć ž š đ): "Kao slika" uvek radi. Za brži tekst odštampaj probnu stranicu i izaberi slovo reda koji je ispravan.',
+              Text(
+                t('Naša slova (č ć ž š đ): "Kao slika" uvek radi. Za brži tekst odštampaj probnu stranicu i izaberi slovo reda koji je ispravan.'),
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               Align(
@@ -617,7 +620,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onPressed: _printing ? null : _testPrint,
                   icon: const Icon(Icons.receipt, color: Colors.amberAccent),
                   label: Text(
-                    _printing ? 'Štampam…' : 'Probna štampa',
+                    _printing ? 'Štampam…' : t('Probna štampa'),
                     style: const TextStyle(color: Colors.amberAccent),
                   ),
                 ),
@@ -647,14 +650,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     icon: const Icon(Icons.image, color: Colors.amberAccent),
                     label: Text(
                       _receiptLogoPath == null
-                          ? 'Logo firme na računu'
-                          : 'Promeni logo',
+                          ? t('Logo firme na računu')
+                          : t('Promeni logo'),
                       style: const TextStyle(color: Colors.amberAccent),
                     ),
                   ),
                   if (_receiptLogoPath != null)
                     IconButton(
-                      tooltip: 'Bez logoa',
+                      tooltip: t('Bez logoa'),
                       icon: const Icon(Icons.close, color: Colors.white54),
                       onPressed: () => setState(() => _receiptLogoPath = null),
                     ),
@@ -665,17 +668,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 maxLines: 4,
                 minLines: 2,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: 'Zaglavlje računa (naziv, telefon…)',
+                decoration: InputDecoration(
+                  labelText: t('Zaglavlje računa (naziv, telefon…)'),
                   labelStyle: TextStyle(color: Colors.white60),
                   helperText:
-                      'Svaki red posebno. Na dnu računa uvek piše da nije fiskalni.',
+                      t('Svaki red posebno. Na dnu računa uvek piše da nije fiskalni.'),
                   helperStyle: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
-              _section('RAD U POZADINI'),
-              const Text(
-                'Da taksimetar ne bi bio ugašen na zaključanom ekranu, isključi optimizaciju baterije za aplikaciju i dozvoli rad u pozadini.',
+              _section(t('RAD U POZADINI')),
+              Text(
+                t('Da taksimetar ne bi bio ugašen na zaključanom ekranu, isključi optimizaciju baterije za aplikaciju i dozvoli rad u pozadini.'),
                 style: TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 8),
@@ -685,8 +688,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Icons.battery_charging_full,
                   color: Colors.amberAccent,
                 ),
-                label: const Text(
-                  'Otvori podešavanja aplikacije',
+                label: Text(
+                  t('Otvori podešavanja aplikacije'),
                   style: TextStyle(color: Colors.amberAccent),
                 ),
               ),
@@ -699,8 +702,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               const SizedBox(height: 24),
-              const Text(
-                'Pomoćni alat za evidenciju i procenu, nije overeni službeni taksimetar ni fiskalni uređaj.',
+              Text(
+                t('Pomoćni alat za evidenciju i procenu, nije overeni službeni taksimetar ni fiskalni uređaj.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white24, fontSize: 11),
               ),

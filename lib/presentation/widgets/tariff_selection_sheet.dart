@@ -6,6 +6,7 @@ import '../../domain/models/tariff.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tariffs_provider.dart';
 import 'tariff_edit_dialog.dart';
+import '../l10n/tr.dart';
 
 /// Izbor i upravljanje tarifama koje je korisnik uneo (nema ugrađenih).
 class TariffSelectionSheet extends ConsumerWidget {
@@ -26,6 +27,7 @@ class TariffSelectionSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
     final auto = ref.watch(appSettingsProvider).value?.autoTariff ?? false;
     final routes = ref.watch(fixedRoutesProvider).value ?? const <FixedRoute>[];
@@ -52,8 +54,8 @@ class TariffSelectionSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'TARIFE',
+            Text(
+              t('TARIFE'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
@@ -63,27 +65,26 @@ class TariffSelectionSheet extends ConsumerWidget {
               ),
             ),
             if (auto)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
-                  'Automatski izbor je uključen: pri startu važe praznici pa raspored. '
-                  'Ručno izabrana tarifa važi kad nijedno pravilo ne važi.',
+                  t('Automatski izbor je uključen: pri startu važe praznici pa raspored. Ručno izabrana tarifa važi kad nijedno pravilo ne važi.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.amberAccent, fontSize: 11),
                 ),
               ),
             const SizedBox(height: 16),
             if (tariffs.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Još nema tarifa. Unesi tarifu koju primenjuješ.',
+                  t('Još nema tarifa. Unesi tarifu koju primenjuješ.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white54, fontSize: 13),
                 ),
               ),
-            ...tariffs.map((t) {
-              final isSelected = t.id == currentTariffId;
+            ...tariffs.map((tariff) {
+              final isSelected = tariff.id == currentTariffId;
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
@@ -98,7 +99,7 @@ class TariffSelectionSheet extends ConsumerWidget {
                 ),
                 child: ListTile(
                   title: Text(
-                    t.name,
+                    tariff.name,
                     style: TextStyle(
                       color: isSelected ? Colors.amberAccent : Colors.white,
                       fontWeight: FontWeight.bold,
@@ -108,9 +109,8 @@ class TariffSelectionSheet extends ConsumerWidget {
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4.0),
                     child: Text(
-                      'Start: ${t.startPrice} | Km: ${t.pricePerKm} | '
-                      'Čekanje/min: ${CurrencyConverter.formatPara(t.waitingParaPerMin)} | Min: ${t.minPrice}'
-                      '${t.schedule == null ? '' : '\nRaspored: ${t.schedule!.describe()}'}',
+                      '${t('Start: {0} | Km: {1} | Čekanje/min: {2} | Min: {3}', [tariff.startPrice, tariff.pricePerKm, CurrencyConverter.formatPara(tariff.waitingParaPerMin), tariff.minPrice])}'
+                      '${tariff.schedule == null ? '' : '\n${t('Raspored')}: ${tariff.schedule!.describe()}'}',
                       style: const TextStyle(
                         color: Colors.white60,
                         fontSize: 12,
@@ -124,10 +124,10 @@ class TariffSelectionSheet extends ConsumerWidget {
                       size: 20,
                     ),
                     onPressed: () =>
-                        showTariffEditor(context, ref, existing: t),
+                        showTariffEditor(context, ref, existing: tariff),
                   ),
                   onTap: () {
-                    onTariffSelected(t);
+                    onTariffSelected(tariff);
                     Navigator.pop(context);
                   },
                 ),
@@ -146,15 +146,15 @@ class TariffSelectionSheet extends ConsumerWidget {
                 if (context.mounted) Navigator.pop(context);
               },
               icon: const Icon(Icons.add, color: Colors.amberAccent),
-              label: const Text(
-                'NOVA TARIFA',
+              label: Text(
+                t('NOVA TARIFA'),
                 style: TextStyle(color: Colors.amberAccent),
               ),
             ),
             if (routes.isNotEmpty && onFixedRouteSelected != null) ...[
               const SizedBox(height: 16),
-              const Text(
-                'FIKSNA RELACIJA (sledeća vožnja)',
+              Text(
+                t('FIKSNA RELACIJA (sledeća vožnja)'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white70,
@@ -197,8 +197,8 @@ class TariffSelectionSheet extends ConsumerWidget {
                     onFixedRouteSelected!(null);
                     Navigator.pop(context);
                   },
-                  child: const Text(
-                    'Bez fiksne relacije (taksimetar)',
+                  child: Text(
+                    t('Bez fiksne relacije (taksimetar)'),
                     style: TextStyle(color: Colors.white54),
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/fixed_route_import.dart';
 import '../../domain/models/fixed_route.dart';
 import '../providers/tariffs_provider.dart';
+import '../l10n/tr.dart';
 
 /// Brza pretraga fiksnih relacija sa glavnog ekrana: kucaš deo naziva
 /// (bez obzira na kvačice), tapneš relaciju i važi za sledeću vožnju.
@@ -30,10 +31,12 @@ class _Picker extends ConsumerStatefulWidget {
 }
 
 class _PickerState extends ConsumerState<_Picker> {
+  Tr get t => ref.read(trProvider);
   String _query = '';
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     final all = ref.watch(fixedRoutesProvider).value ?? const <FixedRoute>[];
     final shown = FixedRouteImport.search(all, _query);
     return Padding(
@@ -47,8 +50,8 @@ class _PickerState extends ConsumerState<_Picker> {
         height: MediaQuery.of(context).size.height * 0.65,
         child: Column(
           children: [
-            const Text(
-              'FIKSNE RELACIJE',
+            Text(
+              t('FIKSNE RELACIJE'),
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -63,8 +66,8 @@ class _PickerState extends ConsumerState<_Picker> {
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search, color: Colors.amberAccent),
                 hintText: all.isEmpty
-                    ? 'Nema relacija (Podešavanja → Fiksne relacije)'
-                    : 'Pretraga (${all.length})',
+                    ? t('Nema relacija (Podešavanja → Fiksne relacije)')
+                    : t('Pretraga ({0})', [all.length]),
                 hintStyle: const TextStyle(color: Colors.white38),
                 isDense: true,
               ),
@@ -76,8 +79,8 @@ class _PickerState extends ConsumerState<_Picker> {
                     ListTile(
                       dense: true,
                       leading: const Icon(Icons.close, color: Colors.white54),
-                      title: const Text(
-                        'Bez fiksne relacije (taksimetar)',
+                      title: Text(
+                        t('Bez fiksne relacije (taksimetar)'),
                         style: TextStyle(color: Colors.white70),
                       ),
                       onTap: () => Navigator.pop(
@@ -108,10 +111,10 @@ class _PickerState extends ConsumerState<_Picker> {
                       onTap: () => Navigator.pop(context, r),
                     ),
                   if (shown.isEmpty && all.isNotEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.all(24),
                       child: Text(
-                        'Nema rezultata.',
+                        t('Nema rezultata.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.white54),
                       ),

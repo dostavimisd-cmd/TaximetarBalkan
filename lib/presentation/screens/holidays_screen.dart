@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/holiday.dart';
 import '../../domain/models/tariff.dart';
 import '../providers/tariffs_provider.dart';
+import '../l10n/tr.dart';
 
 /// Praznici koje korisnik unosi: tog dana (ceo dan) važi izabrana tarifa,
 /// ako je uključen automatski izbor. Nema ugrađenih praznika (Pravilo 3).
@@ -11,11 +12,12 @@ class HolidaysScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     final holidays = ref.watch(holidaysProvider);
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
     String tariffName(int id) =>
         tariffs.where((t) => t.id == id).firstOrNull?.name ??
-        '(obrisana tarifa)';
+        t('(obrisana tarifa)');
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -34,25 +36,25 @@ class HolidaysScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Text(
-            'Greška: $e',
+            t('Greška: {0}', [e]),
             style: const TextStyle(color: Colors.redAccent),
           ),
         ),
         data: (list) {
           if (tariffs.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
-                'Prvo unesi bar jednu tarifu.',
+                t('Prvo unesi bar jednu tarifu.'),
                 style: TextStyle(color: Colors.white54),
               ),
             );
           }
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'Nema praznika. Dodaj datume kada primenjuješ posebnu tarifu (npr. praznična).',
+                  t('Nema praznika. Dodaj datume kada primenjuješ posebnu tarifu (npr. praznična).'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white54),
                 ),
@@ -99,6 +101,7 @@ class _HolidayDialog extends ConsumerStatefulWidget {
 }
 
 class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
+  Tr get t => ref.read(trProvider);
   late final TextEditingController _name;
   late DateTime _date;
   late bool _recurring;
@@ -160,14 +163,15 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     String two(int v) => v.toString().padLeft(2, '0');
     final dateText = _recurring
-        ? '${two(_date.day)}.${two(_date.month)}. svake godine'
+        ? t('{0}.{1}. svake godine', [two(_date.day), two(_date.month)])
         : '${two(_date.day)}.${two(_date.month)}.${_date.year}.';
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
       title: Text(
-        widget.existing == null ? 'Novi praznik' : 'Izmena praznika',
+        widget.existing == null ? 'Novi praznik' : t('Izmena praznika'),
         style: const TextStyle(color: Colors.white),
       ),
       content: SingleChildScrollView(
@@ -178,8 +182,8 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
             TextField(
               controller: _name,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Naziv',
+              decoration: InputDecoration(
+                labelText: t('Naziv'),
                 labelStyle: TextStyle(color: Colors.white54),
                 isDense: true,
               ),
@@ -194,8 +198,8 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
               contentPadding: EdgeInsets.zero,
               value: _recurring,
               onChanged: (v) => setState(() => _recurring = v ?? true),
-              title: const Text(
-                'Svake godine',
+              title: Text(
+                t('Svake godine'),
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -227,22 +231,22 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
         if (widget.existing != null)
           TextButton(
             onPressed: _delete,
-            child: const Text(
-              'OBRIŠI',
+            child: Text(
+              t('OBRIŠI'),
               style: TextStyle(color: Colors.redAccent),
             ),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'ODUSTANI',
+          child: Text(
+            t('ODUSTANI'),
             style: TextStyle(color: Colors.white54),
           ),
         ),
         TextButton(
           onPressed: _save,
-          child: const Text(
-            'SAČUVAJ',
+          child: Text(
+            t('SAČUVAJ'),
             style: TextStyle(color: Colors.amberAccent),
           ),
         ),

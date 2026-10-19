@@ -12,6 +12,7 @@ import '../printing/receipt_printer.dart';
 import '../providers/history_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/price_colors.dart';
+import '../l10n/tr.dart';
 
 const _gold = Color(0xFFFFC107);
 const _card = Color(0xFF141414);
@@ -29,6 +30,7 @@ class RideSummaryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     final settings =
         ref.watch(appSettingsProvider).value ?? const AppSettings();
     final route = ref.watch(rideRouteProvider(ride.id)).value ?? const [];
@@ -42,7 +44,7 @@ class RideSummaryScreen extends ConsumerWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(onNewRide != null ? 'Vožnja završena' : 'Vožnja'),
+        title: Text(onNewRide != null ? 'Vožnja završena' : t('Vožnja')),
         leading: onNewRide != null
             ? IconButton(
                 icon: const Icon(Icons.close),
@@ -52,7 +54,7 @@ class RideSummaryScreen extends ConsumerWidget {
         actions: [
           if (onNewRide == null)
             IconButton(
-              tooltip: 'Obriši vožnju',
+              tooltip: t('Obriši vožnju'),
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
               onPressed: () => _confirmDelete(context, ref),
             ),
@@ -80,10 +82,10 @@ class RideSummaryScreen extends ConsumerWidget {
               ),
             ),
           if (ride.isInterrupted)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 6),
               child: Text(
-                'VOŽNJA PREKINUTA · iznos do poslednjeg snimka',
+                t('VOŽNJA PREKINUTA · iznos do poslednjeg snimka'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.amberAccent, fontSize: 12),
               ),
@@ -107,7 +109,7 @@ class RideSummaryScreen extends ConsumerWidget {
           Text(
             eurRate == null
                 ? 'RSD'
-                : 'RSD  ·  ${CurrencyConverter.formatForeign(ride.totalPrice, eurRate)} EUR',
+                : t('RSD  ·  {0} EUR', [CurrencyConverter.formatForeign(ride.totalPrice, eurRate)]),
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white38, letterSpacing: 2),
           ),
@@ -128,35 +130,35 @@ class RideSummaryScreen extends ConsumerWidget {
             children: [
               _Stat(
                 Icons.straighten,
-                'DISTANCA',
-                '${(ride.distanceMeters / 1000).toStringAsFixed(2)} km',
+                t('DISTANCA'),
+                t('{0} km', [(ride.distanceMeters / 1000).toStringAsFixed(2)]),
               ),
               _Stat(
                 Icons.timer_outlined,
-                'TRAJANJE',
+                t('TRAJANJE'),
                 duration == null ? '—' : RideSummary.clock(duration.inSeconds),
               ),
               _Stat(
                 Icons.hourglass_bottom,
-                'ČEKANJE',
+                t('ČEKANJE'),
                 RideSummary.clock(ride.waitingSeconds),
               ),
-              _Stat(Icons.speed, 'PROSEČNA BRZINA', RideSummary.speed(ride)),
+              _Stat(Icons.speed, t('PROSEČNA BRZINA'), RideSummary.speed(ride)),
               if (ride.pausedSeconds > 0)
                 _Stat(
                   Icons.pause_circle_outline,
-                  'PAUZA',
+                  t('PAUZA'),
                   RideSummary.clock(ride.pausedSeconds),
                 ),
               _Stat(
                 Icons.play_arrow,
-                'POČETAK',
+                t('POČETAK'),
                 RideSummary.dateTime(ride.startTime).split(' ').last,
               ),
               if (ride.endTime != null)
                 _Stat(
                   Icons.stop,
-                  'KRAJ',
+                  t('KRAJ'),
                   RideSummary.dateTime(ride.endTime!).split(' ').last,
                 ),
             ],
@@ -174,19 +176,19 @@ class RideSummaryScreen extends ConsumerWidget {
             child: Column(
               children: [
                 if (ride.fixedRouteName != null)
-                  _Line('Fiksna cena', '${ride.totalPrice} din')
+                  _Line(t('Fiksna cena'), t('{0} din', [ride.totalPrice]))
                 else ...[
-                  _Line('Start', '${ride.startPrice} din'),
-                  _Line('Kilometraža', '${ride.kmPrice} din'),
-                  _Line('Čekanje', '${ride.waitingPrice} din'),
+                  _Line(t('Start'), t('{0} din', [ride.startPrice])),
+                  _Line(t('Kilometraža'), t('{0} din', [ride.kmPrice])),
+                  _Line(t('Čekanje'), t('{0} din', [ride.waitingPrice])),
                   if (ride.minPriceAdjustment > 0)
                     _Line(
-                      'Dopuna do minimalne',
-                      '${ride.minPriceAdjustment} din',
+                      t('Dopuna do minimalne'),
+                      t('{0} din', [ride.minPriceAdjustment]),
                     ),
                 ],
                 const Divider(color: Colors.white12, height: 20),
-                _Line('UKUPNO', '${ride.totalPrice} din', bold: true),
+                _Line(t('UKUPNO'), t('{0} din', [ride.totalPrice]), bold: true),
               ],
             ),
           ),
@@ -247,8 +249,8 @@ class RideSummaryScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: const Text(
-                'NOVA VOŽNJA',
+              child: Text(
+                t('NOVA VOŽNJA'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -259,8 +261,8 @@ class RideSummaryScreen extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 16),
-          const Text(
-            'Pomoćni alat za evidenciju i procenu, nije overeni službeni taksimetar ni fiskalni uređaj.',
+          Text(
+            t('Pomoćni alat za evidenciju i procenu, nije overeni službeni taksimetar ni fiskalni uređaj.'),
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white24, fontSize: 11),
           ),
@@ -270,30 +272,31 @@ class RideSummaryScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final t = ref.read(trProvider);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text(
-          'Obrisati vožnju?',
+        title: Text(
+          t('Obrisati vožnju?'),
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          '${RideSummary.dateTime(ride.startTime)} · ${ride.totalPrice} din\nBrisanje se ne može poništiti.',
+          t('{0} · {1} din\nBrisanje se ne može poništiti.', [RideSummary.dateTime(ride.startTime), ride.totalPrice]),
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'ODUSTANI',
+            child: Text(
+              t('ODUSTANI'),
               style: TextStyle(color: Colors.white54),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'OBRIŠI',
+            child: Text(
+              t('OBRIŠI'),
               style: TextStyle(color: Colors.redAccent),
             ),
           ),
@@ -307,12 +310,13 @@ class RideSummaryScreen extends ConsumerWidget {
   }
 }
 
-class _RouteMap extends StatelessWidget {
+class _RouteMap extends ConsumerWidget {
   final List<(double, double)> route;
   const _RouteMap({required this.route});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     final points = [for (final p in route) LatLng(p.$1, p.$2)];
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
@@ -322,10 +326,10 @@ class _RouteMap extends StatelessWidget {
             ? Container(
                 color: _card,
                 alignment: Alignment.center,
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
-                    'Ruta nije zabeležena (vožnja je kratka ili je počela pre ove verzije).',
+                    t('Ruta nije zabeležena (vožnja je kratka ili je počela pre ove verzije).'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white38, fontSize: 12),
                   ),
@@ -390,10 +394,10 @@ class _RouteMap extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const RichAttributionWidget(
+                  RichAttributionWidget(
                     showFlutterMapAttribution: false,
                     attributions: [
-                      TextSourceAttribution('© OpenStreetMap contributors'),
+                      TextSourceAttribution(t('© OpenStreetMap contributors')),
                     ],
                   ),
                 ],
@@ -403,14 +407,14 @@ class _RouteMap extends StatelessWidget {
   }
 }
 
-class _Stat extends StatelessWidget {
+class _Stat extends ConsumerWidget {
   final IconData icon;
   final String label;
   final String value;
   const _Stat(this.icon, this.label, this.value);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
@@ -459,14 +463,14 @@ class _Stat extends StatelessWidget {
   }
 }
 
-class _Line extends StatelessWidget {
+class _Line extends ConsumerWidget {
   final String label;
   final String value;
   final bool bold;
   const _Line(this.label, this.value, {this.bold = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -494,7 +498,7 @@ class _Line extends StatelessWidget {
   }
 }
 
-class _Gaps extends StatelessWidget {
+class _Gaps extends ConsumerWidget {
   final List<GapInfo> gaps;
   const _Gaps({required this.gaps});
 
@@ -503,7 +507,7 @@ class _Gaps extends StatelessWidget {
       case GapInfo.kindWaiting:
         return 'naplaćeno kao čekanje';
       case GapInfo.kindDistance:
-        return 'dodata vazdušna linija ${g.addedDistanceMeters} m';
+        return 'dodata vazdušna linija {0} m';
       case GapInfo.kindServiceRestart:
         return 'servis zaustavljen, nije mereno';
       default:
@@ -512,7 +516,8 @@ class _Gaps extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     final total = gaps.fold<int>(0, (a, g) => a + g.durationMs) ~/ 1000;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -525,7 +530,7 @@ class _Gaps extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Prekidi GPS signala: ${gaps.length} (ukupno ${RideSummary.clock(total)})',
+            t('Prekidi GPS signala: {0} (ukupno {1})', [gaps.length, RideSummary.clock(total)]),
             style: const TextStyle(
               color: _gold,
               fontWeight: FontWeight.bold,
@@ -535,7 +540,7 @@ class _Gaps extends StatelessWidget {
           const SizedBox(height: 6),
           for (final g in gaps)
             Text(
-              '${RideSummary.dateTime(g.startedAt).split(' ').last} · ${RideSummary.clock(g.durationMs ~/ 1000)} · ${_what(g)}',
+              '${RideSummary.dateTime(g.startedAt).split(' ').last} · ${RideSummary.clock(g.durationMs ~/ 1000)} · ${t(_what(g), [g.addedDistanceMeters])}',
               style: const TextStyle(color: Colors.white60, fontSize: 12),
             ),
         ],

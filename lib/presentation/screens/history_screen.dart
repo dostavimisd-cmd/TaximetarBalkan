@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../providers/history_provider.dart';
 import 'ride_summary_screen.dart';
 import '../providers/settings_provider.dart';
+import '../l10n/tr.dart';
 
 String formatDateTime(DateTime utc) {
   final t = utc.toLocal();
@@ -12,19 +12,6 @@ String formatDateTime(DateTime utc) {
   return '${two(t.day)}.${two(t.month)}.${t.year} ${two(t.hour)}:${two(t.minute)}';
 }
 
-/// Šta je obračunato za rupu u signalu.
-String gapDescription(GapInfo g) {
-  switch (g.kind) {
-    case GapInfo.kindWaiting:
-      return 'naplaćeno kao čekanje (${formatClock(g.addedWaitingMs ~/ 1000)})';
-    case GapInfo.kindDistance:
-      return 'dodata vazdušna linija ${g.addedDistanceMeters} m';
-    case GapInfo.kindServiceRestart:
-      return 'servis zaustavljen, nije mereno';
-    default:
-      return 'nije obračunato';
-  }
-}
 
 String formatClock(int totalSeconds) {
   final h = totalSeconds ~/ 3600;
@@ -40,6 +27,7 @@ class HistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     final rides = ref.watch(rideHistoryProvider);
     final eurRate = ref.watch(appSettingsProvider).value?.eurRateMilli;
 
@@ -59,15 +47,15 @@ class HistoryScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Text(
-            'Greška pri čitanju istorije: $e',
+            t('Greška pri čitanju istorije: {0}', [e]),
             style: const TextStyle(color: Colors.redAccent),
           ),
         ),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
-                'Još nema završenih vožnji.',
+                t('Još nema završenih vožnji.'),
                 style: TextStyle(color: Colors.white54),
               ),
             );
@@ -84,17 +72,18 @@ class HistoryScreen extends ConsumerWidget {
   }
 }
 
-class _RideTile extends StatelessWidget {
+class _RideTile extends ConsumerWidget {
   final RideRecord ride;
   final int? eurRate;
 
   const _RideTile({required this.ride, required this.eurRate});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     final duration = ride.duration;
     final details = [
-      '${(ride.distanceMeters / 1000).toStringAsFixed(2)} km',
+      t('{0} km', [(ride.distanceMeters / 1000).toStringAsFixed(2)]),
       if (duration != null) formatClock(duration.inSeconds),
     ].join(' · ');
 
@@ -114,8 +103,8 @@ class _RideTile extends StatelessWidget {
           ),
           if (ride.isInterrupted) ...[
             const SizedBox(width: 8),
-            const Text(
-              'PREKINUTA',
+            Text(
+              t('PREKINUTA'),
               style: TextStyle(
                 color: Colors.amberAccent,
                 fontSize: 11,

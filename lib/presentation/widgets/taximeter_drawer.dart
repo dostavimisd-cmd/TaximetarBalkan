@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/tr.dart';
 
-class TaximeterDrawer extends StatelessWidget {
+class TaximeterDrawer extends ConsumerWidget {
   final VoidCallback onTariffsTap;
   final VoidCallback onHistoryTap;
   final VoidCallback onReportsTap;
@@ -15,7 +17,8 @@ class TaximeterDrawer extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     return Drawer(
       backgroundColor: const Color(0xFF121212),
       child: SafeArea(
@@ -42,11 +45,11 @@ class TaximeterDrawer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'TAKSIMETAR',
+                        t('TAKSIMETAR'),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -55,7 +58,7 @@ class TaximeterDrawer extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Balkan Pro Edition',
+                        t('Balkan Pro Edition'),
                         style: TextStyle(color: Colors.white38, fontSize: 12),
                       ),
                     ],
@@ -66,8 +69,8 @@ class TaximeterDrawer extends StatelessWidget {
             const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.history, color: Colors.white70),
-              title: const Text(
-                'Istorija vožnji',
+              title: Text(
+                t('Istorija vožnji'),
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () {
@@ -77,8 +80,8 @@ class TaximeterDrawer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.bar_chart, color: Colors.white70),
-              title: const Text(
-                'Izveštaji',
+              title: Text(
+                t('Izveštaji'),
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () {
@@ -88,8 +91,8 @@ class TaximeterDrawer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.receipt_long, color: Colors.white70),
-              title: const Text(
-                'Tarife',
+              title: Text(
+                t('Tarife'),
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () {
@@ -99,8 +102,8 @@ class TaximeterDrawer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.tune, color: Colors.white70),
-              title: const Text(
-                'Podešavanja',
+              title: Text(
+                t('Podešavanja'),
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () {
@@ -113,32 +116,32 @@ class TaximeterDrawer extends StatelessWidget {
                 Icons.battery_charging_full,
                 color: Colors.white70,
               ),
-              title: const Text(
-                'Optimizacija baterije',
+              title: Text(
+                t('Optimizacija baterije'),
                 style: TextStyle(color: Colors.white),
               ),
-              subtitle: const Text(
-                'Uputstvo za rad u pozadini',
+              subtitle: Text(
+                t('Uputstvo za rad u pozadini'),
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               onTap: () {
                 Navigator.pop(context);
-                _showBatteryDialog(context);
+                _showBatteryDialog(context, t);
               },
             ),
             const Spacer(),
             Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(16),
+              margin: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Pravna napomena:',
+                    t('Pravna napomena:'),
                     style: TextStyle(
                       color: Colors.white54,
                       fontSize: 11,
@@ -147,7 +150,7 @@ class TaximeterDrawer extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Ova aplikacija je pomoćni alat za internu evidenciju i procenu troškova, a ne overeni službeni taksimetar.',
+                    t('Ova aplikacija je pomoćni alat za internu evidenciju i procenu troškova, a ne overeni službeni taksimetar.'),
                     style: TextStyle(
                       color: Colors.white38,
                       fontSize: 10,
@@ -163,27 +166,24 @@ class TaximeterDrawer extends StatelessWidget {
     );
   }
 
-  void _showBatteryDialog(BuildContext context) {
+  void _showBatteryDialog(BuildContext context, Tr t) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text(
-          'Rad u pozadini bez prekida',
+        backgroundColor: Color(0xFF1E1E1E),
+        title: Text(
+          t('Rad u pozadini bez prekida'),
           style: TextStyle(color: Colors.white),
         ),
-        content: const Text(
-          'Za neprekidan rad kada je ekran zaključan:\n\n'
-          '1. Isključite "Battery Optimization" za ovu aplikaciju.\n'
-          '2. Dozvolite "Autostart" / rad u pozadini (posebno za Xiaomi, Huawei i Samsung uređaje).\n'
-          '3. Zaključajte aplikaciju u listi nedavnih aplikacija.',
+        content: Text(
+          t('Za neprekidan rad kada je ekran zaključan:\n\n1. Isključite "Battery Optimization" za ovu aplikaciju.\n2. Dozvolite "Autostart" / rad u pozadini (posebno za Xiaomi, Huawei i Samsung uređaje).\n3. Zaključajte aplikaciju u listi nedavnih aplikacija.'),
           style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'RAZUMEM',
+            child: Text(
+              t('RAZUMEM'),
               style: TextStyle(color: Colors.amberAccent),
             ),
           ),

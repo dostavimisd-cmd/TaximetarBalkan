@@ -1,0 +1,25 @@
+/// Engleski prevodi (ključ = srpski tekst iz aplikacije).
+/// Popunjeno delimično; test (sledeći korak) proverava da su svi ključevi prevedeni.
+const Map<String, String> enStrings = {
+  'POMOĆNI TAKSIMETAR': 'AUXILIARY METER',
+  'PAUZIRANO': 'PAUSED',
+  'ČEKANJE (< {0} km/h)': 'WAITING (< {0} km/h)',
+  'VOŽNJA': 'DRIVING',
+  'DISTANCA': 'DISTANCE',
+  'ČEKANJE': 'WAITING',
+  'START': 'BASE',
+  'Fiksno: {0}': 'Fixed: {0}',
+  'Start': 'Base',
+  'Kilometraža': 'Distance',
+  'Čekanje': 'Waiting',
+  'Dopuna do minimalne': 'Minimum fare top-up',
+  'ŠTAMPAJ RAČUN': 'PRINT RECEIPT',
+  'GPS signal prekidan {0}× (ukupno {1})': 'GPS signal lost {0}× (total {1})',
+  'NOVA VOŽNJA': 'NEW RIDE',
+  'NASTAVI': 'RESUME',
+  'PAUZA': 'PAUSE',
+  'ZAVRŠI': 'END',
+  'POVEŽI SE PONOVO': 'RECONNECT',
+  'DODAJ TARIFU': 'ADD TARIFF',
+  'POKRENI (START)': 'START RIDE',
+};

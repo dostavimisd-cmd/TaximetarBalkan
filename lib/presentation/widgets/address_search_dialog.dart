@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/services/navigation_service.dart';
 import '../../domain/models/navigation.dart';
+import '../l10n/tr.dart';
 
 /// Pretraga adrese: upit ide tek na "Traži" (ne pri svakom slovu), jer javni
 /// Nominatim dozvoljava najviše jedan upit u sekundi.
@@ -20,7 +22,7 @@ Future<Place?> showAddressSearch(
   );
 }
 
-class _AddressSearchDialog extends StatefulWidget {
+class _AddressSearchDialog extends ConsumerStatefulWidget {
   final NavigationService service;
   final double? nearLat;
   final double? nearLon;
@@ -32,10 +34,11 @@ class _AddressSearchDialog extends StatefulWidget {
   });
 
   @override
-  State<_AddressSearchDialog> createState() => _AddressSearchDialogState();
+  ConsumerState<_AddressSearchDialog> createState() => _AddressSearchDialogState();
 }
 
-class _AddressSearchDialogState extends State<_AddressSearchDialog> {
+class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
+  Tr get t => ref.read(trProvider);
   final _query = TextEditingController();
   List<Place> _results = const [];
   bool _loading = false;
@@ -49,7 +52,7 @@ class _AddressSearchDialogState extends State<_AddressSearchDialog> {
 
   Future<void> _search() async {
     if (_query.text.trim().length < 3) {
-      setState(() => _message = 'Unesi bar 3 slova adrese.');
+      setState(() => _message = t('Unesi bar 3 slova adrese.'));
       return;
     }
     setState(() {
@@ -66,12 +69,12 @@ class _AddressSearchDialogState extends State<_AddressSearchDialog> {
       setState(() {
         _results = r;
         _message = r.isEmpty
-            ? 'Ništa nije pronađeno. Probaj sa nazivom grada.'
+            ? t('Ništa nije pronađeno. Probaj sa nazivom grada.')
             : null;
       });
     } catch (e) {
       if (mounted) {
-        setState(() => _message = 'Pretraga nije uspela (internet?): $e');
+        setState(() => _message = t('Pretraga nije uspela (internet?): {0}', [e]));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -95,7 +98,7 @@ class _AddressSearchDialogState extends State<_AddressSearchDialog> {
               onSubmitted: (_) => _search(),
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                hintText: 'Ulica i broj, grad',
+                hintText: t('Ulica i broj, grad'),
                 hintStyle: const TextStyle(color: Colors.white38),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.search, color: Colors.amberAccent),
@@ -139,8 +142,8 @@ class _AddressSearchDialogState extends State<_AddressSearchDialog> {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Podaci © OpenStreetMap contributors',
+            Text(
+              t('Podaci © OpenStreetMap contributors'),
               style: TextStyle(color: Colors.white24, fontSize: 10),
             ),
           ],

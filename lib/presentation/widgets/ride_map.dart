@@ -10,6 +10,7 @@ import '../../domain/models/navigation.dart';
 import '../../domain/models/tariff.dart';
 import '../providers/taximeter_provider.dart';
 import 'address_search_dialog.dart';
+import '../l10n/tr.dart';
 
 final navigationServiceProvider = Provider<NavigationService>(
   (ref) => NavigationService(),
@@ -41,6 +42,7 @@ class RideMap extends ConsumerStatefulWidget {
 }
 
 class _RideMapState extends ConsumerState<RideMap> {
+  Tr get t => ref.read(trProvider);
   final _controller = MapController();
   final List<LatLng> _route = [];
   LatLng? _here;
@@ -153,7 +155,7 @@ class _RideMapState extends ConsumerState<RideMap> {
     final to = LatLng(place.lat, place.lon);
     if (from == null) {
       _showMessage(
-        'Trenutna lokacija nije poznata; prikazujem samo odredište.',
+        t('Trenutna lokacija nije poznata; prikazujem samo odredište.'),
       );
       if (_ready) _controller.move(to, 15);
       return;
@@ -174,7 +176,7 @@ class _RideMapState extends ConsumerState<RideMap> {
         );
       }
     } catch (e) {
-      _showMessage('Ruta nije dostupna (internet?): $e');
+      _showMessage(t('Ruta nije dostupna (internet?): {0}', [e]));
       if (_ready) _controller.move(to, 15);
     } finally {
       if (mounted) setState(() => _routing = false);
@@ -201,8 +203,8 @@ class _RideMapState extends ConsumerState<RideMap> {
       fixedPrice: widget.fixedPrice,
     );
     return widget.fixedPrice != null
-        ? '\nFiksna cena: $price din'
-        : '\n≈ $price din (bez čekanja)';
+        ? t('\nFiksna cena: {0} din', [price])
+        : t('\n≈ {0} din (bez čekanja)', [price]);
   }
 
   void _clearDestination() => setState(() {
@@ -244,6 +246,7 @@ class _RideMapState extends ConsumerState<RideMap> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     ref.listen<TaximeterState>(taximeterProvider, _onRide);
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
@@ -322,10 +325,10 @@ class _RideMapState extends ConsumerState<RideMap> {
                     ),
                   ],
                 ),
-              const RichAttributionWidget(
+              RichAttributionWidget(
                 showFlutterMapAttribution: false,
                 attributions: [
-                  TextSourceAttribution('© OpenStreetMap contributors'),
+                  TextSourceAttribution(t('© OpenStreetMap contributors')),
                 ],
               ),
             ],

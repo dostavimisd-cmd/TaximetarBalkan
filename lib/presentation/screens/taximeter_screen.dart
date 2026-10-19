@@ -27,6 +27,7 @@ import '../widgets/ride_map.dart';
 import '../widgets/tariff_edit_dialog.dart';
 import '../widgets/tariff_selection_sheet.dart';
 import '../widgets/taximeter_drawer.dart';
+import '../l10n/tr.dart';
 
 class TaximeterScreen extends ConsumerStatefulWidget {
   const TaximeterScreen({super.key});
@@ -36,6 +37,7 @@ class TaximeterScreen extends ConsumerStatefulWidget {
 }
 
 class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
+  Tr get t => ref.read(trProvider);
   /// Automatski izbor zavisi od sata: ekran se osvežava dok čeka start.
   Timer? _clock;
 
@@ -157,6 +159,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     ref.listen<TaximeterState>(taximeterProvider, (prev, next) {
       final finishedNow =
           next.phase == RidePhase.finished && prev?.phase != RidePhase.finished;
@@ -186,7 +189,6 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
 
     final settings =
         ref.watch(appSettingsProvider).value ?? const AppSettings();
-    final isSr = settings.language == 'sr';
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
     final eurRate = settings.eurRateMilli;
     final badgeSpeed = state.waitingSpeedKmh ?? settings.waitingSpeedKmh;
@@ -281,7 +283,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                isSr ? 'POMOĆNI TAKSIMETAR' : 'AUXILIARY METER',
+                                t('POMOĆNI TAKSIMETAR'),
                                 style: TextStyle(
                                   color: Colors.amberAccent.withValues(
                                     alpha: 0.85,
@@ -381,8 +383,9 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    '${isSr ? 'PAUZIRANO' : 'PAUSED'}'
-                                    '${state.pausedSince == null ? '' : ' · ${formatClock(DateTime.now().difference(state.pausedSince!).inSeconds)}'}',
+                                    state.pausedSince == null
+                                        ? t('PAUZIRANO')
+                                        : '${t('PAUZIRANO')} · ${formatClock(DateTime.now().difference(state.pausedSince!).inSeconds)}',
                                     style: const TextStyle(
                                       color: Colors.amberAccent,
                                       fontSize: 11,
@@ -433,10 +436,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                   const SizedBox(width: 8),
                                   Text(
                                     isWaiting
-                                        ? (isSr
-                                              ? 'ČEKANJE (< $badgeSpeed km/h)'
-                                              : 'WAITING (< $badgeSpeed km/h)')
-                                        : (isSr ? 'VOŽNJA' : 'DRIVING'),
+                                        ? (t('ČEKANJE (< {0} km/h)', [badgeSpeed]))
+                                        : (t('VOŽNJA')),
                                     style: TextStyle(
                                       color: isWaiting
                                           ? Colors.orangeAccent
@@ -515,9 +516,9 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               _InfoBlock(
-                                label: isSr ? 'DISTANCA' : 'DISTANCE',
+                                label: t('DISTANCA'),
                                 value:
-                                    '${(state.currentDistanceMeters / 1000).toStringAsFixed(2)} km',
+                                    t('{0} km', [(state.currentDistanceMeters / 1000).toStringAsFixed(2)]),
                               ),
                               Container(
                                 width: 1,
@@ -525,7 +526,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                 color: Colors.white12,
                               ),
                               _InfoBlock(
-                                label: isSr ? 'ČEKANJE' : 'WAITING',
+                                label: t('ČEKANJE'),
                                 value: _formatDuration(state.currentWaitingMs),
                               ),
                               Container(
@@ -534,7 +535,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                 color: Colors.white12,
                               ),
                               _InfoBlock(
-                                label: isSr ? 'START' : 'BASE',
+                                label: t('START'),
                                 value:
                                     '${state.rideStartPrice ?? tariff?.startPrice ?? '-'}',
                               ),
@@ -558,30 +559,26 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                               children: [
                                 if (state.fixedRouteName != null)
                                   _ResultLine(
-                                    isSr
-                                        ? 'Fiksno: ${state.fixedRouteName}'
-                                        : 'Fixed: ${state.fixedRouteName}',
+                                    t('Fiksno: {0}', [state.fixedRouteName]),
                                     result.totalPrice,
                                   )
                                 else ...[
                                   _ResultLine(
-                                    isSr ? 'Start' : 'Base',
+                                    t('Start'),
                                     result.startPrice,
                                   ),
                                   _ResultLine(
-                                    isSr ? 'Kilometraža' : 'Distance',
+                                    t('Kilometraža'),
                                     result.kmPrice,
                                   ),
                                   _ResultLine(
-                                    isSr ? 'Čekanje' : 'Waiting',
+                                    t('Čekanje'),
                                     result.waitingPrice,
                                   ),
                                 ],
                                 if (result.minPriceAdjustment > 0)
                                   _ResultLine(
-                                    isSr
-                                        ? 'Dopuna do minimalne'
-                                        : 'Minimum fare top-up',
+                                    t('Dopuna do minimalne'),
                                     result.minPriceAdjustment,
                                   ),
                                 Align(
@@ -598,7 +595,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                       size: 18,
                                     ),
                                     label: Text(
-                                      isSr ? 'ŠTAMPAJ RAČUN' : 'PRINT RECEIPT',
+                                      t('ŠTAMPAJ RAČUN'),
                                       style: const TextStyle(
                                         color: Colors.amberAccent,
                                       ),
@@ -614,9 +611,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10.0),
                             child: Text(
-                              isSr
-                                  ? 'GPS signal prekidan ${state.gapCount}× (ukupno ${formatClock(state.gapMs ~/ 1000)})'
-                                  : 'GPS signal lost ${state.gapCount}× (total ${formatClock(state.gapMs ~/ 1000)})',
+                              t('GPS signal prekidan {0}× (ukupno {1})', [state.gapCount, formatClock(state.gapMs ~/ 1000)]),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Colors.amberAccent,
@@ -691,8 +686,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                       ),
                                     ),
                                     if (_fixedRoute != null && !state.isRunning)
-                                      const Text(
-                                        'FIKSNO',
+                                      Text(
+                                        t('FIKSNO'),
                                         style: TextStyle(
                                           color: Colors.amberAccent,
                                           fontSize: 9,
@@ -702,8 +697,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                       Text(
                                         choice.reason ==
                                                 TariffChoiceReason.holiday
-                                            ? 'PRAZNIK'
-                                            : 'AUTO',
+                                            ? t('PRAZNIK')
+                                            : t('AUTO'),
                                         style: const TextStyle(
                                           color: Colors.amberAccent,
                                           fontSize: 9,
@@ -757,7 +752,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                       const SizedBox(height: 4),
                                       Text(
                                         _fixedRoute == null
-                                            ? 'RELACIJE'
+                                            ? t('RELACIJE')
                                             : '${_fixedRoute!.price}',
                                         style: TextStyle(
                                           color: _fixedRoute == null
@@ -783,7 +778,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                           const Color(0xFF1565C0),
                                         ),
                                         child: _mainButtonLabel(
-                                          isSr ? 'NOVA VOŽNJA' : 'NEW RIDE',
+                                          t('NOVA VOŽNJA'),
                                         ),
                                       )
                                     : state.isRunning
@@ -811,12 +806,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                   child: _mainButtonLabel(
                                                     state.phase ==
                                                             RidePhase.paused
-                                                        ? (isSr
-                                                              ? 'NASTAVI'
-                                                              : 'RESUME')
-                                                        : (isSr
-                                                              ? 'PAUZA'
-                                                              : 'PAUSE'),
+                                                        ? (t('NASTAVI'))
+                                                        : (t('PAUZA')),
                                                   ),
                                                 ),
                                               ),
@@ -836,7 +827,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                 ),
                                                 child: FittedBox(
                                                   child: _mainButtonLabel(
-                                                    isSr ? 'ZAVRŠI' : 'END',
+                                                    t('ZAVRŠI'),
                                                   ),
                                                 ),
                                               ),
@@ -889,16 +880,10 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                         ),
                                         child: _mainButtonLabel(
                                           !state.isReady
-                                              ? (isSr
-                                                    ? 'POVEŽI SE PONOVO'
-                                                    : 'RECONNECT')
+                                              ? (t('POVEŽI SE PONOVO'))
                                               : tariffs.isEmpty
-                                              ? (isSr
-                                                    ? 'DODAJ TARIFU'
-                                                    : 'ADD TARIFF')
-                                              : (isSr
-                                                    ? 'POKRENI (START)'
-                                                    : 'START RIDE'),
+                                              ? (t('DODAJ TARIFU'))
+                                              : (t('POKRENI (START)')),
                                         ),
                                       ),
                               ),
@@ -929,14 +914,14 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
   }
 }
 
-class _InfoBlock extends StatelessWidget {
+class _InfoBlock extends ConsumerWidget {
   final String label;
   final String value;
 
   const _InfoBlock({required this.label, required this.value});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         Text(
@@ -979,14 +964,14 @@ Widget _mainButtonLabel(String text) => Text(
   ),
 );
 
-class _ResultLine extends StatelessWidget {
+class _ResultLine extends ConsumerWidget {
   final String label;
   final int amount;
 
   const _ResultLine(this.label, this.amount);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(

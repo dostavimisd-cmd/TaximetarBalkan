@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/fixed_route_import.dart';
 import '../../domain/models/fixed_route.dart';
 import '../providers/tariffs_provider.dart';
+import '../l10n/tr.dart';
 
 /// Fiksne relacije (npr. grad → aerodrom) sa cenama koje unosi korisnik:
 /// dodavanje, izmena, brisanje, pretraga i uvoz više relacija odjednom.
@@ -17,6 +18,7 @@ class FixedRoutesScreen extends ConsumerStatefulWidget {
 }
 
 class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
+  Tr get t => ref.read(trProvider);
   String _query = '';
 
   Future<void> _confirmDeleteAll(int count) async {
@@ -24,26 +26,26 @@ class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text(
-          'Obrisati sve relacije?',
+        title: Text(
+          t('Obrisati sve relacije?'),
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Biće obrisano $count relacija. Istorija vožnji ostaje.',
+          t('Biće obrisano {0} relacija. Istorija vožnji ostaje.', [count]),
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'ODUSTANI',
+            child: Text(
+              t('ODUSTANI'),
               style: TextStyle(color: Colors.white54),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'OBRIŠI SVE',
+            child: Text(
+              t('OBRIŠI SVE'),
               style: TextStyle(color: Colors.redAccent),
             ),
           ),
@@ -55,6 +57,7 @@ class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     final routes = ref.watch(fixedRoutesProvider);
     final all = routes.value ?? const <FixedRoute>[];
     final shown = FixedRouteImport.search(all, _query);
@@ -65,13 +68,13 @@ class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
         title: const Text('Fiksne relacije'),
         actions: [
           IconButton(
-            tooltip: 'Uvezi spisak',
+            tooltip: t('Uvezi spisak'),
             icon: const Icon(Icons.upload_file),
             onPressed: () => showFixedRouteImport(context),
           ),
           if (all.isNotEmpty)
             IconButton(
-              tooltip: 'Obriši sve',
+              tooltip: t('Obriši sve'),
               icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
               onPressed: () => _confirmDeleteAll(all.length),
             ),
@@ -86,16 +89,16 @@ class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Text(
-            'Greška: $e',
+            t('Greška: {0}', [e]),
             style: const TextStyle(color: Colors.redAccent),
           ),
         ),
         data: (list) => list.isEmpty
-            ? const Center(
+            ? Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
-                    'Nema relacija. Dodaj ih ručno (+) ili uvezi ceo spisak odjednom (gore).',
+                    t('Nema relacija. Dodaj ih ručno (+) ili uvezi ceo spisak odjednom (gore).'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white54),
                   ),
@@ -113,7 +116,7 @@ class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
                           Icons.search,
                           color: Colors.white54,
                         ),
-                        hintText: 'Pretraga (${list.length} relacija)',
+                        hintText: t('Pretraga ({0} relacija)', [list.length]),
                         hintStyle: const TextStyle(color: Colors.white38),
                         isDense: true,
                       ),
@@ -139,10 +142,10 @@ class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
                                 showFixedRouteEditor(context, existing: r),
                           ),
                         if (shown.isEmpty)
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.all(24),
                             child: Text(
-                              'Nema rezultata.',
+                              t('Nema rezultata.'),
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.white54),
                             ),
@@ -173,6 +176,7 @@ class _ImportDialog extends ConsumerStatefulWidget {
 }
 
 class _ImportDialogState extends ConsumerState<_ImportDialog> {
+  Tr get t => ref.read(trProvider);
   final _text = TextEditingController();
   ImportResult _result = const ImportResult([], []);
   String? _message;
@@ -202,7 +206,7 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
         _result = FixedRouteImport.parse(_text.text);
       });
     } catch (e) {
-      setState(() => _message = 'Fajl nije mogao da se pročita: $e');
+      setState(() => _message = t('Fajl nije mogao da se pročita: {0}', [e]));
     }
   }
 
@@ -216,22 +220,23 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Uvezeno: ${r.added} novih, ${r.updated} izmenjenih (cena).',
+              t('Uvezeno: {0} novih, {1} izmenjenih (cena).', [r.added, r.updated]),
             ),
           ),
         );
       }
     } catch (e) {
-      setState(() => _message = 'Uvoz nije uspeo: $e');
+      setState(() => _message = t('Uvoz nije uspeo: {0}', [e]));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
-      title: const Text(
-        'Uvoz fiksnih relacija',
+      title: Text(
+        t('Uvoz fiksnih relacija'),
         style: TextStyle(color: Colors.white),
       ),
       content: SizedBox(
@@ -241,8 +246,8 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Jedan red = jedna relacija:\nNaziv ; Od ; Do ; Cena\nNaziv ; Cena\nNaziv - Cena',
+              Text(
+                t('Jedan red = jedna relacija:\nNaziv ; Od ; Do ; Cena\nNaziv ; Cena\nNaziv - Cena'),
                 style: TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 8),
@@ -253,8 +258,8 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
                 onChanged: (v) =>
                     setState(() => _result = FixedRouteImport.parse(v)),
                 style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: const InputDecoration(
-                  hintText: 'Nalepi spisak ovde',
+                decoration: InputDecoration(
+                  hintText: t('Nalepi spisak ovde'),
                   hintStyle: TextStyle(color: Colors.white38),
                   border: OutlineInputBorder(),
                 ),
@@ -262,22 +267,22 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
               TextButton.icon(
                 onPressed: _pickFile,
                 icon: const Icon(Icons.folder_open, color: Colors.amberAccent),
-                label: const Text(
-                  'Izaberi fajl (.txt)',
+                label: Text(
+                  t('Izaberi fajl (.txt)'),
                   style: TextStyle(color: Colors.amberAccent),
                 ),
               ),
               TextButton.icon(
                 onPressed: _paste,
                 icon: const Icon(Icons.paste, color: Colors.amberAccent),
-                label: const Text(
-                  'Nalepi iz klipborda',
+                label: Text(
+                  t('Nalepi iz klipborda'),
                   style: TextStyle(color: Colors.amberAccent),
                 ),
               ),
               if (_text.text.trim().isNotEmpty) ...[
                 Text(
-                  'Prepoznato relacija: ${_result.routes.length}',
+                  t('Prepoznato relacija: {0}', [_result.routes.length]),
                   style: const TextStyle(color: Colors.greenAccent),
                 ),
                 for (final r in _result.routes.take(5))
@@ -287,18 +292,18 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
                   ),
                 if (_result.routes.length > 5)
                   Text(
-                    '… i još ${_result.routes.length - 5}',
+                    t('… i još {0}', [_result.routes.length - 5]),
                     style: const TextStyle(color: Colors.white38, fontSize: 12),
                   ),
                 if (_result.issues.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
-                    'Preskočeno redova: ${_result.issues.length}',
+                    t('Preskočeno redova: {0}', [_result.issues.length]),
                     style: const TextStyle(color: Colors.amberAccent),
                   ),
                   for (final i in _result.issues.take(5))
                     Text(
-                      'red ${i.line}: ${i.reason}',
+                      t('red {0}: {1}', [i.line, i.reason]),
                       style: const TextStyle(
                         color: Colors.white54,
                         fontSize: 12,
@@ -318,15 +323,15 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'ODUSTANI',
+          child: Text(
+            t('ODUSTANI'),
             style: TextStyle(color: Colors.white54),
           ),
         ),
         TextButton(
           onPressed: _result.routes.isEmpty ? null : _import,
           child: Text(
-            'UVEZI (${_result.routes.length})',
+            t('UVEZI ({0})', [_result.routes.length]),
             style: const TextStyle(color: Colors.amberAccent),
           ),
         ),
@@ -354,6 +359,7 @@ class _FixedRouteDialog extends ConsumerStatefulWidget {
 }
 
 class _FixedRouteDialogState extends ConsumerState<_FixedRouteDialog> {
+  Tr get t => ref.read(trProvider);
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
   late final _from = TextEditingController(
     text: widget.existing?.fromLabel ?? '',
@@ -375,7 +381,7 @@ class _FixedRouteDialogState extends ConsumerState<_FixedRouteDialog> {
   Future<void> _save() async {
     final price = int.tryParse(_price.text.trim());
     if (price == null) {
-      setState(() => _error = 'Unesi cenu celim brojem.');
+      setState(() => _error = t('Unesi cenu celim brojem.'));
       return;
     }
     final route = FixedRoute(
@@ -414,20 +420,21 @@ class _FixedRouteDialogState extends ConsumerState<_FixedRouteDialog> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
       title: Text(
-        widget.existing == null ? 'Nova relacija' : 'Izmena relacije',
+        widget.existing == null ? 'Nova relacija' : t('Izmena relacije'),
         style: const TextStyle(color: Colors.white),
       ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _field('Naziv (npr. Aerodrom)', _name),
-            _field('Od (opciono)', _from),
-            _field('Do (opciono)', _to),
-            _field('Fiksna cena (din)', _price, number: true),
+            _field(t('Naziv (npr. Aerodrom)'), _name),
+            _field(t('Od (opciono)'), _from),
+            _field(t('Do (opciono)'), _to),
+            _field(t('Fiksna cena (din)'), _price, number: true),
             if (_error != null)
               Text(
                 _error!,
@@ -445,22 +452,22 @@ class _FixedRouteDialogState extends ConsumerState<_FixedRouteDialog> {
                   .remove(widget.existing!.id);
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text(
-              'OBRIŠI',
+            child: Text(
+              t('OBRIŠI'),
               style: TextStyle(color: Colors.redAccent),
             ),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'ODUSTANI',
+          child: Text(
+            t('ODUSTANI'),
             style: TextStyle(color: Colors.white54),
           ),
         ),
         TextButton(
           onPressed: _save,
-          child: const Text(
-            'SAČUVAJ',
+          child: Text(
+            t('SAČUVAJ'),
             style: TextStyle(color: Colors.amberAccent),
           ),
         ),

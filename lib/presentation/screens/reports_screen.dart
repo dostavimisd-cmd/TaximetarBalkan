@@ -6,6 +6,7 @@ import '../../domain/reports.dart';
 import '../providers/history_provider.dart';
 import '../providers/settings_provider.dart';
 import 'history_screen.dart' show formatClock;
+import '../l10n/tr.dart';
 
 /// Izveštaji (Faza 3): zarada i rad po danu, nedelji i mesecu.
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,7 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  Tr get t => ref.read(trProvider);
   ReportRange _range = ReportRange.containing(ReportPeriod.day, DateTime.now());
 
   /// null = izveštaj po periodu; inače indeks smene u listi (0 = najnovija).
@@ -73,7 +75,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 color: Colors.white,
               ),
               label: Text(
-                open == null ? 'POČNI SMENU' : 'ZAVRŠI SMENU',
+                open == null ? 'POČNI SMENU' : t('ZAVRŠI SMENU'),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -82,8 +84,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
             const SizedBox(height: 12),
             if (shift == null)
-              const Text(
-                'Još nema smena.',
+              Text(
+                t('Još nema smena.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white54),
               )
@@ -103,7 +105,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      '${fmt(shift.start)} – ${shift.end == null ? 'u toku' : fmt(shift.end!)}',
+                      '${fmt(shift.start)} – ${shift.end == null ? t('u toku') : fmt(shift.end!)}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -130,7 +132,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Text(
-                      'Greška: $e',
+                      t('Greška: {0}', [e]),
                       style: const TextStyle(color: Colors.redAccent),
                     ),
                     data: (rides) {
@@ -154,6 +156,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(trProvider); // prevod se menja sa jezikom
     final rides = ref.watch(reportRidesProvider(_range));
     final eurRate = ref.watch(appSettingsProvider).value?.eurRateMilli;
     // nema smisla ići u budućnost
@@ -222,7 +225,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             rides.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text(
-                'Greška: $e',
+                t('Greška: {0}', [e]),
                 style: const TextStyle(color: Colors.redAccent),
               ),
               data: (list) =>
@@ -235,7 +238,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 }
 
-class _StatsCard extends StatelessWidget {
+class _StatsCard extends ConsumerWidget {
   final RideStats stats;
   final int? eurRate;
 
@@ -271,7 +274,8 @@ class _StatsCard extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(trProvider);
     String hm(int seconds) {
       final h = seconds ~/ 3600;
       final m = (seconds % 3600) ~/ 60;
@@ -287,30 +291,31 @@ class _StatsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _row('Ukupno', '${stats.totalPrice} din', big: true),
+          _row(t('Ukupno'), t('{0} din', [stats.totalPrice]), big: true),
           if (eurRate != null)
             _row(
               '',
-              '${CurrencyConverter.formatForeign(stats.totalPrice, eurRate!)} EUR',
+              t('{0} EUR', [CurrencyConverter.formatForeign(stats.totalPrice, eurRate!)]),
             ),
           const Divider(color: Colors.white12),
           _row(
-            'Vožnji',
-            '${stats.rideCount}'
-                '${stats.interruptedCount > 0 ? ' (prekinuto ${stats.interruptedCount})' : ''}',
+            t('Vožnji'),
+            stats.interruptedCount > 0
+                ? t('{0} (prekinuto {1})', [stats.rideCount, stats.interruptedCount])
+                : '${stats.rideCount}',
           ),
-          _row('Prosek po vožnji', '${stats.averagePerRide} din'),
-          _row('Po satu vožnje', '${stats.perHour} din'),
+          _row(t('Prosek po vožnji'), t('{0} din', [stats.averagePerRide])),
+          _row(t('Po satu vožnje'), t('{0} din', [stats.perHour])),
           if (shiftSeconds != null && shiftSeconds! > 0)
-            _row('Po satu smene', '${stats.perHourOver(shiftSeconds!)} din'),
-          _row('Po kilometru', '${stats.perKm} din'),
+            _row(t('Po satu smene'), t('{0} din', [stats.perHourOver(shiftSeconds!)])),
+          _row(t('Po kilometru'), t('{0} din', [stats.perKm])),
           const Divider(color: Colors.white12),
-          if (shiftSeconds != null) _row('Trajanje smene', hm(shiftSeconds!)),
-          _row('Vreme u vožnji', hm(stats.durationSeconds)),
-          _row('Od toga čekanje', formatClock(stats.waitingSeconds)),
+          if (shiftSeconds != null) _row(t('Trajanje smene'), hm(shiftSeconds!)),
+          _row(t('Vreme u vožnji'), hm(stats.durationSeconds)),
+          _row(t('Od toga čekanje'), formatClock(stats.waitingSeconds)),
           _row(
-            'Pređeno (GPS)',
-            '${(stats.distanceMeters / 1000).toStringAsFixed(2)} km',
+            t('Pređeno (GPS)'),
+            t('{0} km', [(stats.distanceMeters / 1000).toStringAsFixed(2)]),
           ),
         ],
       ),
