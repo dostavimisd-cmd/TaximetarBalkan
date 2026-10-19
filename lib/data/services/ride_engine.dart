@@ -151,7 +151,7 @@ class RideEngine {
       'tariff_id',
       'start_price',
       'price_per_km',
-      'waiting_price_per_min',
+      'waiting_para_per_min',
       'min_price',
     ];
     for (final key in requiredKeys) {
@@ -170,7 +170,7 @@ class RideEngine {
         id: data['tariff_id'] as int,
         startPrice: data['start_price'] as int,
         pricePerKm: data['price_per_km'] as int,
-        waitingPricePerMin: data['waiting_price_per_min'] as int,
+        waitingParaPerMin: data['waiting_para_per_min'] as int,
         minPrice: data['min_price'] as int,
       );
       final calibration = (data['calibration'] as num?)?.toDouble() ?? 1.0;
@@ -197,7 +197,7 @@ class RideEngine {
         'status': statusActive,
         'tariff_start_price': tariff.startPrice,
         'tariff_price_per_km': tariff.pricePerKm,
-        'tariff_waiting_price_per_min': tariff.waitingPricePerMin,
+        'tariff_waiting_para_per_min': tariff.waitingParaPerMin,
         'tariff_min_price': tariff.minPrice,
         'min_price_adjustment': 0,
       });
@@ -339,7 +339,7 @@ class RideEngine {
         id: ride['tariff_id'] as int,
         startPrice: ride['tariff_start_price'] as int,
         pricePerKm: ride['tariff_price_per_km'] as int,
-        waitingPricePerMin: ride['tariff_waiting_price_per_min'] as int,
+        waitingParaPerMin: ride['tariff_waiting_para_per_min'] as int,
         minPrice: ride['tariff_min_price'] as int,
       );
 

@@ -20,7 +20,7 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   });
 
-  test('nova baza ima v3 šemu i indekse', () async {
+  test('nova baza ima v4 šemu i indekse', () async {
     final db = await DatabaseHelper.openAt(inMemoryDatabasePath);
     addTearDown(db.close);
     expect(await columns(db, 'rides'), containsAll(['client_uuid', 'tariff_min_price']));
@@ -30,7 +30,7 @@ void main() {
     expect(await db.query('app_settings'), hasLength(3));
   });
 
-  test('5: migracija v1 → v3 čuva istoriju i prekida aktivnu vožnju', () async {
+  test('5: migracija v1 → v4 čuva istoriju i prekida aktivnu vožnju', () async {
     final dir = await Directory.systemTemp.createTemp('taksi_mig');
     addTearDown(() => dir.delete(recursive: true));
     final path = p.join(dir.path, 'v1.db');
@@ -50,6 +50,12 @@ void main() {
                   tariff_id INTEGER NOT NULL, applied_calibration REAL NOT NULL,
                   status TEXT NOT NULL)''');
               await db.execute('''
+                CREATE TABLE tariffs (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL,
+                  start_price INTEGER NOT NULL, price_per_km INTEGER NOT NULL,
+                  waiting_price_per_min INTEGER NOT NULL, min_price INTEGER NOT NULL,
+                  rules_json TEXT)''');
+              await db.execute('''
                 CREATE TABLE ride_snapshots (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                   ride_id INTEGER NOT NULL, current_distance INTEGER NOT NULL,
@@ -64,6 +70,10 @@ void main() {
         };
     await v1.insert('rides', ride('completed', 1)..['end_time'] = 2000);
     await v1.insert('rides', ride('active', 2));
+    await v1.insert('tariffs', {
+      'name': 'Stara', 'start_price': 100, 'price_per_km': 50,
+      'waiting_price_per_min': 15, 'min_price': 200,
+    });
     await v1.close();
 
     final db = await DatabaseHelper.openAt(path);
@@ -78,6 +88,11 @@ void main() {
         containsAll(['tariff_start_price', 'min_price_adjustment', 'client_uuid']));
     expect(await columns(db, 'ride_snapshots'),
         containsAll(['current_waiting_ms', 'saved_at']));
+
+    // v4: čekanje po minutu je u para (15 din → 1500)
+    expect(await columns(db, 'tariffs'), contains('waiting_para_per_min'));
+    expect((await db.query('tariffs')).single['waiting_para_per_min'], 1500);
+    expect(await columns(db, 'rides'), contains('tariff_waiting_para_per_min'));
     expect(await indexes(db),
         containsAll(['idx_rides_client_uuid', 'idx_snapshots_ride']));
   });

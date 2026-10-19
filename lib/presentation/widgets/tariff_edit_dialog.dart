@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/currency_converter.dart';
 import '../../domain/models/tariff.dart';
 import '../providers/tariffs_provider.dart';
 
@@ -38,7 +39,8 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
     _name = TextEditingController(text: t?.name ?? '');
     _start = TextEditingController(text: n(t?.startPrice));
     _perKm = TextEditingController(text: n(t?.pricePerKm));
-    _waiting = TextEditingController(text: n(t?.waitingPricePerMin));
+    _waiting = TextEditingController(
+        text: t == null ? '' : CurrencyConverter.formatPara(t.waitingParaPerMin));
     _min = TextEditingController(text: n(t?.minPrice));
   }
 
@@ -51,11 +53,15 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
   }
 
   Future<void> _save() async {
-    final values = [_start, _perKm, _waiting, _min]
-        .map((c) => int.tryParse(c.text.trim()))
-        .toList();
+    final values = [_start, _perKm, _waiting, _min].map((c) {
+      // čekanje može sa decimalama (13.4 ili 13,4), ostalo su celi dinari
+      return c == _waiting
+          ? CurrencyConverter.parsePara(c.text)
+          : int.tryParse(c.text.trim());
+    }).toList();
     if (values.any((v) => v == null)) {
-      setState(() => _error = 'Popuni sva polja celim brojevima.');
+      setState(() => _error =
+          'Popuni sva polja. Čekanje može sa zarezom (npr. 13,4), ostalo celim brojevima.');
       return;
     }
     final tariff = Tariff(
@@ -63,7 +69,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
       name: _name.text.trim(),
       startPrice: values[0]!,
       pricePerKm: values[1]!,
-      waitingPricePerMin: values[2]!,
+      waitingParaPerMin: values[2]!,
       minPrice: values[3]!,
     );
     final error = tariff.validate();
@@ -80,14 +86,18 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
     if (mounted) Navigator.pop(context, -1);
   }
 
-  Widget _field(String label, TextEditingController c, {bool number = true}) {
+  Widget _field(String label, TextEditingController c,
+      {bool number = true, bool decimal = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
         controller: c,
-        keyboardType: number ? TextInputType.number : TextInputType.text,
-        inputFormatters:
-            number ? [FilteringTextInputFormatter.digitsOnly] : const [],
+        keyboardType: decimal
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : (number ? TextInputType.number : TextInputType.text),
+        inputFormatters: decimal
+            ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))]
+            : (number ? [FilteringTextInputFormatter.digitsOnly] : const []),
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           labelText: label,
@@ -111,7 +121,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
             _field('Naziv', _name, number: false),
             _field('Start (din)', _start),
             _field('Cena po km (din)', _perKm),
-            _field('Čekanje po minutu (din)', _waiting),
+            _field('Čekanje po minutu (din, npr. 13,4)', _waiting, decimal: true),
             _field('Minimalna cena (din)', _min),
             if (_error != null)
               Text(_error!,

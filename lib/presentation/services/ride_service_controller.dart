@@ -157,7 +157,7 @@ class RideServiceController {
     required int tariffId,
     required int startPrice,
     required int pricePerKm,
-    required int waitingPricePerMin,
+    required int waitingParaPerMin,
     required int minPrice,
     required double calibration,
   }) =>
@@ -210,7 +210,7 @@ class RideServiceController {
           'tariff_id': tariffId,
           'start_price': startPrice,
           'price_per_km': pricePerKm,
-          'waiting_price_per_min': waitingPricePerMin,
+          'waiting_para_per_min': waitingParaPerMin,
           'min_price': minPrice,
           'calibration': calibration,
         });

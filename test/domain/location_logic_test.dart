@@ -13,7 +13,7 @@ void main() {
     const baseLat = 44.8000;
     const baseLon = 20.4000;
     final baseTime = DateTime.utc(2023, 1, 1, 12, 0, 0);
-    const tariff = Tariff(id: 1, startPrice: 150, pricePerKm: 80, waitingPricePerMin: 10, minPrice: 200);
+    const tariff = Tariff(id: 1, startPrice: 150, pricePerKm: 80, waitingParaPerMin: 1000, minPrice: 200);
 
     test('a) 60 tačaka, speed 0, šum 3m napred-nazad', () {
       final tracker = RideTracker(tariff: tariff);

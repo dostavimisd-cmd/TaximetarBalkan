@@ -12,7 +12,7 @@ const Map<String, dynamic> startCmd = {
   'tariff_id': 1,
   'start_price': 200,
   'price_per_km': 100,
-  'waiting_price_per_min': 10,
+  'waiting_para_per_min': 1000,
   'min_price': 0,
   'calibration': 1.0,
 };

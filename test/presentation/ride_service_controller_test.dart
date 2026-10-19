@@ -89,7 +89,7 @@ Future<bool> start(RideServiceController c) => c.startRide(
       tariffId: 1,
       startPrice: 200,
       pricePerKm: 100,
-      waitingPricePerMin: 10,
+      waitingParaPerMin: 1000,
       minPrice: 300,
       calibration: 1.0,
     );

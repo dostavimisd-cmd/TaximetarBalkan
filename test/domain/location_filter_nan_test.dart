@@ -25,7 +25,7 @@ void main() {
   test('U2: NaN tačka ne kvari zbir distance', () {
     final t = RideTracker(
         tariff: const Tariff(
-            id: 1, startPrice: 200, pricePerKm: 100, waitingPricePerMin: 10, minPrice: 0));
+            id: 1, startPrice: 200, pricePerKm: 100, waitingParaPerMin: 1000, minPrice: 0));
     t.processLocation(p(44.8, 20.4, 5, 0));
     t.processLocation(p(double.nan, 20.4, 5, 1));
     t.processLocation(p(44.8009, 20.4, 5, 10));

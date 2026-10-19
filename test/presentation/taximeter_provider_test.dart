@@ -29,7 +29,7 @@ class FakeController extends RideServiceController {
     required int tariffId,
     required int startPrice,
     required int pricePerKm,
-    required int waitingPricePerMin,
+    required int waitingParaPerMin,
     required int minPrice,
     required double calibration,
   }) async {
@@ -173,7 +173,7 @@ void main() {
 
   Future<void> startViaNotifier() =>
       container.read(taximeterProvider.notifier).startRide(
-          startPrice: 200, pricePerKm: 100, waitingPricePerMin: 10, minPrice: 300);
+          startPrice: 200, pricePerKm: 100, waitingParaPerMin: 1000, minPrice: 300);
 
   test('startRide koji nije poslat vraća prethodnu fazu i rezultat', () async {
     fake.connectResult.complete(true);

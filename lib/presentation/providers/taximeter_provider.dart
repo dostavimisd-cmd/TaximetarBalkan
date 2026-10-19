@@ -292,7 +292,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     int? tariffId,
     required int startPrice,
     required int pricePerKm,
-    required int waitingPricePerMin,
+    required int waitingParaPerMin,
     required int minPrice,
     double calibration = 1.0,
   }) async {
@@ -318,7 +318,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       tariffId: tariffId ?? state.selectedTariffId,
       startPrice: startPrice,
       pricePerKm: pricePerKm,
-      waitingPricePerMin: waitingPricePerMin,
+      waitingParaPerMin: waitingParaPerMin,
       minPrice: minPrice,
       calibration: calibration,
     );

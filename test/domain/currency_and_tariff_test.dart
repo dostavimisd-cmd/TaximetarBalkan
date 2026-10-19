@@ -13,7 +13,7 @@ Tariff tariff({
       name: name,
       startPrice: start,
       pricePerKm: km,
-      waitingPricePerMin: waiting,
+      waitingParaPerMin: waiting,
       minPrice: min,
     );
 
@@ -50,6 +50,30 @@ void main() {
 
     test('formatForeign baca na kurs <= 0', () {
       expect(() => CurrencyConverter.formatForeign(100, 0), throwsArgumentError);
+    });
+  });
+
+  group('para (čekanje sa decimalama)', () {
+    test('parsePara: tačka, zarez, najviše 2 decimale', () {
+      expect(CurrencyConverter.parsePara('13.4'), 1340);
+      expect(CurrencyConverter.parsePara('13,4'), 1340);
+      expect(CurrencyConverter.parsePara('13,45'), 1345);
+      expect(CurrencyConverter.parsePara('800'), 80000);
+      expect(CurrencyConverter.parsePara('0'), 0);
+      expect(CurrencyConverter.parsePara(' 0,5 '), 50);
+    });
+
+    test('parsePara odbija nevalidan unos', () {
+      for (final bad in ['', 'a', '-1', '13.456', '1..2', '1,2,3', '.5']) {
+        expect(CurrencyConverter.parsePara(bad), isNull, reason: bad);
+      }
+    });
+
+    test('formatPara skida završne nule', () {
+      expect(CurrencyConverter.formatPara(1340), '13.4');
+      expect(CurrencyConverter.formatPara(1333), '13.33');
+      expect(CurrencyConverter.formatPara(1500), '15');
+      expect(CurrencyConverter.formatPara(5), '0.05');
     });
   });
 

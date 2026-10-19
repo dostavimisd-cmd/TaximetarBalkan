@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/currency_converter.dart';
 import '../../domain/models/tariff.dart';
 import '../providers/tariffs_provider.dart';
 import 'tariff_edit_dialog.dart';
@@ -86,7 +87,7 @@ class TariffSelectionSheet extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 4.0),
                     child: Text(
                       'Start: ${t.startPrice} | Km: ${t.pricePerKm} | '
-                      'Čekanje/min: ${t.waitingPricePerMin} | Min: ${t.minPrice}',
+                      'Čekanje/min: ${CurrencyConverter.formatPara(t.waitingParaPerMin)} | Min: ${t.minPrice}',
                       style: const TextStyle(color: Colors.white60, fontSize: 12),
                     ),
                   ),

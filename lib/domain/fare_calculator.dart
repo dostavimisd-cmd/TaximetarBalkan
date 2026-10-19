@@ -27,9 +27,10 @@ class FareCalculator {
     // Formula: (metri * cena) / 1000
     final int kmPrice = _roundHalfUp(calibratedMeters * tariff.pricePerKm, 1000);
 
-    // 3. Cena za čekanje (60 sekundi)
-    // Formula: (sekunde * cena) / 60
-    final int waitingPrice = _roundHalfUp(waitingSeconds * tariff.waitingPricePerMin, 60);
+    // 3. Cena za čekanje: cena po minutu je u para (1/100 dinara)
+    // Formula: (sekunde * para po minutu) / (60 * 100)
+    final int waitingPrice =
+        _roundHalfUp(waitingSeconds * tariff.waitingParaPerMin, 6000);
 
     // 4. Sabiranje
     final int startPrice = tariff.startPrice;

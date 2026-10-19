@@ -9,7 +9,7 @@ void main() {
     const defaultTariff = Tariff(
       startPrice: 150,
       pricePerKm: 80,
-      waitingPricePerMin: 10,
+      waitingParaPerMin: 1000,
       minPrice: 200,
     );
 
@@ -110,5 +110,21 @@ void main() {
       expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 10, waitingSeconds: -5), throwsArgumentError);
       expect(() => FareCalculator.calculate(tariff: defaultTariff, distanceMeters: 10, waitingSeconds: 0, calibrationMultiplier: 0), throwsArgumentError);
     });
+  });
+
+  test('čekanje sa decimalama: 13,4 din/min (1340 para)', () {
+    const t = Tariff(
+      startPrice: 0,
+      pricePerKm: 0,
+      waitingParaPerMin: 1340,
+      minPrice: 0,
+    );
+    // 90 s * 13,4 / 60 = 20,1 → 20
+    expect(FareCalculator.calculate(tariff: t, distanceMeters: 0, waitingSeconds: 90).waitingPrice, 20);
+    // pun sat = 60 * 13,4 = 804
+    expect(FareCalculator.calculate(tariff: t, distanceMeters: 0, waitingSeconds: 3600).waitingPrice, 804);
+    // 800 din/h = 13,33 din/min (1333 para): sat = 799,8 → 800
+    const hourly = Tariff(startPrice: 0, pricePerKm: 0, waitingParaPerMin: 1333, minPrice: 0);
+    expect(FareCalculator.calculate(tariff: hourly, distanceMeters: 0, waitingSeconds: 3600).waitingPrice, 800);
   });
 }

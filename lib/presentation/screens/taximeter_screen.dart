@@ -358,7 +358,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                 tariffId: t.id,
                                                 startPrice: t.startPrice,
                                                 pricePerKm: t.pricePerKm,
-                                                waitingPricePerMin: t.waitingPricePerMin,
+                                                waitingParaPerMin: t.waitingParaPerMin,
                                                 minPrice: t.minPrice,
                                               );
                                             },

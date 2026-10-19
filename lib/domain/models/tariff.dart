@@ -7,7 +7,8 @@ class Tariff {
   final String name;
   final int startPrice;
   final int pricePerKm;
-  final int waitingPricePerMin;
+  /// Cena čekanja po minutu u para (1/100 dinara): 13.4 din/min = 1340.
+  final int waitingParaPerMin;
   final int minPrice;
 
   const Tariff({
@@ -15,16 +16,17 @@ class Tariff {
     this.name = 'Standard',
     required this.startPrice,
     required this.pricePerKm,
-    required this.waitingPricePerMin,
+    required this.waitingParaPerMin,
     required this.minPrice,
   });
 
   /// N19: vraća opis greške ili null ako je tarifa ispravna.
   String? validate() {
-    final prices = [startPrice, pricePerKm, waitingPricePerMin, minPrice];
+    final prices = [startPrice, pricePerKm, waitingParaPerMin, minPrice];
     if (prices.any((p) => p < 0)) return 'Cene ne smeju biti negativne.';
-    if (prices.any((p) => p > maxPrice)) {
-      return 'Cena ne sme biti veća od $maxPrice.';
+    if ([startPrice, pricePerKm, minPrice].any((p) => p > maxPrice) ||
+        waitingParaPerMin > maxPrice * 100) {
+      return 'Cena ne sme biti veća od $maxPrice din.';
     }
     if (name.trim().isEmpty) return 'Naziv tarife je obavezan.';
     return null;
@@ -35,7 +37,7 @@ class Tariff {
     String? name,
     int? startPrice,
     int? pricePerKm,
-    int? waitingPricePerMin,
+    int? waitingParaPerMin,
     int? minPrice,
   }) {
     return Tariff(
@@ -43,7 +45,7 @@ class Tariff {
       name: name ?? this.name,
       startPrice: startPrice ?? this.startPrice,
       pricePerKm: pricePerKm ?? this.pricePerKm,
-      waitingPricePerMin: waitingPricePerMin ?? this.waitingPricePerMin,
+      waitingParaPerMin: waitingParaPerMin ?? this.waitingParaPerMin,
       minPrice: minPrice ?? this.minPrice,
     );
   }

@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -52,7 +52,7 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         start_price INTEGER NOT NULL,
         price_per_km INTEGER NOT NULL,
-        waiting_price_per_min INTEGER NOT NULL,
+        waiting_para_per_min INTEGER NOT NULL,
         min_price INTEGER NOT NULL,
         rules_json TEXT
       )
@@ -84,7 +84,7 @@ class DatabaseHelper {
         status TEXT NOT NULL,
         tariff_start_price INTEGER DEFAULT 0,
         tariff_price_per_km INTEGER DEFAULT 0,
-        tariff_waiting_price_per_min INTEGER DEFAULT 0,
+        tariff_waiting_para_per_min INTEGER DEFAULT 0,
         tariff_min_price INTEGER DEFAULT 0,
         min_price_adjustment INTEGER DEFAULT 0,
         client_uuid TEXT
@@ -161,5 +161,23 @@ class DatabaseHelper {
       await db.execute(
           'CREATE INDEX idx_snapshots_ride ON ride_snapshots(ride_id)');
     }
+    if (oldVersion < 4) {
+      // Čekanje se unosi sa decimalama (npr. 13.4 din/min), a novac je int:
+      // cena čekanja po minutu se od sada čuva u para (1/100 dinara).
+      await _waitingToPara(
+          db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
+      await _waitingToPara(
+          db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+  }
+
+  /// Preimenuje kolonu i množi vrednosti sa 100; preskače ako tabela ili
+  /// kolona ne postoje (npr. nepotpuna stara šema).
+  static Future<void> _waitingToPara(
+      Database db, String table, String oldName, String newName) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    if (!columns.any((c) => c['name'] == oldName)) return;
+    await db.execute('ALTER TABLE $table RENAME COLUMN $oldName TO $newName');
+    await db.execute('UPDATE $table SET $newName = $newName * 100');
   }
 }

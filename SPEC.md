@@ -13,5 +13,7 @@ Odluke korisnika (2026-10-19), vidi `docs/AUDIT_2026-10-19.md` (N17, U7).
 - Posledica: razlika do ±1 din u odnosu na zaokruživanje jednom na kraju. Namerno ostavljeno.
 
 ## Tarifa
-- Polja: naziv, start, cena po km, čekanje po minutu, minimalna cena; sve ≥ 0 i ≤ 1.000.000 (tehnička granica protiv prekoračenja, ne tarifa).
+- Polja: naziv, start, cena po km, čekanje po minutu, minimalna cena. Čekanje po minutu se unosi sa najviše 2 decimale (npr. 13,4) i čuva u para kao `int`; ostalo su celi dinari.
+- Čekanje: `cena = sekunde * para_po_minutu / 6000`, zaokruženo na ceo dinar (.5 naviše).
+- Sve cene ≥ 0 i ≤ 1.000.000 din (čekanje ≤ 1.000.000 din/min); to je tehnička granica protiv prekoračenja, ne tarifa.
 - Vožnja čuva sopstvenu kopiju tarife (`rides.tariff_*`), pa izmena ili brisanje tarife ne menja istoriju.

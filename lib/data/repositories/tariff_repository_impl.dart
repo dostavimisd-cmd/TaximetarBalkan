@@ -17,7 +17,7 @@ class TariffRepositoryImpl implements TariffRepository {
               name: r['name'] as String,
               startPrice: r['start_price'] as int,
               pricePerKm: r['price_per_km'] as int,
-              waitingPricePerMin: r['waiting_price_per_min'] as int,
+              waitingParaPerMin: r['waiting_para_per_min'] as int,
               minPrice: r['min_price'] as int,
             ))
         .toList();
@@ -33,7 +33,7 @@ class TariffRepositoryImpl implements TariffRepository {
       'name': tariff.name.trim(),
       'start_price': tariff.startPrice,
       'price_per_km': tariff.pricePerKm,
-      'waiting_price_per_min': tariff.waitingPricePerMin,
+      'waiting_para_per_min': tariff.waitingParaPerMin,
       'min_price': tariff.minPrice,
     };
     if (tariff.id == 0) return db.insert('tariffs', values);

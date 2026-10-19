@@ -26,7 +26,7 @@ void main() {
     name: 'Dnevna',
     startPrice: 100,
     pricePerKm: 50,
-    waitingPricePerMin: 10,
+    waitingParaPerMin: 1000,
     minPrice: 200,
   );
 
