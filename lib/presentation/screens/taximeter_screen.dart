@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/currency_converter.dart';
+import '../../domain/models/tariff.dart';
 import '../providers/taximeter_provider.dart';
+import '../providers/tariffs_provider.dart';
+import '../widgets/settings_dialog.dart';
+import '../widgets/tariff_edit_dialog.dart';
 import '../widgets/tariff_selection_sheet.dart';
 import '../widgets/taximeter_drawer.dart';
 
@@ -13,13 +18,13 @@ class TaximeterScreen extends ConsumerStatefulWidget {
 
 class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
   /// Tarifa se drži samo u provider-u (selectedTariffId); servis je vraća
-  /// u status/recovered, pa ekran posle oporavka prikazuje pravu.
-  TariffOption get _activeTariff {
+  /// u status/recovered, pa ekran posle oporavka prikazuje pravu. Tarife
+  /// unosi korisnik; dok ih nema, vraća null.
+  Tariff? get _activeTariff {
+    final tariffs = ref.read(tariffsProvider).value ?? const <Tariff>[];
+    if (tariffs.isEmpty) return null;
     final id = ref.read(taximeterProvider).selectedTariffId;
-    return TariffSelectionSheet.predefinedTariffs.firstWhere(
-      (t) => t.id == id,
-      orElse: () => TariffSelectionSheet.predefinedTariffs.first,
-    );
+    return tariffs.firstWhere((t) => t.id == id, orElse: () => tariffs.first);
   }
 
   String _formatDuration(int ms) {
@@ -46,7 +51,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => TariffSelectionSheet(
-        currentTariffId: _activeTariff.id,
+        currentTariffId: _activeTariff?.id ?? 0,
         onTariffSelected: (selected) {
           ref.read(taximeterProvider.notifier).setTariff(selected.id);
         },
@@ -60,9 +65,12 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     final notifier = ref.read(taximeterProvider.notifier);
 
     final isSr = state.language == 'sr';
-    final currencyFactor = state.currency == 'EUR' ? 117.2 : 1.0;
-    final displayPrice = state.currency == 'EUR'
-        ? (state.currentPrice / currencyFactor).toStringAsFixed(2)
+    final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
+    final eurRate = ref.watch(eurRateProvider).value;
+    final tariff = _activeTariff;
+    // EUR samo uz kurs koji je korisnik uneo; račun je celobrojan.
+    final displayPrice = (state.currency == 'EUR' && eurRate != null)
+        ? CurrencyConverter.formatForeign(state.currentPrice, eurRate)
         : state.currentPrice.toString();
 
     // Trenutno stajanje (servis javlja mode), ne ukupno čekanje
@@ -75,7 +83,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       drawer: TaximeterDrawer(
         onHistoryTap: () {},
         onTariffsTap: () => _openTariffSheet(context),
-        onSettingsTap: () {},
+        onSettingsTap: () => showSettingsDialog(context, ref),
       ),
       body: SafeArea(
         child: Padding(
@@ -118,7 +126,14 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                   ),
                   const SizedBox(width: 6),
                   TextButton(
-                    onPressed: notifier.toggleCurrency,
+                    onPressed: () async {
+                      if (state.currency == 'RSD' && eurRate == null) {
+                        // Nema ugrađenog kursa: prvo ga korisnik unosi.
+                        final saved = await showSettingsDialog(context, ref);
+                        if (saved != true) return;
+                      }
+                      notifier.toggleCurrency();
+                    },
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.amberAccent,
                       backgroundColor: Colors.white10,
@@ -226,7 +241,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                     Container(width: 1, height: 40, color: Colors.white12),
                     _InfoBlock(
                       label: isSr ? 'START' : 'BASE',
-                      value: '${state.rideStartPrice ?? _activeTariff.startPrice}',
+                      value: '${state.rideStartPrice ?? tariff?.startPrice ?? '-'}',
                     ),
                   ],
                 ),
@@ -296,7 +311,11 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           const Icon(Icons.tune, color: Colors.amberAccent, size: 22),
                           const SizedBox(height: 4),
                           Text(
-                            'T-${_activeTariff.id}',
+                            tariff == null
+                                ? '-'
+                                : (tariff.name.length > 6
+                                    ? tariff.name.substring(0, 6)
+                                    : tariff.name),
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -326,21 +345,29 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                   child: _mainButtonLabel(isSr ? 'ZAVRŠI (STOP)' : 'END RIDE'),
                                 )
                               : ElevatedButton(
-                                  onPressed: state.isReady
-                                      ? () {
-                                          final t = _activeTariff;
-                                          notifier.startRide(
-                                            startPrice: t.startPrice,
-                                            pricePerKm: t.pricePerKm,
-                                            waitingPricePerMin: t.waitingPricePerMin,
-                                            minPrice: t.minPrice,
-                                          );
-                                        }
-                                      : notifier.retryConnect,
+                                  onPressed: !state.isReady
+                                      ? notifier.retryConnect
+                                      : tariffs.isEmpty
+                                          ? () async {
+                                              final id = await showTariffEditor(context, ref);
+                                              if (id != null && id > 0) notifier.setTariff(id);
+                                            }
+                                          : () {
+                                              final t = tariff!;
+                                              notifier.startRide(
+                                                tariffId: t.id,
+                                                startPrice: t.startPrice,
+                                                pricePerKm: t.pricePerKm,
+                                                waitingPricePerMin: t.waitingPricePerMin,
+                                                minPrice: t.minPrice,
+                                              );
+                                            },
                                   style: _mainButtonStyle(const Color(0xFF2E7D32)),
-                                  child: _mainButtonLabel(state.isReady
-                                      ? (isSr ? 'POKRENI (START)' : 'START RIDE')
-                                      : (isSr ? 'POVEŽI SE PONOVO' : 'RECONNECT')),
+                                  child: _mainButtonLabel(!state.isReady
+                                      ? (isSr ? 'POVEŽI SE PONOVO' : 'RECONNECT')
+                                      : tariffs.isEmpty
+                                          ? (isSr ? 'DODAJ TARIFU' : 'ADD TARIFF')
+                                          : (isSr ? 'POKRENI (START)' : 'START RIDE')),
                                 ),
                     ),
                   ),

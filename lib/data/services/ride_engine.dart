@@ -175,6 +175,12 @@ class RideEngine {
       );
       final calibration = (data['calibration'] as num?)?.toDouble() ?? 1.0;
 
+      final invalid = tariff.validate();
+      if (invalid != null) {
+        _send({'event': 'error', 'cmd': 'start', 'message': invalid});
+        return;
+      }
+
       final db = await _database();
       await _cleanupOldActiveRides(db);
 

@@ -289,6 +289,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
   }
 
   Future<void> startRide({
+    int? tariffId,
     required int startPrice,
     required int pricePerKm,
     required int waitingPricePerMin,
@@ -314,7 +315,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
 
     final controller = ref.read(rideServiceControllerProvider);
     final sent = await controller.startRide(
-      tariffId: state.selectedTariffId,
+      tariffId: tariffId ?? state.selectedTariffId,
       startPrice: startPrice,
       pricePerKm: pricePerKm,
       waitingPricePerMin: waitingPricePerMin,

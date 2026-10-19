@@ -142,6 +142,13 @@ void main() {
     expect(h.of('stopped').single['ride_id'], isNull);
   });
 
+  test('N19: start sa negativnom cenom → error{cmd:start}, nema reda', () async {
+    await h.engine.receive({...startCmd, 'price_per_km': -100});
+    expect(h.of('error').single['cmd'], 'start');
+    expect(h.engine.hasActiveRide, false);
+    expect(await h.rides(), isEmpty);
+  });
+
   test('start sa nepotpunom tarifom → error{cmd:start}, nema reda', () async {
     await h.engine.receive({'command': 'start', 'tariff_id': 1});
     expect(h.of('error').single['cmd'], 'start');
