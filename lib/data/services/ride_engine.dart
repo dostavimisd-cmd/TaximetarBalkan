@@ -189,6 +189,8 @@ class RideEngine {
           t.waiter.waitingSpeedThresholdKmh.round(),
       'gap_count': _gapCount,
       'gap_ms': _gapMs,
+      if (t.lastValidPoint != null) 'lat': t.lastValidPoint!.latitude,
+      if (t.lastValidPoint != null) 'lon': t.lastValidPoint!.longitude,
     };
   }
 

@@ -63,6 +63,10 @@ class TaximeterState {
   /// Broj prekida GPS signala u vožnji u toku i njihovo ukupno trajanje.
   final int gapCount;
   final int gapMs;
+
+  /// Poslednja važeća GPS tačka vožnje (za mapu); null dok je nema.
+  final double? lat;
+  final double? lon;
   final String? errorMessage;
   final String? warningMessage;
 
@@ -79,6 +83,8 @@ class TaximeterState {
     this.waitingSpeedKmh,
     this.gapCount = 0,
     this.gapMs = 0,
+    this.lat,
+    this.lon,
     this.errorMessage,
     this.warningMessage,
   });
@@ -106,6 +112,8 @@ class TaximeterState {
     int? waitingSpeedKmh,
     int? gapCount,
     int? gapMs,
+    double? lat,
+    double? lon,
     bool clearRideStartPrice = false,
     String? errorMessage,
     String? warningMessage,
@@ -128,6 +136,8 @@ class TaximeterState {
       waitingSpeedKmh: waitingSpeedKmh ?? this.waitingSpeedKmh,
       gapCount: gapCount ?? this.gapCount,
       gapMs: gapMs ?? this.gapMs,
+      lat: lat ?? this.lat,
+      lon: lon ?? this.lon,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       warningMessage:
           clearWarning ? null : (warningMessage ?? this.warningMessage),
@@ -212,6 +222,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
           gapCount: event['gap_count'] as int?,
           gapMs: event['gap_ms'] as int?,
+          lat: (event['lat'] as num?)?.toDouble(),
+          lon: (event['lon'] as num?)?.toDouble(),
           clearError: true,
         );
         break;
@@ -233,6 +245,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
           gapCount: event['gap_count'] as int?,
           gapMs: event['gap_ms'] as int?,
+          lat: (event['lat'] as num?)?.toDouble(),
+          lon: (event['lon'] as num?)?.toDouble(),
           warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
           clearResult: true,
           clearError: true,
@@ -254,6 +268,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
           gapCount: event['gap_count'] as int?,
           gapMs: event['gap_ms'] as int?,
+          lat: (event['lat'] as num?)?.toDouble(),
+          lon: (event['lon'] as num?)?.toDouble(),
         );
         break;
       case 'stopped':

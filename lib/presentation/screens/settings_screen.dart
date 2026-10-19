@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../domain/calibration.dart';
 import '../../domain/currency_converter.dart';
@@ -25,6 +29,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _language = 'sr';
   String _currency = 'RSD';
   bool _autoTariff = false;
+  bool _showMap = true;
+  String? _logoPath;
   bool _loaded = false;
   String? _error;
 
@@ -44,6 +50,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _language = s.language;
     _currency = s.currency;
     _autoTariff = s.autoTariff;
+    _showMap = s.showMap;
+    _logoPath = s.backgroundLogoPath;
     _loaded = true;
   }
 
@@ -80,6 +88,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       currency: _currency,
       selectedTariffId: current.selectedTariffId,
       autoTariff: _autoTariff,
+      showMap: _showMap,
+      backgroundLogoPath: _logoPath,
     );
     final invalid = next.validate();
     if (invalid != null) {
@@ -88,6 +98,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
     await ref.read(appSettingsProvider.notifier).save(next);
     if (mounted) Navigator.pop(context, true);
+  }
+
+  /// Slika se kopira u fascikle aplikacije, da ostane i ako se original obriše.
+  Future<void> _pickLogo() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600);
+    if (picked == null) return;
+    final dir = await getApplicationDocumentsDirectory();
+    final ext = p.extension(picked.path).isEmpty ? '.png' : p.extension(picked.path);
+    // novo ime svaki put, da se prikaz ne zadrži na staroj slici iz keša
+    final target = p.join(dir.path, 'background_logo_${DateTime.now().millisecondsSinceEpoch}$ext');
+    await File(picked.path).copy(target);
+    final old = _logoPath;
+    setState(() => _logoPath = target);
+    if (old != null && old != target) {
+      try {
+        await File(old).delete();
+      } catch (_) {}
+    }
   }
 
   Widget _section(String title) => Padding(
@@ -201,6 +229,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   allow: r'[0-9.,]',
                   decimal: true,
                   helper: 'Samo za prikaz u EUR. Obračun je uvek u dinarima.'),
+              _section('IZGLED'),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _showMap,
+                onChanged: (v) => setState(() => _showMap = v),
+                title: const Text('Prikaži mapu', style: TextStyle(color: Colors.white)),
+                subtitle: const Text(
+                    'OpenStreetMap (besplatno). Podloge traže internet; obračun radi i bez mape.',
+                    style: TextStyle(color: Colors.white38, fontSize: 11)),
+              ),
+              _choice('Pozadina', const ['crna', 'logo'], _logoPath == null ? 'crna' : 'logo',
+                  (v) {
+                if (v == 'crna') {
+                  _logoPath = null;
+                } else if (_logoPath == null) {
+                  _pickLogo();
+                }
+              }),
+              if (_logoPath != null)
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(File(_logoPath!),
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.broken_image, color: Colors.white38)),
+                    ),
+                    const SizedBox(width: 12),
+                    TextButton(
+                      onPressed: _pickLogo,
+                      child: const Text('Promeni sliku', style: TextStyle(color: Colors.amberAccent)),
+                    ),
+                  ],
+                ),
               _section('RAD U POZADINI'),
               const Text(
                 'Da taksimetar ne bi bio ugašen na zaključanom ekranu, isključi optimizaciju baterije za aplikaciju i dozvoli rad u pozadini.',

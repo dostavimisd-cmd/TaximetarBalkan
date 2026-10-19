@@ -12,6 +12,8 @@ class AppSettings {
   static const String keyCurrency = 'currency';
   static const String keySelectedTariff = 'selected_tariff_id';
   static const String keyAutoTariff = 'auto_tariff';
+  static const String keyShowMap = 'show_map';
+  static const String keyBackgroundLogo = 'background_logo';
 
   static const int defaultWaitingSpeedKmh = 8;
   static const int minWaitingSpeedKmh = 1;
@@ -40,6 +42,12 @@ class AppSettings {
   /// Automatski izbor tarife pri startu (praznici, pa raspored).
   final bool autoTariff;
 
+  /// Mapa (OpenStreetMap) na glavnom ekranu; traži internet za podloge.
+  final bool showMap;
+
+  /// Putanja do slike logoa za pozadinu; null = crna pozadina.
+  final String? backgroundLogoPath;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -49,6 +57,8 @@ class AppSettings {
     this.currency = 'RSD',
     this.selectedTariffId,
     this.autoTariff = false,
+    this.showMap = true,
+    this.backgroundLogoPath,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -75,6 +85,9 @@ class AppSettings {
       currency: currencies.contains(m[keyCurrency]) ? m[keyCurrency]! : 'RSD',
       selectedTariffId: asInt(keySelectedTariff),
       autoTariff: m[keyAutoTariff] == '1',
+      showMap: m[keyShowMap] != '0',
+      backgroundLogoPath:
+          (m[keyBackgroundLogo] ?? '').isEmpty ? null : m[keyBackgroundLogo],
     );
   }
 
@@ -87,6 +100,9 @@ class AppSettings {
         keyCurrency: currency,
         if (selectedTariffId != null) keySelectedTariff: '$selectedTariffId',
         keyAutoTariff: autoTariff ? '1' : '0',
+        keyShowMap: showMap ? '1' : '0',
+        // prazno = crna pozadina (upis prazne vrednosti briše raniji logo)
+        keyBackgroundLogo: backgroundLogoPath ?? '',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -115,6 +131,9 @@ class AppSettings {
     String? currency,
     int? selectedTariffId,
     bool? autoTariff,
+    bool? showMap,
+    String? backgroundLogoPath,
+    bool clearBackgroundLogo = false,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -125,6 +144,10 @@ class AppSettings {
       currency: currency ?? this.currency,
       selectedTariffId: selectedTariffId ?? this.selectedTariffId,
       autoTariff: autoTariff ?? this.autoTariff,
+      showMap: showMap ?? this.showMap,
+      backgroundLogoPath: clearBackgroundLogo
+          ? null
+          : (backgroundLogoPath ?? this.backgroundLogoPath),
     );
   }
 }
