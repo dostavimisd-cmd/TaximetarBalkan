@@ -175,18 +175,38 @@ void main() {
     expect((await h.rides()).single['status'], RideEngine.statusCompleted);
   });
 
-  test('7: pad servisa, snapshot > 5 min → interrupted, nema oporavka', () async {
+  test('7/K1: pad servisa, snapshot > 5 min → upisani iznosi, 0 snapshot-a',
+      () async {
     await h.engine.receive(startCmd);
-    h.drive(30);
+    h.drive(60);
     await h.engine.saveSnapshot();
+    final distance = h.engine.tracker!.totalDistanceMeters.round();
+    final expectedFare = h.engine.tracker!.currentFare!;
 
-    h.now = t0 + 30 * 1000 + 6 * min;
+    h.now = t0 + 6 * min;
     final engine2 = h.newEngine();
     expect(await engine2.onServiceStart(), false);
+
     final ride = (await h.rides()).single;
     expect(ride['status'], RideEngine.statusInterrupted);
-    expect(ride['end_time'], t0 + 30 * 1000);
-    // TODO(korak 6, K1): iznosi iz snapshot-a u rides, snapshot obrisan.
+    expect(ride['end_time'], t0 + 60 * 1000);
+    expect(ride['distance_m'], distance);
+    expect(ride['total_price'], expectedFare.totalPrice);
+    expect(ride['km_price'], expectedFare.kmPrice);
+    expect(ride['total_price'] as int, greaterThan(200));
+    expect(await h.snapshotCount(), 0);
+  });
+
+  test('N5: starost snapshot-a se meri saved_at, ne GPS vremenom', () async {
+    await h.engine.receive(startCmd);
+    h.drive(30);
+    h.now = t0 + 10 * min; // GPS vreme je staro, ali upis je svež
+    await h.engine.saveSnapshot();
+
+    h.now = t0 + 11 * min;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+    expect(h.of('recovered'), isNotEmpty);
   });
 
   test('8: novi start zatvara zaostale aktivne vožnje kao interrupted', () async {
@@ -214,12 +234,44 @@ void main() {
     ]);
   });
 
-  test('9: vožnja bez snapshot-a se ne oporavlja (N6, korak 6)', () async {
+  test('9/N6: bez snapshot-a sveža vožnja nastavlja od nule', () async {
     await h.engine.receive(startCmd); // nema GPS fix-a → nema snapshot-a
+    h.now = t0 + 2 * min;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+    expect(engine2.hasActiveRide, true);
+    expect(h.of('recovered').single['distance'], 0.0);
+    expect((await h.rides()).single['status'], RideEngine.statusActive);
+  });
+
+  test('9/N6: bez snapshot-a stara vožnja postaje interrupted, end=start',
+      () async {
+    await h.engine.receive(startCmd);
+    h.now = t0 + 10 * min;
     final engine2 = h.newEngine();
     expect(await engine2.onServiceStart(), false);
-    expect(engine2.hasActiveRide, false);
-    // TODO(korak 6, N6): sveža vožnja treba da nastavi od nule.
+    final ride = (await h.rides()).single;
+    expect(ride['status'], RideEngine.statusInterrupted);
+    expect(ride['end_time'], ride['start_time']);
+  });
+
+  test('8/K1: zaostala aktivna vožnja sa snapshot-om dobija iznose pri startu',
+      () async {
+    await h.engine.receive(startCmd);
+    h.drive(60);
+    await h.engine.saveSnapshot();
+    final expected = h.engine.tracker!.currentFare!.totalPrice;
+
+    // pad, pa korisnik odmah pokrene novu vožnju (bez oporavka)
+    h.now = t0 + 61 * 1000;
+    final engine2 = h.newEngine();
+    await engine2.receive(startCmd);
+
+    final rides = await h.rides();
+    expect(rides[0]['status'], RideEngine.statusInterrupted);
+    expect(rides[0]['total_price'], expected);
+    expect(rides[1]['status'], RideEngine.statusActive);
+    expect(await h.snapshotCount(), 0);
   });
 
   test('status odražava aktivnu vožnju', () async {

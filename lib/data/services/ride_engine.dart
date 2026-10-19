@@ -275,6 +275,7 @@ class RideEngine {
           'last_lat': t.lastValidPoint!.latitude,
           'last_lon': t.lastValidPoint!.longitude,
           'timestamp': t.lastValidPoint!.timestamp.millisecondsSinceEpoch,
+          'saved_at': _nowMs(),
         });
       });
       _snapshotFailures = 0;
@@ -292,25 +293,61 @@ class RideEngine {
   Future<void> _cleanupOldActiveRides(Database db) async {
     final oldRides =
         await db.query('rides', where: 'status = ?', whereArgs: [statusActive]);
-
     for (final ride in oldRides) {
-      final rideId = ride['id'] as int;
-      final snaps = await db.query('ride_snapshots',
-          where: 'ride_id = ?',
-          whereArgs: [rideId],
-          orderBy: 'id DESC',
-          limit: 1);
-
-      int endTime = ride['start_time'] as int;
-      if (snaps.isNotEmpty) {
-        endTime = snaps.first['timestamp'] as int;
-      }
-
-      await db.update('rides', {
-        'status': statusInterrupted,
-        'end_time': endTime,
-      }, where: 'id = ?', whereArgs: [rideId]);
+      await _markInterrupted(db, ride, await _latestSnapshot(db, ride['id'] as int));
     }
+  }
+
+  Future<Map<String, Object?>?> _latestSnapshot(Database db, int rideId) async {
+    final snaps = await db.query('ride_snapshots',
+        where: 'ride_id = ?', whereArgs: [rideId], orderBy: 'id DESC', limit: 1);
+    return snaps.isEmpty ? null : snaps.first;
+  }
+
+  Tariff _tariffFromRide(Map<String, Object?> ride) => Tariff(
+        id: ride['tariff_id'] as int,
+        startPrice: ride['tariff_start_price'] as int,
+        pricePerKm: ride['tariff_price_per_km'] as int,
+        waitingPricePerMin: ride['tariff_waiting_price_per_min'] as int,
+        minPrice: ride['tariff_min_price'] as int,
+      );
+
+  /// K1: prekinutu vožnju zatvara sa iznosima iz poslednjeg snapshot-a
+  /// (ili bez ičega, ako ga nema) i briše snapshot u istoj transakciji.
+  Future<void> _markInterrupted(
+      Database db, Map<String, Object?> ride, Map<String, Object?>? snap) async {
+    final rideId = ride['id'] as int;
+    final values = <String, Object?>{'status': statusInterrupted};
+
+    if (snap == null) {
+      values['end_time'] = ride['start_time'];
+    } else {
+      values['end_time'] = snap['timestamp'];
+      final distanceM = (snap['current_distance'] as num).round();
+      final waitingSec = (snap['current_waiting_ms'] as int) ~/ 1000;
+      values['distance_m'] = distanceM;
+      values['waiting_time_sec'] = waitingSec;
+      try {
+        final fare = FareCalculator.calculate(
+          tariff: _tariffFromRide(ride),
+          distanceMeters: distanceM,
+          waitingSeconds: waitingSec,
+          calibrationMultiplier: (ride['applied_calibration'] as num).toDouble(),
+        );
+        values['km_price'] = fare.kmPrice;
+        values['waiting_price'] = fare.waitingPrice;
+        values['total_price'] = fare.totalPrice;
+        values['min_price_adjustment'] = fare.minPriceAdjustment;
+      } catch (_) {
+        // Nevalidni ulazi (npr. kalibracija ≤ 0): ostavljamo bar distancu i vreme.
+      }
+    }
+
+    await db.transaction((txn) async {
+      await txn.update('rides', values, where: 'id = ?', whereArgs: [rideId]);
+      await txn.delete('ride_snapshots',
+          where: 'ride_id = ?', whereArgs: [rideId]);
+    });
   }
 
   /// Vraća true ako je vožnja oporavljena i treba nastaviti praćenje.
@@ -325,30 +362,40 @@ class RideEngine {
 
     final ride = rides.first;
     final rId = ride['id'] as int;
+    final snap = await _latestSnapshot(db, rId);
 
-    final snaps = await db.query('ride_snapshots',
-        where: 'ride_id = ?',
-        whereArgs: [rId],
-        orderBy: 'id DESC',
-        limit: 1);
-    if (snaps.isEmpty) return false;
+    if (snap == null) {
+      // N6: vožnja bez prvog GPS fix-a nema snapshot. Sveža nastavlja od nule,
+      // stara se zatvara kao prekinuta.
+      if (_nowMs() - (ride['start_time'] as int) > maxSnapshotAgeMs) {
+        await _markInterrupted(db, ride, null);
+        return false;
+      }
+      currentRideId = rId;
+      tracker = RideTracker(
+        tariff: _tariffFromRide(ride),
+        calibrationMultiplier: (ride['applied_calibration'] as num).toDouble(),
+      );
+      _send({
+        'event': 'recovered',
+        'ride_id': rId,
+        'distance': 0.0,
+        'waitingMs': 0,
+        'price': tracker!.tariff.startPrice,
+      });
+      return true;
+    }
 
-    final snap = snaps.first;
     final snapTime = snap['timestamp'] as int;
+    // N5: starost se meri vremenom upisa, ne GPS vremenom poslednje tačke.
+    final savedAt = (snap['saved_at'] as int?) ?? snapTime;
 
-    if (_nowMs() - snapTime > maxSnapshotAgeMs) {
-      await db.update('rides', {'status': statusInterrupted, 'end_time': snapTime},
-          where: 'id = ?', whereArgs: [rId]);
+    if (_nowMs() - savedAt > maxSnapshotAgeMs) {
+      await _markInterrupted(db, ride, snap);
       return false;
     }
 
-    final tariff = Tariff(
-      id: ride['tariff_id'] as int,
-      startPrice: ride['tariff_start_price'] as int,
-      pricePerKm: ride['tariff_price_per_km'] as int,
-      waitingPricePerMin: ride['tariff_waiting_price_per_min'] as int,
-      minPrice: ride['tariff_min_price'] as int,
-    );
+    final tariff = _tariffFromRide(ride);
 
     final restored = RideTracker(
       tariff: tariff,

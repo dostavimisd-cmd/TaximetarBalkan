@@ -23,10 +23,18 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
+      onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
+  }
+
+  static Future<void> _configureDB(Database db) async {
+    // Na Androidu PRAGMA koja vraća red mora kroz rawQuery.
+    await db.rawQuery('PRAGMA journal_mode=WAL');
+    await db.rawQuery('PRAGMA busy_timeout=5000');
+    await db.execute('PRAGMA foreign_keys=ON');
   }
 
   static Future<void> _createDB(Database db, int version) async {
@@ -78,9 +86,12 @@ class DatabaseHelper {
         tariff_price_per_km INTEGER DEFAULT 0,
         tariff_waiting_price_per_min INTEGER DEFAULT 0,
         tariff_min_price INTEGER DEFAULT 0,
-        min_price_adjustment INTEGER DEFAULT 0
+        min_price_adjustment INTEGER DEFAULT 0,
+        client_uuid TEXT
       )
     ''');
+    await db.execute(
+        'CREATE UNIQUE INDEX idx_rides_client_uuid ON rides(client_uuid)');
 
     await db.execute('''
       CREATE TABLE ride_snapshots (
@@ -91,9 +102,12 @@ class DatabaseHelper {
         current_price INTEGER NOT NULL,
         last_lat REAL NOT NULL,
         last_lon REAL NOT NULL,
-        timestamp INTEGER NOT NULL
+        timestamp INTEGER NOT NULL,
+        saved_at INTEGER
       )
     ''');
+    await db.execute(
+        'CREATE INDEX idx_snapshots_ride ON ride_snapshots(ride_id)');
 
     await db.execute('''
       CREATE TABLE fixed_routes (
@@ -113,6 +127,10 @@ class DatabaseHelper {
 
   static Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
+      // N7: stare aktivne vožnje nemaju tarifu u rides (tariff_* = 0), pa se
+      // ne mogu oporaviti; označavamo ih kao prekinute pre brisanja snapshot-a.
+      await db.execute(
+          "UPDATE rides SET status = 'interrupted', end_time = COALESCE(end_time, start_time) WHERE status = 'active'");
       // Dodajemo nove kolone u postojeću tabelu rides
       await db.execute('ALTER TABLE rides ADD COLUMN tariff_start_price INTEGER DEFAULT 0');
       await db.execute('ALTER TABLE rides ADD COLUMN tariff_price_per_km INTEGER DEFAULT 0');
@@ -134,6 +152,14 @@ class DatabaseHelper {
           timestamp INTEGER NOT NULL
         )
       ''');
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE ride_snapshots ADD COLUMN saved_at INTEGER');
+      await db.execute('ALTER TABLE rides ADD COLUMN client_uuid TEXT');
+      await db.execute(
+          'CREATE UNIQUE INDEX idx_rides_client_uuid ON rides(client_uuid)');
+      await db.execute(
+          'CREATE INDEX idx_snapshots_ride ON ride_snapshots(ride_id)');
     }
   }
 }
