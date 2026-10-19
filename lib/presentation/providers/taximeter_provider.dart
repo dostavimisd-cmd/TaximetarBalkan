@@ -50,6 +50,12 @@ class TaximeterState {
   final double currentDistanceMeters;
   final int currentWaitingMs;
   final int selectedTariffId;
+
+  /// Start cena tarife vožnje u toku (iz servisa); null kad nema vožnje.
+  final int? rideStartPrice;
+
+  /// Trenutno stajanje (čekanje se naplaćuje), a ne ukupno čekanje.
+  final bool isWaitingNow;
   final String currency; // 'RSD', 'EUR'
   final String language; // 'sr', 'en'
   final String? errorMessage;
@@ -63,6 +69,8 @@ class TaximeterState {
     this.currentDistanceMeters = 0.0,
     this.currentWaitingMs = 0,
     this.selectedTariffId = 1,
+    this.rideStartPrice,
+    this.isWaitingNow = false,
     this.currency = 'RSD',
     this.language = 'sr',
     this.errorMessage,
@@ -87,6 +95,9 @@ class TaximeterState {
     double? currentDistanceMeters,
     int? currentWaitingMs,
     int? selectedTariffId,
+    int? rideStartPrice,
+    bool? isWaitingNow,
+    bool clearRideStartPrice = false,
     String? currency,
     String? language,
     String? errorMessage,
@@ -103,6 +114,10 @@ class TaximeterState {
       currentDistanceMeters: currentDistanceMeters ?? this.currentDistanceMeters,
       currentWaitingMs: currentWaitingMs ?? this.currentWaitingMs,
       selectedTariffId: selectedTariffId ?? this.selectedTariffId,
+      rideStartPrice: clearRideStartPrice
+          ? null
+          : (rideStartPrice ?? this.rideStartPrice),
+      isWaitingNow: isWaitingNow ?? this.isWaitingNow,
       currency: currency ?? this.currency,
       language: language ?? this.language,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -183,6 +198,9 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           currentDistanceMeters: (event['distance'] as num?)?.toDouble() ?? 0.0,
           currentWaitingMs: event['waitingMs'] as int? ?? 0,
           currentPrice: event['price'] as int? ?? 0,
+          selectedTariffId: event['tariff_id'] as int?,
+          rideStartPrice: event['start_price'] as int?,
+          isWaitingNow: event['mode'] == 'waiting',
           clearError: true,
         );
         break;
@@ -198,6 +216,9 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
               (event['distance'] as num?)?.toDouble() ?? state.currentDistanceMeters,
           currentWaitingMs: event['waitingMs'] as int? ?? state.currentWaitingMs,
           currentPrice: event['price'] as int? ?? state.currentPrice,
+          selectedTariffId: event['tariff_id'] as int?,
+          rideStartPrice: event['start_price'] as int?,
+          isWaitingNow: event['mode'] == 'waiting',
           warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
           clearResult: true,
           clearError: true,
@@ -215,6 +236,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           currentDistanceMeters: (event['distance'] as num?)?.toDouble() ?? state.currentDistanceMeters,
           currentWaitingMs: event['waitingMs'] as int? ?? state.currentWaitingMs,
           currentPrice: event['price'] as int? ?? state.currentPrice,
+          isWaitingNow: event['mode'] == 'waiting',
         );
         break;
       case 'stopped':
@@ -224,6 +246,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
             currentDistanceMeters: 0.0,
             currentWaitingMs: 0,
             currentPrice: 0,
+            isWaitingNow: false,
+            clearRideStartPrice: true,
             clearError: true,
           );
         } else {
@@ -234,6 +258,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
             currentDistanceMeters: result.distanceMeters.toDouble(),
             currentWaitingMs: result.waitingSeconds * 1000,
             currentPrice: result.totalPrice,
+            isWaitingNow: false,
+            clearRideStartPrice: true,
             clearError: true,
           );
         }
@@ -278,6 +304,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     final previous = state;
     state = state.copyWith(
       phase: RidePhase.starting,
+      rideStartPrice: startPrice,
       currentDistanceMeters: 0.0,
       currentWaitingMs: 0,
       currentPrice: 0,
@@ -322,6 +349,8 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       currentDistanceMeters: 0.0,
       currentWaitingMs: 0,
       currentPrice: 0,
+      isWaitingNow: false,
+      clearRideStartPrice: true,
       clearResult: true,
       clearError: true,
       clearWarning: true,

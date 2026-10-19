@@ -9,6 +9,9 @@ class RideTracker {
   double totalDistanceMeters = 0.0;
   int totalWaitingMs = 0;
   FareResult? currentFare;
+
+  /// Poslednji obrađeni korak je bio čekanje (a ne vožnja).
+  bool isWaitingNow = false;
   LocationPoint? _lastValidPoint;
   
   final List<LocationPoint> _recentPoints = [];
@@ -62,6 +65,7 @@ class RideTracker {
         final result = waiter.process(_lastValidPoint!, newPoint, windowStart);
         totalDistanceMeters += result.addedDistanceMeters;
         totalWaitingMs += result.addedWaitingMs;
+        isWaitingNow = result.addedWaitingMs > 0;
       }
     }
 
@@ -87,6 +91,7 @@ class RideTracker {
   void dropLastPoint() {
     _lastValidPoint = null;
     _recentPoints.clear();
+    isWaitingNow = false;
   }
 
   void restoreFromSnapshot({

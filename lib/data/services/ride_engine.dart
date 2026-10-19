@@ -109,15 +109,27 @@ class RideEngine {
     }
     try {
       tracker!.processLocation(point);
-      _send({
-        'event': 'update',
-        'distance': tracker!.totalDistanceMeters,
-        'waitingMs': tracker!.totalWaitingMs,
-        'price': tracker!.currentFare?.totalPrice ?? tracker!.tariff.startPrice,
-      });
+      _send({'event': 'update', ..._rideValues()});
     } catch (e) {
       _send({'event': 'error', 'message': 'Greška pri obradi GPS tačke: $e'});
     }
+  }
+
+  /// Tekuće vrednosti vožnje za događaje; N11: nose i tarifu vožnje, da UI
+  /// posle oporavka ne mora da je pogađa.
+  Map<String, dynamic> _rideValues() {
+    final t = tracker;
+    if (t == null) {
+      return {'distance': 0.0, 'waitingMs': 0, 'price': 0, 'mode': 'driving'};
+    }
+    return {
+      'distance': t.totalDistanceMeters,
+      'waitingMs': t.totalWaitingMs,
+      'price': t.currentFare?.totalPrice ?? t.tariff.startPrice,
+      'mode': t.isWaitingNow ? 'waiting' : 'driving',
+      'tariff_id': t.tariff.id,
+      'start_price': t.tariff.startPrice,
+    };
   }
 
   void _sendStatus() {
@@ -125,9 +137,7 @@ class RideEngine {
       'event': 'status',
       'active': hasActiveRide,
       'ride_id': currentRideId,
-      'distance': tracker?.totalDistanceMeters ?? 0.0,
-      'waitingMs': tracker?.totalWaitingMs ?? 0,
-      'price': tracker?.currentFare?.totalPrice ?? tracker?.tariff.startPrice ?? 0,
+      ..._rideValues(),
     });
   }
 
@@ -391,13 +401,7 @@ class RideEngine {
         tariff: _tariffFromRide(ride),
         calibrationMultiplier: (ride['applied_calibration'] as num).toDouble(),
       );
-      _send({
-        'event': 'recovered',
-        'ride_id': rId,
-        'distance': 0.0,
-        'waitingMs': 0,
-        'price': tracker!.tariff.startPrice,
-      });
+      _send({'event': 'recovered', 'ride_id': rId, ..._rideValues()});
       return true;
     }
 
@@ -431,13 +435,7 @@ class RideEngine {
     currentRideId = rId;
     tracker = restored;
 
-    _send({
-      'event': 'recovered',
-      'ride_id': currentRideId,
-      'distance': tracker!.totalDistanceMeters,
-      'waitingMs': tracker!.totalWaitingMs,
-      'price': tracker!.currentFare?.totalPrice ?? tariff.startPrice,
-    });
+    _send({'event': 'recovered', 'ride_id': currentRideId, ..._rideValues()});
     return true;
   }
 }

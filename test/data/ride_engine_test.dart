@@ -321,6 +321,27 @@ void main() {
     expect((await h.rides()).single['status'], RideEngine.statusCompleted);
   });
 
+  test('N10/N11: update i status nose mode i tarifu', () async {
+    await h.engine.receive(startCmd);
+    h.drive(20); // ~36 km/h: vožnja
+    expect(h.of('update').last['mode'], 'driving');
+    expect(h.of('update').last['tariff_id'], 1);
+
+    // stajanje: iste koordinate 30 s, brzina 0
+    final last = h.engine.tracker!.lastValidPoint!;
+    for (var i = 1; i <= 30; i++) {
+      h.now = last.timestamp.millisecondsSinceEpoch + i * 1000;
+      h.engine.onPosition(LocationPoint(
+        latitude: last.latitude, longitude: last.longitude, accuracy: 5, speed: 0,
+        timestamp: DateTime.fromMillisecondsSinceEpoch(h.now, isUtc: true),
+      ));
+    }
+    expect(h.of('update').last['mode'], 'waiting');
+    await h.engine.receive({'command': 'status'});
+    expect(h.of('status').last['mode'], 'waiting');
+    expect(h.of('status').last['start_price'], 200);
+  });
+
   test('status odražava aktivnu vožnju', () async {
     await h.engine.receive({'command': 'status'});
     expect(h.of('status').last['active'], false);

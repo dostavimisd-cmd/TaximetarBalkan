@@ -224,6 +224,32 @@ void main() {
     expect(fake.connectCalls, 2);
   });
 
+  test('N10: mode update pali i gasi trenutno čekanje', () async {
+    fake.fakeEvents.add({'event': 'started'});
+    fake.fakeEvents.add({'event': 'update', 'waitingMs': 5000, 'mode': 'waiting'});
+    await pump();
+    expect(read().isWaitingNow, true);
+    fake.fakeEvents.add({'event': 'update', 'waitingMs': 5000, 'mode': 'driving'});
+    await pump();
+    expect(read().isWaitingNow, false);
+    expect(read().currentWaitingMs, 5000);
+  });
+
+  test('N11: recovered i status nose tarifu vožnje', () async {
+    fake.fakeEvents.add({
+      'event': 'recovered', 'distance': 10.0, 'waitingMs': 0, 'price': 300,
+      'tariff_id': 3, 'start_price': 350, 'mode': 'driving',
+    });
+    await pump();
+    expect(read().selectedTariffId, 3);
+    expect(read().rideStartPrice, 350);
+
+    fake.fakeEvents.add({'event': 'stopped', 'ride_id': 1, 'total_price': 400});
+    await pump();
+    expect(read().rideStartPrice, isNull);
+    expect(read().selectedTariffId, 3); // izbor tarife za sledeću vožnju ostaje
+  });
+
   test('copyWith: clearWarning briše upozorenje', () {
     const s = TaximeterState(warningMessage: 'w', errorMessage: 'e');
     expect(s.copyWith(clearWarning: true).warningMessage, isNull);
