@@ -3,7 +3,8 @@ import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../../domain/repositories/ride_history_repository.dart';
 
-/// Samo čita. Jedini pisac u `rides` je servis (RideEngine).
+/// Čita istoriju i briše završene vožnje na zahtev korisnika. Vožnje u toku
+/// menja samo servis (RideEngine); brisanje njih ne dira.
 class RideHistoryRepositoryImpl implements RideHistoryRepository {
   RideHistoryRepositoryImpl(this._database);
 
@@ -26,6 +27,19 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
     final db = await _database();
     final rows = await db.query('rides', where: 'id = ?', whereArgs: [id]);
     return rows.isEmpty ? null : _fromRow(rows.first);
+  }
+
+  @override
+  Future<bool> delete(int id) async {
+    final db = await _database();
+    return db.transaction((txn) async {
+      final n = await txn.delete('rides',
+          where: "id = ? AND status != 'active'", whereArgs: [id]);
+      if (n == 0) return false;
+      await txn.delete('ride_gaps', where: 'ride_id = ?', whereArgs: [id]);
+      await txn.delete('ride_snapshots', where: 'ride_id = ?', whereArgs: [id]);
+      return true;
+    });
   }
 
   @override

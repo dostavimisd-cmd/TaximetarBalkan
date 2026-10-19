@@ -98,6 +98,21 @@ void main() {
     expect(r.map((x) => x.totalPrice), [100, 200]);
   });
 
+  test('delete: briše završenu vožnju i njene prekide, ne dira vožnju u toku', () async {
+    await ride(1000, 'completed', end: 2000);
+    await ride(3000, 'active');
+    await db.insert('ride_gaps', {
+      'ride_id': 1, 'started_at': 1500, 'duration_ms': 20000, 'kind': 'waiting',
+      'added_distance_m': 0, 'added_waiting_ms': 20000,
+    });
+    expect(await repo.delete(2), false); // u toku
+    expect(await repo.delete(1), true);
+    expect(await repo.delete(1), false); // već obrisana
+    expect(await repo.getAll(), isEmpty);
+    expect(await repo.getGaps(1), isEmpty);
+    expect((await db.query('rides')).single['status'], 'active');
+  });
+
   test('limit', () async {
     for (var i = 0; i < 5; i++) {
       await ride(1000 + i, 'completed', end: 2000 + i);

@@ -199,6 +199,37 @@ class _RideDetailsDialog extends ConsumerWidget {
         ],
       ),
       actions: [
+        IconButton(
+          tooltip: 'Obriši vožnju',
+          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+          onPressed: () async {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF1E1E1E),
+                title: const Text('Obrisati vožnju?', style: TextStyle(color: Colors.white)),
+                content: Text(
+                  '${formatDateTime(ride.startTime)} · ${ride.totalPrice} din\nBrisanje se ne može poništiti.',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('ODUSTANI', style: TextStyle(color: Colors.white54)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('OBRIŠI', style: TextStyle(color: Colors.redAccent)),
+                  ),
+                ],
+              ),
+            );
+            if (ok != true || !context.mounted) return;
+            await ref.read(rideHistoryRepositoryProvider).delete(ride.id);
+            ref.invalidate(rideHistoryProvider);
+            if (context.mounted) Navigator.pop(context);
+          },
+        ),
         if (ref.watch(appSettingsProvider).value?.printerMac != null)
           TextButton.icon(
             onPressed: () => printRideReceipt(context, ref, ride.id),

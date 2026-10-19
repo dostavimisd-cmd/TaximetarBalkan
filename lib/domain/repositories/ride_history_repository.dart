@@ -10,6 +10,10 @@ abstract class RideHistoryRepository {
 
   Future<RideRecord?> getById(int id);
 
+  /// Briše završenu ili prekinutu vožnju sa njenim prekidima signala.
+  /// Vožnja u toku se ne briše (vraća false).
+  Future<bool> delete(int id);
+
   /// Prekidi GPS signala u vožnji, po redu nastanka.
   Future<List<GapInfo>> getGaps(int rideId);
 }
