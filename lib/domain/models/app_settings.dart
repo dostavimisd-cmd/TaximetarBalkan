@@ -20,6 +20,7 @@ class AppSettings {
   static const String keyPrintMode = 'print_mode';
   static const String keyPrintCodePage = 'print_codepage';
   static const String keyReceiptHeader = 'receipt_header';
+  static const String keyReceiptLogo = 'receipt_logo';
 
   static const int defaultWaitingSpeedKmh = 8;
   static const int minWaitingSpeedKmh = 1;
@@ -67,6 +68,9 @@ class AppSettings {
   /// Zaglavlje računa (naziv, telefon…), red po red; unosi korisnik.
   final String receiptHeader;
 
+  /// Slika logoa firme na vrhu računa; null = bez logoa.
+  final String? receiptLogoPath;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -83,6 +87,7 @@ class AppSettings {
     this.printMode = PrintMode.image,
     this.printCodePage = 18,
     this.receiptHeader = '',
+    this.receiptLogoPath,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -120,6 +125,7 @@ class AppSettings {
           PrintMode.image,
       printCodePage: inRange(keyPrintCodePage, 18, 0, 255),
       receiptHeader: m[keyReceiptHeader] ?? '',
+      receiptLogoPath: (m[keyReceiptLogo] ?? '').isEmpty ? null : m[keyReceiptLogo],
     );
   }
 
@@ -140,6 +146,7 @@ class AppSettings {
         keyPrintMode: printMode.name,
         keyPrintCodePage: '$printCodePage',
         keyReceiptHeader: receiptHeader,
+        keyReceiptLogo: receiptLogoPath ?? '',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -178,6 +185,8 @@ class AppSettings {
     PrintMode? printMode,
     int? printCodePage,
     String? receiptHeader,
+    String? receiptLogoPath,
+    bool clearReceiptLogo = false,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -197,6 +206,7 @@ class AppSettings {
       printMode: printMode ?? this.printMode,
       printCodePage: printCodePage ?? this.printCodePage,
       receiptHeader: receiptHeader ?? this.receiptHeader,
+      receiptLogoPath: clearReceiptLogo ? null : (receiptLogoPath ?? this.receiptLogoPath),
     );
   }
 }

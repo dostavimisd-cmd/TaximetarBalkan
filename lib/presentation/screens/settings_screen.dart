@@ -33,6 +33,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _autoTariff = false;
   bool _showMap = true;
   String? _logoPath;
+  String? _receiptLogoPath;
   String? _printerMac;
   String? _printerName;
   PrintOption _printOption = PrintOption.all.first;
@@ -58,6 +59,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _autoTariff = s.autoTariff;
     _showMap = s.showMap;
     _logoPath = s.backgroundLogoPath;
+    _receiptLogoPath = s.receiptLogoPath;
     _printerMac = s.printerMac;
     _printerName = s.printerName;
     _printOption = PrintOption.of(s);
@@ -105,6 +107,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       printMode: _printOption.mode,
       printCodePage: _printOption.codePage == 0 ? current.printCodePage : _printOption.codePage,
       receiptHeader: _header.text.trim(),
+      receiptLogoPath: _receiptLogoPath,
     );
     final invalid = next.validate();
     if (invalid != null) {
@@ -115,22 +118,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted) Navigator.pop(context, true);
   }
 
-  /// Slika se kopira u fascikle aplikacije, da ostane i ako se original obriše.
-  Future<void> _pickLogo() async {
+  /// Slika se kopira u fascikle aplikacije, da ostane i ako se original
+  /// obriše. Vraća novu putanju ili null ako korisnik odustane.
+  Future<String?> _pickImage(String prefix, String? old) async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600);
-    if (picked == null) return;
+    if (picked == null) return null;
     final dir = await getApplicationDocumentsDirectory();
     final ext = p.extension(picked.path).isEmpty ? '.png' : p.extension(picked.path);
     // novo ime svaki put, da se prikaz ne zadrži na staroj slici iz keša
-    final target = p.join(dir.path, 'background_logo_${DateTime.now().millisecondsSinceEpoch}$ext');
+    final target = p.join(dir.path, '${prefix}_${DateTime.now().millisecondsSinceEpoch}$ext');
     await File(picked.path).copy(target);
-    final old = _logoPath;
-    setState(() => _logoPath = target);
     if (old != null && old != target) {
       try {
         await File(old).delete();
       } catch (_) {}
     }
+    return target;
+  }
+
+  Future<void> _pickLogo() async {
+    final path = await _pickImage('background_logo', _logoPath);
+    if (path != null) setState(() => _logoPath = path);
+  }
+
+  Future<void> _pickReceiptLogo() async {
+    final path = await _pickImage('receipt_logo', _receiptLogoPath);
+    if (path != null) setState(() => _receiptLogoPath = path);
   }
 
   Future<void> _choosePrinter() async {
@@ -374,6 +387,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   label: Text(_printing ? 'Štampam…' : 'Probna štampa',
                       style: const TextStyle(color: Colors.amberAccent)),
                 ),
+              ),
+              Row(
+                children: [
+                  if (_receiptLogoPath != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Container(
+                        color: Colors.white,
+                        padding: const EdgeInsets.all(4),
+                        child: Image.file(File(_receiptLogoPath!),
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) =>
+                                const Icon(Icons.broken_image, color: Colors.black38)),
+                      ),
+                    ),
+                  TextButton.icon(
+                    onPressed: _pickReceiptLogo,
+                    icon: const Icon(Icons.image, color: Colors.amberAccent),
+                    label: Text(_receiptLogoPath == null ? 'Logo firme na računu' : 'Promeni logo',
+                        style: const TextStyle(color: Colors.amberAccent)),
+                  ),
+                  if (_receiptLogoPath != null)
+                    IconButton(
+                      tooltip: 'Bez logoa',
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => setState(() => _receiptLogoPath = null),
+                    ),
+                ],
               ),
               TextField(
                 controller: _header,

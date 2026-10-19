@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../../domain/models/app_settings.dart';
 import '../../domain/models/ride_record.dart';
+import '../../domain/printing/dither.dart';
 import '../../domain/printing/escpos.dart';
 import '../../domain/printing/receipt.dart';
 import '../providers/history_provider.dart';
@@ -76,8 +78,42 @@ class ReceiptPrinter {
 
   // ---------------------------------------------------------------- bajtovi
 
-  static Future<List<int>> receiptBytes(List<ReceiptLine> lines, PrintMode mode, int codePage) async {
+  /// Širina logoa na papiru (tačke); ostatak do 384 je beli rub.
+  static const int logoWidth = 256;
+
+  /// Logo firme kao raster (dithering), centriran; null ako slika ne može da
+  /// se pročita (tada se račun štampa bez logoa).
+  static Future<List<int>?> logoBytes(String path) async {
+    try {
+      final codec = await ui.instantiateImageCodec(await File(path).readAsBytes(),
+          targetWidth: logoWidth);
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final w = image.width, h = image.height;
+      final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      image.dispose();
+      final rgba = data!.buffer.asUint8List();
+      final lum = List<int>.generate(w * h, (i) {
+        final o = i * 4;
+        final a = rgba[o + 3];
+        final l = (rgba[o] * 299 + rgba[o + 1] * 587 + rgba[o + 2] * 114) ~/ 1000;
+        return (l * a + 255 * (255 - a)) ~/ 255; // providno = belo
+      });
+      final pixels = Dither.centerOnWidth(
+          w, h, Dither.floydSteinberg(w, h, lum), EscPos.dotsPerLine);
+      return EscPos.raster(EscPos.dotsPerLine, h, pixels);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<List<int>> receiptBytes(List<ReceiptLine> lines, PrintMode mode, int codePage,
+      {String? logoPath}) async {
     final out = <int>[...EscPos.init];
+    if (logoPath != null) {
+      final logo = await logoBytes(logoPath);
+      if (logo != null) out.addAll([...EscPos.align(0), ...logo, 0x0A]);
+    }
     if (mode == PrintMode.image) {
       final img = await renderLines(lines);
       out
@@ -196,7 +232,8 @@ Future<void> printRideReceipt(BuildContext context, WidgetRef ref, int rideId) a
       header: settings.receiptHeader.split('\n'),
       eurRateMilli: settings.eurRateMilli,
     );
-    final bytes = await ReceiptPrinter.receiptBytes(lines, settings.printMode, settings.printCodePage);
+    final bytes = await ReceiptPrinter.receiptBytes(lines, settings.printMode, settings.printCodePage,
+        logoPath: settings.receiptLogoPath);
     await ref.read(receiptPrinterProvider).send(mac, bytes);
     say('Račun je poslat na štampač.');
   } catch (e) {
