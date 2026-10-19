@@ -47,6 +47,7 @@ dependencies:
   http: ^1.6.0
   print_bluetooth_thermal: ^1.2.1
   flutter_tts: ^4.2.5
+  wakelock_plus: ^1.6.1
 
 dev_dependencies:
   flutter_test:

@@ -34,6 +34,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _autoTariff = false;
   bool _showMap = true;
   bool _voice = false;
+  int _refresh = 1;
+  bool _keepOn = true;
   String? _logoPath;
   String? _receiptLogoPath;
   String? _printerMac;
@@ -61,6 +63,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _autoTariff = s.autoTariff;
     _showMap = s.showMap;
     _voice = s.voiceAnnounce;
+    _refresh = s.priceRefreshSeconds;
+    _keepOn = s.keepScreenOn;
     _logoPath = s.backgroundLogoPath;
     _receiptLogoPath = s.receiptLogoPath;
     _printerMac = s.printerMac;
@@ -105,6 +109,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       autoTariff: _autoTariff,
       showMap: _showMap,
       voiceAnnounce: _voice,
+      priceRefreshSeconds: _refresh,
+      keepScreenOn: _keepOn,
       backgroundLogoPath: _logoPath,
       printerMac: _printerMac,
       printerName: _printerName,
@@ -324,6 +330,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   allow: r'[0-9.,]',
                   decimal: true,
                   helper: 'Samo za prikaz u EUR. Obračun je uvek u dinarima.'),
+              _section('EKRAN'),
+              _choice('Osvežavanje cene (s)', const ['1', '4', '6', '10'], '$_refresh',
+                  (v) => _refresh = int.parse(v)),
+              const Text(
+                  '1 = odmah. Duže osvežavanje samo usporava prikaz; obračun i konačna cena su isti.',
+                  style: TextStyle(color: Colors.white38, fontSize: 11)),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _keepOn,
+                onChanged: (v) => setState(() => _keepOn = v),
+                title: const Text('Ekran uvek uključen', style: TextStyle(color: Colors.white)),
+                subtitle: const Text(
+                    'Dok je aplikacija otvorena ekran se ne gasi, cena se stalno vidi (troši više baterije).',
+                    style: TextStyle(color: Colors.white38, fontSize: 11)),
+              ),
               _section('GLAS'),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

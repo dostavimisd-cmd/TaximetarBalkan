@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
 import '../../domain/models/fixed_route.dart';
@@ -11,6 +12,7 @@ import '../../domain/tariff_selector.dart';
 import '../providers/taximeter_provider.dart';
 import '../providers/tariffs_provider.dart';
 import '../../domain/announcement.dart';
+import '../../domain/price_throttle.dart';
 import '../printing/receipt_printer.dart';
 import '../services/voice_service.dart';
 import '../providers/settings_provider.dart';
@@ -33,12 +35,21 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
   /// Automatski izbor zavisi od sata: ekran se osvežava dok čeka start.
   Timer? _clock;
 
+  // prikaz cene sa podesivim osvežavanjem (obračun ide nezavisno)
+  final _throttle = PriceThrottle();
+  Timer? _priceTick;
+  bool? _wakelockOn;
+
   /// Fiksna relacija izabrana za sledeću vožnju; null = taksimetar.
   FixedRoute? _fixedRoute;
 
   @override
   void initState() {
     super.initState();
+    // Osvežava prikaz cene i kad GPS ne šalje nove tačke (npr. tunel).
+    _priceTick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && ref.read(taximeterProvider).isRunning) setState(() {});
+    });
     _clock = Timer.periodic(const Duration(seconds: 30), (_) {
       final auto = ref.read(appSettingsProvider).value?.autoTariff ?? false;
       if (mounted && auto && !ref.read(taximeterProvider).isRunning) {
@@ -50,6 +61,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
   @override
   void dispose() {
     _clock?.cancel();
+    _priceTick?.cancel();
+    WakelockPlus.disable();
     super.dispose();
   }
 
@@ -167,9 +180,20 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     final currency = (settings.currency == 'EUR' && eurRate != null)
         ? 'EUR'
         : 'RSD';
+    // Ekran uvek uključen (podešavanje); uključuje se samo pri promeni.
+    if (_wakelockOn != settings.keepScreenOn) {
+      _wakelockOn = settings.keepScreenOn;
+      settings.keepScreenOn ? WakelockPlus.enable() : WakelockPlus.disable();
+    }
+    final shownPrice = _throttle.show(
+      state.currentPrice,
+      DateTime.now().millisecondsSinceEpoch,
+      settings.priceRefreshSeconds * 1000,
+      force: state.phase != RidePhase.running,
+    );
     final displayPrice = (currency == 'EUR')
-        ? CurrencyConverter.formatForeign(state.currentPrice, eurRate!)
-        : state.currentPrice.toString();
+        ? CurrencyConverter.formatForeign(shownPrice, eurRate!)
+        : shownPrice.toString();
 
     // Trenutno stajanje (servis javlja mode), ne ukupno čekanje
     final isWaiting = state.isRunning && state.isWaitingNow;

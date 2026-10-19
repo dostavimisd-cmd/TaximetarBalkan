@@ -12,6 +12,7 @@ import package_info_plus
 import print_bluetooth_thermal
 import shared_preferences_foundation
 import sqflite_darwin
+import wakelock_plus
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FileSelectorPlugin.register(with: registry.registrar(forPlugin: "FileSelectorPlugin"))
@@ -21,4 +22,5 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   PrintBluetoothThermalPlugin.register(with: registry.registrar(forPlugin: "PrintBluetoothThermalPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))
+  WakelockPlusMacosPlugin.register(with: registry.registrar(forPlugin: "WakelockPlusMacosPlugin"))
 }

@@ -1,4 +1,5 @@
 import '../calibration.dart';
+import '../price_throttle.dart';
 import '../printing/escpos.dart';
 
 /// Podešavanja koja unosi korisnik. Čuvaju se u `app_settings` kao parovi
@@ -22,6 +23,8 @@ class AppSettings {
   static const String keyReceiptHeader = 'receipt_header';
   static const String keyReceiptLogo = 'receipt_logo';
   static const String keyVoice = 'voice_announce';
+  static const String keyPriceRefresh = 'price_refresh_s';
+  static const String keyKeepScreenOn = 'keep_screen_on';
 
   static const int defaultWaitingSpeedKmh = 8;
   static const int minWaitingSpeedKmh = 1;
@@ -75,6 +78,12 @@ class AppSettings {
   /// Glasovna najava cene na kraju vožnje.
   final bool voiceAnnounce;
 
+  /// Osvežavanje cene na ekranu tokom vožnje (s): 1 (odmah), 4, 6 ili 10.
+  final int priceRefreshSeconds;
+
+  /// Ekran ne gasi dok je aplikacija otvorena (cena se stalno vidi).
+  final bool keepScreenOn;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -93,6 +102,8 @@ class AppSettings {
     this.receiptHeader = '',
     this.receiptLogoPath,
     this.voiceAnnounce = false,
+    this.priceRefreshSeconds = 1,
+    this.keepScreenOn = true,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -132,6 +143,10 @@ class AppSettings {
       receiptHeader: m[keyReceiptHeader] ?? '',
       receiptLogoPath: (m[keyReceiptLogo] ?? '').isEmpty ? null : m[keyReceiptLogo],
       voiceAnnounce: m[keyVoice] == '1',
+      priceRefreshSeconds: PriceThrottle.allowedSeconds.contains(asInt(keyPriceRefresh))
+          ? asInt(keyPriceRefresh)!
+          : 1,
+      keepScreenOn: m[keyKeepScreenOn] != '0',
     );
   }
 
@@ -154,6 +169,8 @@ class AppSettings {
         keyReceiptHeader: receiptHeader,
         keyReceiptLogo: receiptLogoPath ?? '',
         keyVoice: voiceAnnounce ? '1' : '0',
+        keyPriceRefresh: '$priceRefreshSeconds',
+        keyKeepScreenOn: keepScreenOn ? '1' : '0',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -171,6 +188,9 @@ class AppSettings {
     if (!languages.contains(language)) return 'Nepoznat jezik.';
     if (!currencies.contains(currency)) return 'Nepoznata valuta.';
     if (printCodePage < 0 || printCodePage > 255) return 'Neispravna kodna strana.';
+    if (!PriceThrottle.allowedSeconds.contains(priceRefreshSeconds)) {
+      return 'Osvežavanje cene: 1, 4, 6 ili 10 s.';
+    }
     if (receiptHeader.length > 500) return 'Zaglavlje računa je predugačko.';
     return null;
   }
@@ -195,6 +215,8 @@ class AppSettings {
     String? receiptLogoPath,
     bool clearReceiptLogo = false,
     bool? voiceAnnounce,
+    int? priceRefreshSeconds,
+    bool? keepScreenOn,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -216,6 +238,8 @@ class AppSettings {
       receiptHeader: receiptHeader ?? this.receiptHeader,
       receiptLogoPath: clearReceiptLogo ? null : (receiptLogoPath ?? this.receiptLogoPath),
       voiceAnnounce: voiceAnnounce ?? this.voiceAnnounce,
+      priceRefreshSeconds: priceRefreshSeconds ?? this.priceRefreshSeconds,
+      keepScreenOn: keepScreenOn ?? this.keepScreenOn,
     );
   }
 }
