@@ -7,7 +7,7 @@ Pre prvog slanja `versionCode` je 1 (`pubspec.yaml` `version: 1.0.0+1`); svaki n
 
 ## 1. Podešavanje aplikacije
 - Kategorija: Auto i vozila (ili Alati). Cena: **besplatna** (prvo izdanje).
-- Politika privatnosti: adresa stranice sa `docs/politika_privatnosti.md` (Google Sites). Posle objave upisati u `privacyPolicyUrl` (`lib/presentation/screens/about_screen.dart`).
+- Politika privatnosti: **https://taximetarbalkan.web.app/privacy** (već objavljena; izvor je `site/privacy.html`, a već je upisana u `privacyPolicyUrl` u `about_screen.dart`).
 - Kontakt e-mail: dostavimisd@gmail.com
 - Reklame: ne. Pristup aplikaciji: bez prijave (sve funkcije dostupne).
 - Ciljna grupa: odrasli (18+). Nije za decu.
@@ -84,7 +84,6 @@ To keep it running with a locked screen, turn off battery restrictions for the a
 - 4–8 slika ekrana telefona (glavni ekran sa crvenom/plavom cenom, rezime sa mapom, izveštaji, relacije, račun), SR i EN.
 
 ## 6. Preostalo za vlasnika
-- Objaviti politiku privatnosti na Google Sites i poslati adresu.
 - Napraviti rezervnu kopiju `D:\kljucevi\taksimetar-upload.jks` (i zapisati lozinku na sigurno mesto, ne u projekat).
 - Snimiti video za deklaraciju foreground servisa.
 - Snimiti slike ekrana.

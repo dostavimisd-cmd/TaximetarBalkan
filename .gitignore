@@ -46,3 +46,6 @@ app.*.map.json
 
 # Android build izlaz
 /android/build/
+
+# Firebase Hosting keš
+.firebase/

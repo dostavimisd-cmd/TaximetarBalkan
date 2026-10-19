@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../l10n/tr.dart';
 
-/// Adresa politike privatnosti; upisati kad bude objavljena (pre Play objave).
-const String privacyPolicyUrl = '';
+/// Adresa politike privatnosti (Firebase Hosting, folder `site/`).
+const String privacyPolicyUrl = 'https://taximetarbalkan.web.app/privacy';
 
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
