@@ -4,6 +4,7 @@ import '../../domain/currency_converter.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../providers/history_provider.dart';
+import '../printing/receipt_printer.dart';
 import '../providers/settings_provider.dart';
 
 String formatDateTime(DateTime utc) {
@@ -198,6 +199,12 @@ class _RideDetailsDialog extends ConsumerWidget {
         ],
       ),
       actions: [
+        if (ref.watch(appSettingsProvider).value?.printerMac != null)
+          TextButton.icon(
+            onPressed: () => printRideReceipt(context, ref, ride.id),
+            icon: const Icon(Icons.print, color: Colors.amberAccent, size: 18),
+            label: const Text('ŠTAMPAJ', style: TextStyle(color: Colors.amberAccent)),
+          ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('ZATVORI', style: TextStyle(color: Colors.amberAccent)),

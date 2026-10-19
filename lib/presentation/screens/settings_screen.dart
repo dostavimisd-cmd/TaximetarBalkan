@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../domain/calibration.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
+import '../printing/receipt_printer.dart';
 import '../providers/settings_provider.dart';
 import 'holidays_screen.dart';
 
@@ -26,17 +27,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _calibration = TextEditingController();
   final _gps = TextEditingController();
   final _rate = TextEditingController();
+  final _header = TextEditingController();
   String _language = 'sr';
   String _currency = 'RSD';
   bool _autoTariff = false;
   bool _showMap = true;
   String? _logoPath;
+  String? _printerMac;
+  String? _printerName;
+  PrintOption _printOption = PrintOption.all.first;
+  bool _printing = false;
   bool _loaded = false;
   String? _error;
 
   @override
   void dispose() {
-    for (final c in [_speed, _calibration, _gps, _rate]) {
+    for (final c in [_speed, _calibration, _gps, _rate, _header]) {
       c.dispose();
     }
     super.dispose();
@@ -52,6 +58,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _autoTariff = s.autoTariff;
     _showMap = s.showMap;
     _logoPath = s.backgroundLogoPath;
+    _printerMac = s.printerMac;
+    _printerName = s.printerName;
+    _printOption = PrintOption.of(s);
+    _header.text = s.receiptHeader;
     _loaded = true;
   }
 
@@ -90,6 +100,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       autoTariff: _autoTariff,
       showMap: _showMap,
       backgroundLogoPath: _logoPath,
+      printerMac: _printerMac,
+      printerName: _printerName,
+      printMode: _printOption.mode,
+      printCodePage: _printOption.codePage == 0 ? current.printCodePage : _printOption.codePage,
+      receiptHeader: _header.text.trim(),
     );
     final invalid = next.validate();
     if (invalid != null) {
@@ -115,6 +130,63 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       try {
         await File(old).delete();
       } catch (_) {}
+    }
+  }
+
+  Future<void> _choosePrinter() async {
+    try {
+      final devices = await ref.read(receiptPrinterProvider).paired();
+      if (!mounted) return;
+      final chosen = await showDialog<(String, String)>(
+        context: context,
+        builder: (ctx) => SimpleDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: const Text('Upareni uređaji', style: TextStyle(color: Colors.white)),
+          children: [
+            if (devices.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Nema uparenih uređaja. Upari štampač u Bluetooth podešavanjima telefona (PIN je obično 0000 ili 1234).',
+                  style: TextStyle(color: Colors.white54),
+                ),
+              ),
+            for (final d in devices)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, (d.macAdress, d.name)),
+                child: Text('${d.name}\n${d.macAdress}',
+                    style: const TextStyle(color: Colors.white)),
+              ),
+          ],
+        ),
+      );
+      if (chosen != null) {
+        setState(() {
+          _printerMac = chosen.$1;
+          _printerName = chosen.$2;
+        });
+      }
+    } catch (e) {
+      setState(() => _error = 'Štampač: $e');
+    }
+  }
+
+  Future<void> _testPrint() async {
+    final mac = _printerMac;
+    if (mac == null) {
+      setState(() => _error = 'Prvo izaberi štampač.');
+      return;
+    }
+    setState(() {
+      _printing = true;
+      _error = null;
+    });
+    try {
+      await ref.read(receiptPrinterProvider).send(mac, await ReceiptPrinter.testPageBytes());
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Probna štampa nije uspela: $e');
+    } finally {
+      if (mounted) setState(() => _printing = false);
     }
   }
 
@@ -266,6 +338,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ],
                 ),
+              _section('ŠTAMPAČ RAČUNA'),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.print, color: Colors.amberAccent),
+                title: Text(_printerName ?? 'Štampač nije izabran',
+                    style: const TextStyle(color: Colors.white)),
+                subtitle: Text(_printerMac ?? 'Bluetooth, 58 mm (npr. PT-210)',
+                    style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                trailing: TextButton(
+                  onPressed: _choosePrinter,
+                  child: const Text('IZABERI', style: TextStyle(color: Colors.amberAccent)),
+                ),
+              ),
+              DropdownButton<PrintOption>(
+                value: _printOption,
+                isExpanded: true,
+                dropdownColor: const Color(0xFF2A2A2A),
+                items: [
+                  for (final o in PrintOption.all)
+                    DropdownMenuItem(
+                        value: o, child: Text(o.label, style: const TextStyle(color: Colors.white))),
+                ],
+                onChanged: (o) => setState(() => _printOption = o ?? _printOption),
+              ),
+              const Text(
+                'Naša slova (č ć ž š đ): "Kao slika" uvek radi. Za brži tekst odštampaj probnu stranicu i izaberi slovo reda koji je ispravan.',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _printing ? null : _testPrint,
+                  icon: const Icon(Icons.receipt, color: Colors.amberAccent),
+                  label: Text(_printing ? 'Štampam…' : 'Probna štampa',
+                      style: const TextStyle(color: Colors.amberAccent)),
+                ),
+              ),
+              TextField(
+                controller: _header,
+                maxLines: 4,
+                minLines: 2,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Zaglavlje računa (naziv, telefon…)',
+                  labelStyle: TextStyle(color: Colors.white60),
+                  helperText: 'Svaki red posebno. Na dnu računa uvek piše da nije fiskalni.',
+                  helperStyle: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ),
               _section('RAD U POZADINI'),
               const Text(
                 'Da taksimetar ne bi bio ugašen na zaključanom ekranu, isključi optimizaciju baterije za aplikaciju i dozvoli rad u pozadini.',

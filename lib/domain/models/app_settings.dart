@@ -1,4 +1,5 @@
 import '../calibration.dart';
+import '../printing/escpos.dart';
 
 /// Podešavanja koja unosi korisnik. Čuvaju se u `app_settings` kao parovi
 /// ključ/tekst; ovde su tipizirana i proverena. Podrazumevane vrednosti su
@@ -14,6 +15,11 @@ class AppSettings {
   static const String keyAutoTariff = 'auto_tariff';
   static const String keyShowMap = 'show_map';
   static const String keyBackgroundLogo = 'background_logo';
+  static const String keyPrinterMac = 'printer_mac';
+  static const String keyPrinterName = 'printer_name';
+  static const String keyPrintMode = 'print_mode';
+  static const String keyPrintCodePage = 'print_codepage';
+  static const String keyReceiptHeader = 'receipt_header';
 
   static const int defaultWaitingSpeedKmh = 8;
   static const int minWaitingSpeedKmh = 1;
@@ -48,6 +54,19 @@ class AppSettings {
   /// Putanja do slike logoa za pozadinu; null = crna pozadina.
   final String? backgroundLogoPath;
 
+  /// Upareni Bluetooth štampač računa; null = nije izabran.
+  final String? printerMac;
+  final String? printerName;
+
+  /// Kako se štampaju naša slova (videti [PrintMode]); podrazumevano slika.
+  final PrintMode printMode;
+
+  /// Broj kodne strane (ESC t n) za tekstualni režim; bira se probnom štampom.
+  final int printCodePage;
+
+  /// Zaglavlje računa (naziv, telefon…), red po red; unosi korisnik.
+  final String receiptHeader;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -59,6 +78,11 @@ class AppSettings {
     this.autoTariff = false,
     this.showMap = true,
     this.backgroundLogoPath,
+    this.printerMac,
+    this.printerName,
+    this.printMode = PrintMode.image,
+    this.printCodePage = 18,
+    this.receiptHeader = '',
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -88,6 +112,14 @@ class AppSettings {
       showMap: m[keyShowMap] != '0',
       backgroundLogoPath:
           (m[keyBackgroundLogo] ?? '').isEmpty ? null : m[keyBackgroundLogo],
+      printerMac: (m[keyPrinterMac] ?? '').isEmpty ? null : m[keyPrinterMac],
+      printerName: (m[keyPrinterName] ?? '').isEmpty ? null : m[keyPrinterName],
+      printMode: PrintMode.values
+              .where((v) => v.name == m[keyPrintMode])
+              .firstOrNull ??
+          PrintMode.image,
+      printCodePage: inRange(keyPrintCodePage, 18, 0, 255),
+      receiptHeader: m[keyReceiptHeader] ?? '',
     );
   }
 
@@ -103,6 +135,11 @@ class AppSettings {
         keyShowMap: showMap ? '1' : '0',
         // prazno = crna pozadina (upis prazne vrednosti briše raniji logo)
         keyBackgroundLogo: backgroundLogoPath ?? '',
+        keyPrinterMac: printerMac ?? '',
+        keyPrinterName: printerName ?? '',
+        keyPrintMode: printMode.name,
+        keyPrintCodePage: '$printCodePage',
+        keyReceiptHeader: receiptHeader,
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -119,6 +156,8 @@ class AppSettings {
     }
     if (!languages.contains(language)) return 'Nepoznat jezik.';
     if (!currencies.contains(currency)) return 'Nepoznata valuta.';
+    if (printCodePage < 0 || printCodePage > 255) return 'Neispravna kodna strana.';
+    if (receiptHeader.length > 500) return 'Zaglavlje računa je predugačko.';
     return null;
   }
 
@@ -134,6 +173,11 @@ class AppSettings {
     bool? showMap,
     String? backgroundLogoPath,
     bool clearBackgroundLogo = false,
+    String? printerMac,
+    String? printerName,
+    PrintMode? printMode,
+    int? printCodePage,
+    String? receiptHeader,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -148,6 +192,11 @@ class AppSettings {
       backgroundLogoPath: clearBackgroundLogo
           ? null
           : (backgroundLogoPath ?? this.backgroundLogoPath),
+      printerMac: printerMac ?? this.printerMac,
+      printerName: printerName ?? this.printerName,
+      printMode: printMode ?? this.printMode,
+      printCodePage: printCodePage ?? this.printCodePage,
+      receiptHeader: receiptHeader ?? this.receiptHeader,
     );
   }
 }

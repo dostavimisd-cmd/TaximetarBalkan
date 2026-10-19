@@ -9,6 +9,7 @@ import '../../domain/models/tariff.dart';
 import '../../domain/tariff_selector.dart';
 import '../providers/taximeter_provider.dart';
 import '../providers/tariffs_provider.dart';
+import '../printing/receipt_printer.dart';
 import '../providers/settings_provider.dart';
 import 'history_screen.dart';
 import 'reports_screen.dart';
@@ -450,6 +451,28 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                         ? 'Dopuna do minimalne'
                                         : 'Minimum fare top-up',
                                     result.minPriceAdjustment,
+                                  ),
+                                if (settings.printerMac != null)
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton.icon(
+                                      onPressed: () => printRideReceipt(
+                                        context,
+                                        ref,
+                                        result.rideId,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.print,
+                                        color: Colors.amberAccent,
+                                        size: 18,
+                                      ),
+                                      label: Text(
+                                        isSr ? 'ŠTAMPAJ RAČUN' : 'PRINT RECEIPT',
+                                        style: const TextStyle(
+                                          color: Colors.amberAccent,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                               ],
                             ),

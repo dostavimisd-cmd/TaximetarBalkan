@@ -28,7 +28,7 @@ Pomoćna aplikacija za vozača (offline-first) koja računa cenu vožnje. Pomaž
 | 3 | Smene (izveštaj po smeni) | čeka |
 | 3 | Brisanje vožnje iz istorije | odloženo (korisnik) |
 | 4 | Kalibracija | urađeno |
-| 4 | ESC/POS štampač (č,ć,ž,š,đ) | čeka |
+| 4 | ESC/POS štampač (č,ć,ž,š,đ), PT-210 58 mm | urađeno u kodu, čeka test na štampaču |
 | 4 | Glasovna najava cene | čeka |
 | UI | Besplatna open-source mapa (OpenStreetMap), tamna, linija vožnje | urađeno |
 | UI | Pretraga adrese i predlog rute (Nominatim + OSRM) | urađeno |

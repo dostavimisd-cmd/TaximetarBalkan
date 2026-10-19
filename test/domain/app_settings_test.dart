@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taksimetar_balkan/domain/models/app_settings.dart';
+import 'package:taksimetar_balkan/domain/printing/escpos.dart';
 
 void main() {
   test('prazna baza → podrazumevane vrednosti (dosadašnje ponašanje)', () {
@@ -12,6 +13,8 @@ void main() {
     expect(s.currency, 'RSD');
     expect(s.selectedTariffId, isNull);
     expect(s.autoTariff, false);
+    expect(s.printMode, PrintMode.image); // naša slova uvek tačna
+    expect(s.printerMac, isNull);
     expect(s.validate(), isNull);
   });
 
@@ -25,6 +28,12 @@ void main() {
       currency: 'EUR',
       selectedTariffId: 3,
       autoTariff: true,
+      printerMac: '00:11:22:33:44:55',
+      printerName: 'PT-210',
+      printMode: PrintMode.cp1250,
+      printCodePage: 45,
+      receiptHeader: 'TAXI
+060 123',
     );
     final back = AppSettings.fromMap(s.toMap());
     expect(back.toMap(), s.toMap());
