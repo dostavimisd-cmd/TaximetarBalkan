@@ -1,4 +1,4 @@
-package com.example.taksimetar_balkan
+package rs.taksimetar.balkan
 
 import io.flutter.embedding.android.FlutterActivity
 
