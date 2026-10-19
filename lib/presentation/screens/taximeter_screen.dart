@@ -17,6 +17,8 @@ import '../printing/receipt_printer.dart';
 import '../services/voice_service.dart';
 import '../providers/settings_provider.dart';
 import 'history_screen.dart';
+import 'ride_summary_screen.dart';
+import '../providers/history_provider.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/fixed_route_picker.dart';
@@ -94,6 +96,22 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
 
   Tariff? get _activeTariff => _choice?.tariff;
 
+  /// Rezime vožnje se otvara čim se vožnja završi (čita se iz baze, pa
+  /// prikazuje isto što i istorija). Zatvaranje ostavlja mali rezultat ispod.
+  Future<void> _showSummary(int rideId) async {
+    final ride = await ref.read(rideHistoryRepositoryProvider).getById(rideId);
+    if (ride == null || !mounted) return;
+    ref.invalidate(rideHistoryProvider);
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => RideSummaryScreen(
+          ride: ride,
+          onNewRide: ref.read(taximeterProvider.notifier).newRide,
+        ),
+      ),
+    );
+  }
+
   Future<void> _selectTariff(int id) async {
     ref.read(taximeterProvider.notifier).setTariff(id);
     await ref
@@ -143,6 +161,9 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       final finishedNow =
           next.phase == RidePhase.finished && prev?.phase != RidePhase.finished;
       final s = ref.read(appSettingsProvider).value;
+      if (finishedNow && next.lastResult != null) {
+        _showSummary(next.lastResult!.rideId);
+      }
       if (!finishedNow ||
           s == null ||
           !s.voiceAnnounce ||
@@ -331,7 +352,49 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                         const Spacer(flex: 1),
 
                         // Status režima rada (Vožnja vs Čekanje)
-                        if (state.isRunning)
+                        // Pauza: obračun staje, cena ostaje; prikazuje se trajanje pauze
+                        if (state.phase == RidePhase.paused)
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.amberAccent.withValues(
+                                  alpha: 0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.amberAccent,
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.pause_circle,
+                                    color: Colors.amberAccent,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${isSr ? 'PAUZIRANO' : 'PAUSED'}'
+                                    '${state.pausedSince == null ? '' : ' · ${formatClock(DateTime.now().difference(state.pausedSince!).inSeconds)}'}',
+                                    style: const TextStyle(
+                                      color: Colors.amberAccent,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else if (state.isRunning)
                           Center(
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -724,16 +787,62 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                         ),
                                       )
                                     : state.isRunning
-                                    ? ElevatedButton(
-                                        onPressed: state.isBusy
-                                            ? null
-                                            : notifier.stopRide,
-                                        style: _mainButtonStyle(
-                                          const Color(0xFFD32F2F),
-                                        ),
-                                        child: _mainButtonLabel(
-                                          isSr ? 'ZAVRŠI (STOP)' : 'END RIDE',
-                                        ),
+                                    ? Row(
+                                        children: [
+                                          // PAUZA / NASTAVI: obračun staje, cena ostaje
+                                          Expanded(
+                                            flex: 4,
+                                            child: SizedBox(
+                                              height: 74,
+                                              child: ElevatedButton(
+                                                onPressed: state.isBusy
+                                                    ? null
+                                                    : (state.phase ==
+                                                              RidePhase.paused
+                                                          ? notifier.resumeRide
+                                                          : notifier.pauseRide),
+                                                style: _mainButtonStyle(
+                                                  state.phase ==
+                                                          RidePhase.paused
+                                                      ? const Color(0xFF2E7D32)
+                                                      : const Color(0xFFF9A825),
+                                                ),
+                                                child: FittedBox(
+                                                  child: _mainButtonLabel(
+                                                    state.phase ==
+                                                            RidePhase.paused
+                                                        ? (isSr
+                                                              ? 'NASTAVI'
+                                                              : 'RESUME')
+                                                        : (isSr
+                                                              ? 'PAUZA'
+                                                              : 'PAUSE'),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            flex: 5,
+                                            child: SizedBox(
+                                              height: 74,
+                                              child: ElevatedButton(
+                                                onPressed: state.isBusy
+                                                    ? null
+                                                    : notifier.stopRide,
+                                                style: _mainButtonStyle(
+                                                  const Color(0xFFD32F2F),
+                                                ),
+                                                child: FittedBox(
+                                                  child: _mainButtonLabel(
+                                                    isSr ? 'ZAVRŠI' : 'END',
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       )
                                     : ElevatedButton(
                                         onPressed: !state.isReady

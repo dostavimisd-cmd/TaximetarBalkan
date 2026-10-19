@@ -10,6 +10,9 @@ abstract class RideHistoryRepository {
 
   Future<RideRecord?> getById(int id);
 
+  /// Tačke pređene rute (lat, lon) po redu vremena.
+  Future<List<(double lat, double lon)>> getRoute(int rideId);
+
   /// Briše završenu ili prekinutu vožnju sa njenim prekidima signala.
   /// Vožnja u toku se ne briše (vraća false).
   Future<bool> delete(int id);

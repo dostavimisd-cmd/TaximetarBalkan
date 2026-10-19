@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/currency_converter.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../providers/history_provider.dart';
-import '../printing/receipt_printer.dart';
+import 'ride_summary_screen.dart';
 import '../providers/settings_provider.dart';
 
 String formatDateTime(DateTime utc) {
@@ -100,9 +99,8 @@ class _RideTile extends StatelessWidget {
     ].join(' · ');
 
     return ListTile(
-      onTap: () => showDialog<void>(
-        context: context,
-        builder: (_) => _RideDetailsDialog(ride: ride, eurRate: eurRate),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => RideSummaryScreen(ride: ride)),
       ),
       title: Text(
         formatDateTime(ride.startTime),
@@ -136,166 +134,6 @@ class _RideTile extends StatelessWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
-    );
-  }
-}
-
-class _RideDetailsDialog extends ConsumerWidget {
-  final RideRecord ride;
-  final int? eurRate;
-
-  const _RideDetailsDialog({required this.ride, required this.eurRate});
-
-  Widget _line(String label, String value, {bool bold = false}) {
-    final style = TextStyle(
-      color: Colors.white,
-      fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-    );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white54)),
-          Text(value, style: style),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final duration = ride.duration;
-    final gaps =
-        ref.watch(rideGapsProvider(ride.id)).value ?? const <GapInfo>[];
-    return AlertDialog(
-      backgroundColor: const Color(0xFF1E1E1E),
-      title: Text(
-        formatDateTime(ride.startTime),
-        style: const TextStyle(color: Colors.white, fontSize: 16),
-      ),
-      // Sadržaj se pomera: u horizontalnom položaju ne staje, pa su se dugmad
-      // (obriši, štampaj, zatvori) preklapala sa njim.
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (ride.isInterrupted)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'Vožnja je prekinuta (servis zaustavljen). Iznos je do poslednjeg snimka.',
-                  style: TextStyle(color: Colors.amberAccent, fontSize: 12),
-                ),
-              ),
-            _line(
-              'Distanca',
-              '${(ride.distanceMeters / 1000).toStringAsFixed(2)} km',
-            ),
-            if (duration != null)
-              _line('Trajanje', formatClock(duration.inSeconds)),
-            _line('Čekanje', formatClock(ride.waitingSeconds)),
-            const Divider(color: Colors.white12),
-            if (ride.fixedRouteName != null)
-              _line('Fiksno: ${ride.fixedRouteName}', '${ride.totalPrice}')
-            else ...[
-              _line('Start', '${ride.startPrice}'),
-              _line('Kilometraža', '${ride.kmPrice}'),
-              _line('Čekanje', '${ride.waitingPrice}'),
-              if (ride.minPriceAdjustment > 0)
-                _line('Dopuna do minimalne', '${ride.minPriceAdjustment}'),
-            ],
-            const Divider(color: Colors.white12),
-            _line('UKUPNO', '${ride.totalPrice} din', bold: true),
-            if (eurRate != null)
-              _line(
-                '',
-                '${CurrencyConverter.formatForeign(ride.totalPrice, eurRate!)} EUR',
-              ),
-            if (gaps.isNotEmpty) ...[
-              const Divider(color: Colors.white12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Prekidi GPS signala: ${gaps.length} '
-                  '(ukupno ${formatClock(gaps.fold<int>(0, (a, g) => a + g.durationMs) ~/ 1000)})',
-                  style: const TextStyle(
-                    color: Colors.amberAccent,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              ...gaps.map(
-                (g) => Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '${formatDateTime(g.startedAt).substring(11)} · '
-                    '${formatClock(g.durationMs ~/ 1000)} · ${gapDescription(g)}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        IconButton(
-          tooltip: 'Obriši vožnju',
-          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-          onPressed: () async {
-            final ok = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: const Color(0xFF1E1E1E),
-                title: const Text(
-                  'Obrisati vožnju?',
-                  style: TextStyle(color: Colors.white),
-                ),
-                content: Text(
-                  '${formatDateTime(ride.startTime)} · ${ride.totalPrice} din\nBrisanje se ne može poništiti.',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text(
-                      'ODUSTANI',
-                      style: TextStyle(color: Colors.white54),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text(
-                      'OBRIŠI',
-                      style: TextStyle(color: Colors.redAccent),
-                    ),
-                  ),
-                ],
-              ),
-            );
-            if (ok != true || !context.mounted) return;
-            await ref.read(rideHistoryRepositoryProvider).delete(ride.id);
-            ref.invalidate(rideHistoryProvider);
-            if (context.mounted) Navigator.pop(context);
-          },
-        ),
-        TextButton.icon(
-          onPressed: () => printRideReceipt(context, ref, ride.id),
-          icon: const Icon(Icons.print, color: Colors.amberAccent, size: 18),
-          label: const Text(
-            'ŠTAMPAJ',
-            style: TextStyle(color: Colors.amberAccent),
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'ZATVORI',
-            style: TextStyle(color: Colors.amberAccent),
-          ),
-        ),
-      ],
     );
   }
 }

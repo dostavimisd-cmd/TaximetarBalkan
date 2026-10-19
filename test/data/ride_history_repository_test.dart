@@ -113,6 +113,31 @@ void main() {
     expect((await db.query('rides')).single['status'], 'active');
   });
 
+  test('getRoute: po vremenu, samo za tu vožnju; brisanje vožnje briše rutu', () async {
+    await ride(1000, 'completed', end: 2000);
+    await ride(3000, 'completed', end: 4000);
+    Future<void> pt(int rideId, int ts, double lat, double lon) =>
+        db.insert('ride_points', {'ride_id': rideId, 'ts': ts, 'lat': lat, 'lon': lon});
+    await pt(1, 1500, 44.2, 20.2);
+    await pt(1, 1100, 44.1, 20.1);
+    await pt(2, 3100, 45.0, 21.0);
+
+    expect(await repo.getRoute(1), [(44.1, 20.1), (44.2, 20.2)]);
+    expect(await repo.getRoute(99), isEmpty);
+    await repo.delete(1);
+    expect(await repo.getRoute(1), isEmpty);
+    expect(await repo.getRoute(2), [(45.0, 21.0)]);
+  });
+
+  test('pauza se čita iz vožnje', () async {
+    await db.insert('rides', {
+      'start_time': 1000, 'end_time': 7000, 'distance_m': 0, 'waiting_time_sec': 0,
+      'start_price': 0, 'km_price': 0, 'waiting_price': 0, 'total_price': 0,
+      'tariff_id': 1, 'applied_calibration': 1.0, 'status': 'completed', 'paused_sec': 4,
+    });
+    expect((await repo.getAll()).single.pausedSeconds, 4);
+  });
+
   test('limit', () async {
     for (var i = 0; i < 5; i++) {
       await ride(1000 + i, 'completed', end: 2000 + i);

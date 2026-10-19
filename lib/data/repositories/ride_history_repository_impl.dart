@@ -30,6 +30,16 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
   }
 
   @override
+  Future<List<(double lat, double lon)>> getRoute(int rideId) async {
+    final db = await _database();
+    final rows = await db.query('ride_points',
+        where: 'ride_id = ?', whereArgs: [rideId], orderBy: 'ts, id');
+    return [
+      for (final r in rows) ((r['lat'] as num).toDouble(), (r['lon'] as num).toDouble()),
+    ];
+  }
+
+  @override
   Future<bool> delete(int id) async {
     final db = await _database();
     return db.transaction((txn) async {
@@ -38,6 +48,7 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
       if (n == 0) return false;
       await txn.delete('ride_gaps', where: 'ride_id = ?', whereArgs: [id]);
       await txn.delete('ride_snapshots', where: 'ride_id = ?', whereArgs: [id]);
+      await txn.delete('ride_points', where: 'ride_id = ?', whereArgs: [id]);
       return true;
     });
   }
@@ -88,6 +99,7 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
       totalPrice: r['total_price'] as int,
       status: r['status'] as String,
       fixedRouteName: r['fixed_route_name'] as String?,
+      pausedSeconds: (r['paused_sec'] as int?) ?? 0,
     );
   }
 }

@@ -49,3 +49,9 @@ final shiftRidesProvider = FutureProvider.autoDispose
             shift.endOr(DateTime.now().toUtc()).millisecondsSinceEpoch + 1,
           ),
     );
+
+/// Pređena ruta vožnje za prikaz na mapi.
+final rideRouteProvider = FutureProvider.autoDispose
+    .family<List<(double, double)>, int>(
+      (ref, rideId) => ref.read(rideHistoryRepositoryProvider).getRoute(rideId),
+    );
