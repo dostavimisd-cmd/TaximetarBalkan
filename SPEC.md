@@ -69,6 +69,7 @@ Odluke korisnika (2026-10-19), vidi `docs/AUDIT_2026-10-19.md` (N17, U7).
 
 ## Automatski izbor tarife (Faza 2, odluke korisnika)
 - Tarifa se bira **samo pri startu** i važi do kraja vožnje.
+  - **Potvrđeno (vlasnik, 19.10.2026):** pravilo u Srbiji je da vožnja koja počne u jednoj tarifi (npr. pre 22:00) ostaje u toj tarifi do kraja, pa prelaza tarife usred vožnje nema. Vozač tarifu menja ručno pre sledeće vožnje.
 - Uključuje se u Podešavanjima. Redosled: **praznik** (ceo dan, lokalni datum) → **raspored** (prva tarifa na listi čiji raspored važi) → ručno izabrana tarifa → prva tarifa.
 - Raspored po tarifi: dani u nedelji + lokalno vreme od–do; period preko ponoći pripada danu u kome počinje; isto vreme od i do = ceo dan. Kraj nije uključen (22:00 je već sledeći period).
 - Praznike unosi korisnik (jednokratno ili svake godine) i uz svaki bira tarifu. Nema ugrađenih praznika.
