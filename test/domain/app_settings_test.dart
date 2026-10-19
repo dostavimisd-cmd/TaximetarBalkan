@@ -11,6 +11,7 @@ void main() {
     expect(s.language, 'sr');
     expect(s.currency, 'RSD');
     expect(s.selectedTariffId, isNull);
+    expect(s.autoTariff, false);
     expect(s.validate(), isNull);
   });
 
@@ -23,6 +24,7 @@ void main() {
       language: 'en',
       currency: 'EUR',
       selectedTariffId: 3,
+      autoTariff: true,
     );
     final back = AppSettings.fromMap(s.toMap());
     expect(back.toMap(), s.toMap());

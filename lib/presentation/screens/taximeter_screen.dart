@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
+import '../../domain/models/holiday.dart';
 import '../../domain/models/tariff.dart';
+import '../../domain/tariff_selector.dart';
 import '../providers/taximeter_provider.dart';
 import '../providers/tariffs_provider.dart';
 import '../providers/settings_provider.dart';
@@ -20,19 +23,47 @@ class TaximeterScreen extends ConsumerStatefulWidget {
 }
 
 class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
+  /// Automatski izbor zavisi od sata: ekran se osvežava dok čeka start.
+  Timer? _clock;
+
+  @override
+  void initState() {
+    super.initState();
+    _clock = Timer.periodic(const Duration(seconds: 30), (_) {
+      final auto = ref.read(appSettingsProvider).value?.autoTariff ?? false;
+      if (mounted && auto && !ref.read(taximeterProvider).isRunning) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _clock?.cancel();
+    super.dispose();
+  }
+
   /// Tokom (i posle) vožnje tarifu javlja servis (status/recovered), pa ekran
-  /// posle oporavka prikazuje pravu. Između vožnji važi izbor iz podešavanja
-  /// (pamti se). Tarife unosi korisnik; dok ih nema, vraća null.
-  Tariff? get _activeTariff {
+  /// posle oporavka prikazuje pravu. Između vožnji: ručni izbor (pamti se) ili
+  /// automatski po prazniku/rasporedu u ovom trenutku. Tarife unosi korisnik;
+  /// dok ih nema, vraća null.
+  TariffChoice? get _choice {
     final tariffs = ref.read(tariffsProvider).value ?? const <Tariff>[];
     if (tariffs.isEmpty) return null;
     final state = ref.read(taximeterProvider);
-    final fromRide = state.isRunning || state.phase == RidePhase.finished;
-    final id = fromRide
-        ? state.selectedTariffId
-        : ref.read(appSettingsProvider).value?.selectedTariffId;
-    return tariffs.firstWhere((t) => t.id == id, orElse: () => tariffs.first);
+    if (state.isRunning || state.phase == RidePhase.finished) {
+      final t = tariffs.where((t) => t.id == state.selectedTariffId).firstOrNull;
+      if (t != null) return TariffChoice(t, TariffChoiceReason.manual);
+    }
+    final settings = ref.read(appSettingsProvider).value;
+    return TariffSelector.choose(
+      tariffs: tariffs,
+      holidays: ref.read(holidaysProvider).value ?? const <Holiday>[],
+      local: DateTime.now(),
+      automatic: settings?.autoTariff ?? false,
+      manualTariffId: settings?.selectedTariffId,
+    );
   }
+
+  Tariff? get _activeTariff => _choice?.tariff;
 
   Future<void> _selectTariff(int id) async {
     ref.read(taximeterProvider.notifier).setTariff(id);
@@ -85,7 +116,12 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
     final eurRate = settings.eurRateMilli;
     final badgeSpeed = state.waitingSpeedKmh ?? settings.waitingSpeedKmh;
-    final tariff = _activeTariff;
+    ref.watch(holidaysProvider);
+    final choice = _choice;
+    final tariff = choice?.tariff;
+    final autoPicked = choice != null &&
+        (choice.reason == TariffChoiceReason.schedule ||
+            choice.reason == TariffChoiceReason.holiday);
     // EUR samo uz kurs koji je korisnik uneo; račun je celobrojan.
     final currency = (settings.currency == 'EUR' && eurRate != null) ? 'EUR' : 'RSD';
     final displayPrice = (currency == 'EUR')
@@ -358,6 +394,11 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                               fontSize: 14,
                             ),
                           ),
+                          if (autoPicked)
+                            Text(
+                              choice.reason == TariffChoiceReason.holiday ? 'PRAZNIK' : 'AUTO',
+                              style: const TextStyle(color: Colors.amberAccent, fontSize: 9),
+                            ),
                         ],
                       ),
                     ),
@@ -389,7 +430,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                               if (id != null && id > 0) await _selectTariff(id);
                                             }
                                           : () {
-                                              final t = tariff!;
+                                              // tarifa se bira u trenutku starta
+                                              final t = _activeTariff!;
                                               notifier.startRide(
                                                 tariffId: t.id,
                                                 startPrice: t.startPrice,

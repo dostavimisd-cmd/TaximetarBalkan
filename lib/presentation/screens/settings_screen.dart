@@ -6,6 +6,7 @@ import '../../domain/calibration.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
 import '../providers/settings_provider.dart';
+import 'holidays_screen.dart';
 
 /// Podešavanja korisnika. Vrednosti važe od sledećeg starta vožnje; vožnja u
 /// toku zadržava ono sa čim je počela (upisano je u `rides`).
@@ -23,6 +24,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _rate = TextEditingController();
   String _language = 'sr';
   String _currency = 'RSD';
+  bool _autoTariff = false;
   bool _loaded = false;
   String? _error;
 
@@ -41,6 +43,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _rate.text = s.eurRateMilli == null ? '' : CurrencyConverter.formatRate(s.eurRateMilli!);
     _language = s.language;
     _currency = s.currency;
+    _autoTariff = s.autoTariff;
     _loaded = true;
   }
 
@@ -76,6 +79,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       language: _language,
       currency: _currency,
       selectedTariffId: current.selectedTariffId,
+      autoTariff: _autoTariff,
     );
     final invalid = next.validate();
     if (invalid != null) {
@@ -169,6 +173,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   decimal: true,
                   signed: true,
                   helper: '0 = bez korekcije; 2,5 = distanca +2,5%. Uskladi sa zvaničnim taksimetrom.'),
+              _section('TARIFE'),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _autoTariff,
+                onChanged: (v) => setState(() => _autoTariff = v),
+                title: const Text('Automatski izbor tarife pri startu',
+                    style: TextStyle(color: Colors.white)),
+                subtitle: const Text(
+                    'Prvo praznici, pa raspored tarife (dani i vreme). Tarifa se ne menja tokom vožnje.',
+                    style: TextStyle(color: Colors.white38, fontSize: 11)),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => const HolidaysScreen())),
+                icon: const Icon(Icons.event, color: Colors.amberAccent),
+                label: const Text('Praznici', style: TextStyle(color: Colors.amberAccent)),
+              ),
               _section('GPS'),
               _number('Najveća dozvoljena nepreciznost (m)', _gps,
                   helper:

@@ -2,13 +2,13 @@
 
 **Pravila:** Novac se čuva kao `INTEGER` (najmanja jedinica valute; za RSD dinar, za EUR cent — vidi N17 u `docs/AUDIT_2026-10-19.md`). Vreme se čuva kao `INTEGER` (UTC milisekunde). Logičke vrednosti (boolean) kao 0 ili 1.
 
-**Verzija šeme: 7** (`DatabaseHelper.openAt`). `onConfigure`: WAL, `busy_timeout=5000`, `foreign_keys=ON`.
+**Verzija šeme: 8** (`DatabaseHelper.openAt`). `onConfigure`: WAL, `busy_timeout=5000`, `foreign_keys=ON`.
 Servis (`RideEngine`) je jedini pisac u `rides` i `ride_snapshots`.
 
 ## Tabele
-- `app_settings`: id, key (UNIQUE), value. Tipizirano u `AppSettings` (domain): `eur_rate_milli` (kurs × 1000, opciono), `waiting_speed_kmh` (1–50, pod. 8), `calibration_permille` (500–1500, pod. 1000), `gps_accuracy_m` (5–50, pod. 15), `language` (sr|en), `currency` (RSD|EUR), `selected_tariff_id`. Neispravna vrednost se čita kao podrazumevana. Stari ključevi iz v1 (`waiting_speed_threshold`, `gps_accuracy_threshold`, `calibration_multiplier`) se ne koriste.
-- `tariffs`: id, name, start_price, price_per_km, waiting_para_per_min, min_price, rules_json.
-- `holidays`: id, name, date_string, multiplier, recurring_yearly.
+- `app_settings`: id, key (UNIQUE), value. Tipizirano u `AppSettings` (domain): `eur_rate_milli` (kurs × 1000, opciono), `waiting_speed_kmh` (1–50, pod. 8), `calibration_permille` (500–1500, pod. 1000), `gps_accuracy_m` (5–50, pod. 15), `language` (sr|en), `currency` (RSD|EUR), `selected_tariff_id`, `auto_tariff` (1/0). Neispravna vrednost se čita kao podrazumevana. Stari ključevi iz v1 (`waiting_speed_threshold`, `gps_accuracy_threshold`, `calibration_multiplier`) se ne koriste.
+- `tariffs`: id, name, start_price, price_per_km, waiting_para_per_min, min_price, rules_json (ne koristi se), **schedule_days** (v8; bitovi pon=0 … ned=6, 0 = bez rasporeda), **schedule_start_min**, **schedule_end_min** (lokalni minuti od ponoći; kraj < početak = preko ponoći; jednaki = ceo dan). Redosled (id) je prioritet kad se rasporedi poklapaju.
+- `holidays`: id, name, date_string (`MM-DD` svake godine ili `YYYY-MM-DD`), multiplier (iz v1, ne koristi se), recurring_yearly, **tariff_id** (v8; tarifa koja važi ceo taj dan). Redovi bez `tariff_id` se ignorišu. Brisanje tarife briše njene praznike.
 - `rides`: id, start_time, end_time, distance_m, waiting_time_sec, start_price, km_price, waiting_price, total_price, tariff_id, applied_calibration (REAL = promili / 1000, npr. 1.025), status, **tariff_start_price, tariff_price_per_km, tariff_waiting_para_per_min, tariff_min_price** (kopija tarife važeća za vožnju), **min_price_adjustment**, **client_uuid** (v3, unique indeks; još se ne popunjava), **waiting_speed_kmh** (v5; prag brzine za čekanje koji je važio za vožnju, NULL = 8), **gps_accuracy_m** (v7; prag GPS tačnosti vožnje, NULL = 15).
   - *Vrednosti za status:* `active` (u toku), `completed` (završena), `interrupted` (prekinuta; iznosi su iz poslednjeg snapshot-a, `end_time` = vreme snapshot-a ili `start_time`), `cancelled` (rezervisano).
   - `total_price = start_price + km_price + waiting_price + min_price_adjustment`.
@@ -23,3 +23,4 @@ Servis (`RideEngine`) je jedini pisac u `rides` i `ride_snapshots`.
 - v4→v5: `rides.waiting_speed_kmh`.
 - v5→v6: tabela `ride_gaps`.
 - v6→v7: `rides.gps_accuracy_m`.
+- v7→v8: raspored tarife (`tariffs.schedule_*`) i `holidays.tariff_id`.

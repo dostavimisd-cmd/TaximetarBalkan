@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -70,7 +70,10 @@ class DatabaseHelper {
         price_per_km INTEGER NOT NULL,
         waiting_para_per_min INTEGER NOT NULL,
         min_price INTEGER NOT NULL,
-        rules_json TEXT
+        rules_json TEXT,
+        schedule_days INTEGER NOT NULL DEFAULT 0,
+        schedule_start_min INTEGER NOT NULL DEFAULT 0,
+        schedule_end_min INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -80,7 +83,8 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         date_string TEXT NOT NULL,
         multiplier REAL NOT NULL,
-        recurring_yearly INTEGER NOT NULL
+        recurring_yearly INTEGER NOT NULL,
+        tariff_id INTEGER
       )
     ''');
 
@@ -189,6 +193,13 @@ class DatabaseHelper {
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
     }
+    if (oldVersion < 8) {
+      // Faza 2: raspored tarife (dani + vreme od-do) i tarifa praznika.
+      for (final col in ['schedule_days', 'schedule_start_min', 'schedule_end_min']) {
+        await _addColumn(db, 'tariffs', col, 'INTEGER NOT NULL DEFAULT 0');
+      }
+      await _addColumn(db, 'holidays', 'tariff_id', 'INTEGER');
+    }
     if (oldVersion < 7) {
       // Prag GPS tačnosti (m) koji je važio za vožnju; null = podrazumevani.
       await db.execute('ALTER TABLE rides ADD COLUMN gps_accuracy_m INTEGER');
@@ -200,6 +211,14 @@ class DatabaseHelper {
       // Prag brzine za čekanje (km/h) koji je važio za vožnju; null = podrazumevani.
       await db.execute('ALTER TABLE rides ADD COLUMN waiting_speed_kmh INTEGER');
     }
+  }
+
+  /// Dodaje kolonu ako tabela postoji, a kolona ne (nepotpune stare šeme).
+  static Future<void> _addColumn(
+      Database db, String table, String column, String type) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    if (columns.isEmpty || columns.any((c) => c['name'] == column)) return;
+    await db.execute('ALTER TABLE $table ADD COLUMN $column $type');
   }
 
   /// Preimenuje kolonu i množi vrednosti sa 100; preskače ako tabela ili

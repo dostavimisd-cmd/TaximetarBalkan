@@ -1,3 +1,5 @@
+import 'tariff_schedule.dart';
+
 class Tariff {
   /// Tehnička gornja granica cene (sprečava prekoračenje int-a pri obračunu
   /// metar * cena); nije tarifa ni zakonski limit.
@@ -11,6 +13,9 @@ class Tariff {
   final int waitingParaPerMin;
   final int minPrice;
 
+  /// Raspored za automatski izbor; null = samo ručni izbor.
+  final TariffSchedule? schedule;
+
   const Tariff({
     this.id = 1,
     this.name = 'Standard',
@@ -18,6 +23,7 @@ class Tariff {
     required this.pricePerKm,
     required this.waitingParaPerMin,
     required this.minPrice,
+    this.schedule,
   });
 
   /// N19: vraća opis greške ili null ako je tarifa ispravna.
@@ -29,7 +35,7 @@ class Tariff {
       return 'Cena ne sme biti veća od $maxPrice din.';
     }
     if (name.trim().isEmpty) return 'Naziv tarife je obavezan.';
-    return null;
+    return schedule?.validate();
   }
 
   Tariff copyWith({
@@ -39,6 +45,8 @@ class Tariff {
     int? pricePerKm,
     int? waitingParaPerMin,
     int? minPrice,
+    TariffSchedule? schedule,
+    bool clearSchedule = false,
   }) {
     return Tariff(
       id: id ?? this.id,
@@ -47,6 +55,7 @@ class Tariff {
       pricePerKm: pricePerKm ?? this.pricePerKm,
       waitingParaPerMin: waitingParaPerMin ?? this.waitingParaPerMin,
       minPrice: minPrice ?? this.minPrice,
+      schedule: clearSchedule ? null : (schedule ?? this.schedule),
     );
   }
 }

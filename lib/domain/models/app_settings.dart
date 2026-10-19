@@ -11,6 +11,7 @@ class AppSettings {
   static const String keyLanguage = 'language';
   static const String keyCurrency = 'currency';
   static const String keySelectedTariff = 'selected_tariff_id';
+  static const String keyAutoTariff = 'auto_tariff';
 
   static const int defaultWaitingSpeedKmh = 8;
   static const int minWaitingSpeedKmh = 1;
@@ -36,6 +37,9 @@ class AppSettings {
   /// Tarifa izabrana za sledeću vožnju; null = prva u listi.
   final int? selectedTariffId;
 
+  /// Automatski izbor tarife pri startu (praznici, pa raspored).
+  final bool autoTariff;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -44,6 +48,7 @@ class AppSettings {
     this.language = 'sr',
     this.currency = 'RSD',
     this.selectedTariffId,
+    this.autoTariff = false,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -69,6 +74,7 @@ class AppSettings {
       language: languages.contains(m[keyLanguage]) ? m[keyLanguage]! : 'sr',
       currency: currencies.contains(m[keyCurrency]) ? m[keyCurrency]! : 'RSD',
       selectedTariffId: asInt(keySelectedTariff),
+      autoTariff: m[keyAutoTariff] == '1',
     );
   }
 
@@ -80,6 +86,7 @@ class AppSettings {
         keyLanguage: language,
         keyCurrency: currency,
         if (selectedTariffId != null) keySelectedTariff: '$selectedTariffId',
+        keyAutoTariff: autoTariff ? '1' : '0',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -107,6 +114,7 @@ class AppSettings {
     String? language,
     String? currency,
     int? selectedTariffId,
+    bool? autoTariff,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -116,6 +124,7 @@ class AppSettings {
       language: language ?? this.language,
       currency: currency ?? this.currency,
       selectedTariffId: selectedTariffId ?? this.selectedTariffId,
+      autoTariff: autoTariff ?? this.autoTariff,
     );
   }
 }

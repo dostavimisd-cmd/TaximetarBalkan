@@ -20,8 +20,8 @@ Pomoćna aplikacija za vozača (offline-first) koja računa cenu vožnje. Pomaž
 |---|---|---|
 | 1 | GPS, FareCalculator, sqflite, Foreground Service, glavni ekran | urađeno (revizija koraci 1–9) |
 | 2 | Model tarifa (unos korisnika) | urađeno |
-| 2 | Automatski/ručni režim tarifa | sledeće |
-| 2 | Korisnički definisani praznici | sledeće |
+| 2 | Automatski/ručni režim tarifa | urađeno |
+| 2 | Korisnički definisani praznici | urađeno |
 | 3 | Istorija vožnji | urađeno (brisanje odloženo) |
 | 3 | Mesečni izveštaji | čeka |
 | 3 | Fiksne relacije | čeka |
@@ -60,3 +60,9 @@ Odluke korisnika (2026-10-19), vidi `docs/AUDIT_2026-10-19.md` (N17, U7).
 - Korisnik unosi procenat korekcije (npr. 2,5 ili -1, jedna decimala, -50 do 50); čuva se kao ceo broj promila (1000 = bez korekcije).
 - Obračun: `kalibrisani_metri = round_half_up(metri * promili / 1000)`, celobrojno. U `rides.distance_m` ostaje izmerena distanca, a iznos km se računa iz kalibrisane.
 - Promili važe od starta vožnje (`rides.applied_calibration`), pa se oporavljena vožnja obračunava istom kalibracijom.
+
+## Automatski izbor tarife (Faza 2, odluke korisnika)
+- Tarifa se bira **samo pri startu** i važi do kraja vožnje.
+- Uključuje se u Podešavanjima. Redosled: **praznik** (ceo dan, lokalni datum) → **raspored** (prva tarifa na listi čiji raspored važi) → ručno izabrana tarifa → prva tarifa.
+- Raspored po tarifi: dani u nedelji + lokalno vreme od–do; period preko ponoći pripada danu u kome počinje; isto vreme od i do = ceo dan. Kraj nije uključen (22:00 je već sledeći period).
+- Praznike unosi korisnik (jednokratno ili svake godine) i uz svaki bira tarifu. Nema ugrađenih praznika.

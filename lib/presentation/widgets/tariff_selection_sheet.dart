@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/tariff.dart';
+import '../providers/settings_provider.dart';
 import '../providers/tariffs_provider.dart';
 import 'tariff_edit_dialog.dart';
 
@@ -19,6 +20,7 @@ class TariffSelectionSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
+    final auto = ref.watch(appSettingsProvider).value?.autoTariff ?? false;
 
     return Container(
       decoration: const BoxDecoration(
@@ -52,6 +54,16 @@ class TariffSelectionSheet extends ConsumerWidget {
                 letterSpacing: 1.5,
               ),
             ),
+            if (auto)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Automatski izbor je uključen: pri startu važe praznici pa raspored. '
+                  'Ručno izabrana tarifa važi kad nijedno pravilo ne važi.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.amberAccent, fontSize: 11),
+                ),
+              ),
             const SizedBox(height: 16),
             if (tariffs.isEmpty)
               const Padding(
@@ -87,7 +99,8 @@ class TariffSelectionSheet extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 4.0),
                     child: Text(
                       'Start: ${t.startPrice} | Km: ${t.pricePerKm} | '
-                      'Čekanje/min: ${CurrencyConverter.formatPara(t.waitingParaPerMin)} | Min: ${t.minPrice}',
+                      'Čekanje/min: ${CurrencyConverter.formatPara(t.waitingParaPerMin)} | Min: ${t.minPrice}'
+                      '${t.schedule == null ? '' : '\nRaspored: ${t.schedule!.describe()}'}',
                       style: const TextStyle(color: Colors.white60, fontSize: 12),
                     ),
                   ),
