@@ -6,12 +6,21 @@
 - **Core Logika:** `FareCalculator` je čista Dart klasa u `domain` sloju. Ne zna za UI ni za bazu. Pokrivena testovima za sve scenarije iz plana.
 
 ## Glavni Moduli
-1. **GPS Engine (Foreground Service):** Sluša lokaciju i drži Android WakeLock. Odbacuje tačke sa lošom tačnošću (prag je podesiv iz baze, podrazumevano >15m).
-2. **Obračun Cene (FareCalculator):** Pametno čekanje se aktivira kada je brzina ispod podesivog praga (podrazumevano < 8 km/h), tada računa vreme čekanja umesto distance.
-3. **Lokalna Baza (sqflite):** Offline-first pristup. Vožnja se periodično upisuje u `ride_snapshots` tabelu.
+1. **GPS Engine (Foreground Service):** Sluša lokaciju i drži Android WakeLock. Odbacuje tačke sa lošom tačnošću (prag iz Podešavanja, 5–50 m, podrazumevano 15 m; upisuje se uz vožnju).
+2. **Obračun Cene (FareCalculator):** Pametno čekanje kada je brzina ispod praga (Podešavanja, podrazumevano 8 km/h); kalibracija distance u promilima. Sve celobrojno (vidi `SPEC.md`).
+3. **Lokalna Baza (sqflite, šema v8):** Offline-first. Vožnja se periodično upisuje u `ride_snapshots`. Detalji u `DATA_MODEL.md`.
+4. **Tarife (Faza 2):** tarife, raspored i praznike unosi korisnik; `TariffSelector` bira tarifu samo pri startu (praznik → raspored → ručni izbor).
+5. **Izveštaji i istorija (Faza 3):** `RideHistoryRepository` (čitanje, brisanje završenih vožnji), `ReportRange`/`RideStats` (dan, nedelja, mesec).
+6. **Štampa (Faza 4):** `EscPos`, `Receipt`, `Dither` (domain, čisti) + `ReceiptPrinter` (Bluetooth, `print_bluetooth_thermal`). Podrazumevano se račun šalje kao slika, pa su naša slova uvek tačna.
+7. **Mapa i navigacija:** `RideMap` (flutter_map, OpenStreetMap podloge), `NavigationService` (Nominatim pretraga, OSRM ruta). Samo za orijentaciju; obračun ne zavisi od mape ni interneta.
+8. **Podešavanja:** `AppSettings` (domain, tipizirano i provereno) u `app_settings`; jedan `appSettingsProvider`.
+
+## Ko piše u bazu
+- `rides`, `ride_snapshots`, `ride_gaps` za vožnju u toku: samo servis (`RideEngine`).
+- UI isolate: `tariffs`, `holidays`, `app_settings`, i brisanje **završenih** vožnji iz istorije (kratka transakcija; WAL + `busy_timeout` sprečavaju sudar sa servisom).
 
 ## Tok Podataka
-GPS Senzor -> Foreground Service -> Odbacivanje šuma -> FareCalculator -> Ažuriranje Riverpod State-a -> UI Prikaz & sqflite backup.
+GPS Senzor -> Foreground Service (`RideEngine`) -> Odbacivanje šuma -> FareCalculator -> događaji (`update`…) -> Riverpod -> UI Prikaz & sqflite backup.
 
 ## Životni ciklus servisa
 - **Vlasnik servisa je `RideServiceController` (UI isolate).** On pali i gasi foreground servis; handler (`RideTaskHandler`) nikad ne zove `stopService()`.
@@ -23,7 +32,7 @@ GPS Senzor -> Foreground Service -> Odbacivanje šuma -> FareCalculator -> Ažur
 - **Baza u testovima:** `DatabaseHelper.openAt(path)` otvara produkcijsku šemu i migracije na proizvoljnoj putanji.
 
 ## Protokol događaja (servis → UI)
-- `ready{active}`, `status{active, distance, waitingMs, price}`, `started{ride_id}`, `recovered{...}`, `update{...}`, `already_active`, `snapshot_failing`, `warning{message}`.
+- `ready{active}`, `status{active, distance, waitingMs, price, mode, tariff_id, start_price, waiting_speed_kmh, gap_count, gap_ms, lat, lon}`, `started{ride_id}`, `recovered{...}`, `update{...}` (ista polja kao status), `gap{duration_ms, kind, ...}`, `already_active`, `snapshot_failing`, `warning{message}`.
 - `stopped{ride_id, distance_m, waiting_sec, start_price, km_price, waiting_price, min_price_adjustment, total_price}`; `ride_id: null` znači da vožnje nije bilo.
 - `error{message, cmd?}`: `cmd:'start'` → UI se vraća u `idle`, kontroler gasi servis; `cmd:'stop'` → upis nije uspeo, vožnja ostaje aktivna, Stop se može ponoviti.
 - UI faze (`RidePhase`): `idle → starting → running → stopping → finished` (`newRide()` → `idle`).
@@ -40,5 +49,7 @@ GPS Senzor -> Foreground Service -> Odbacivanje šuma -> FareCalculator -> Ažur
 - UI: tokom vožnje amber red "GPS signal prekidan N×"; u istoriji detalji vožnje navode svaku rupu i šta je naplaćeno.
 
 ## Rizici i Tehnički Dug
-- **Rizik 1 (Baterija):** Android agresivno gasi servise (Xiaomi, Huawei). Moramo obezbediti ekran koji vodi vozača da isključi Battery Optimization.
-- **Rizik 2 (GPS Šum):** Stajanje u mestu može generisati mikropomake.
+- **Rizik 1 (Baterija):** Android agresivno gasi servise (Xiaomi, Huawei, Samsung). Podešavanja imaju dugme ka podešavanjima aplikacije; ponašanje na uređaju još nije testirano (plan E u `docs/AUDIT_2026-10-19.md`).
+- **Rizik 2 (GPS Šum):** Stajanje u mestu može generisati mikropomake (ublaženo prozorom brzine i pragom tačnosti).
+- **Javni OSM serveri** (mapa, pretraga, ruta) su za malu upotrebu — vidi `KNOWN_ISSUES.md`.
+- **Testovi:** logika (domain, data, provider, kontroler) je pokrivena; ekrani nemaju widget testove i proveravaju se ručno.
