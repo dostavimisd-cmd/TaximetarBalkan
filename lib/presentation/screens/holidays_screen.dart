@@ -23,7 +23,7 @@ class HolidaysScreen extends ConsumerWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Praznici'),
+        title: Text(t('Praznici')),
       ),
       floatingActionButton: tariffs.isEmpty
           ? null
@@ -171,7 +171,7 @@ class _HolidayDialogState extends ConsumerState<_HolidayDialog> {
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
       title: Text(
-        widget.existing == null ? 'Novi praznik' : t('Izmena praznika'),
+        widget.existing == null ? t('Novi praznik') : t('Izmena praznika'),
         style: const TextStyle(color: Colors.white),
       ),
       content: SingleChildScrollView(

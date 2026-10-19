@@ -309,7 +309,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           SegmentedButton<String>(
             segments: [
               for (final o in options)
-                ButtonSegment(value: o, label: Text(o.toUpperCase())),
+                ButtonSegment(value: o, label: Text(t(o).toUpperCase())),
             ],
             selected: {value},
             showSelectedIcon: false,
@@ -328,7 +328,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Podešavanja'),
+        title: Text(t('Podešavanja')),
         actions: [
           TextButton(
             onPressed: settings.hasValue ? () => _save(settings.value!) : null,
@@ -434,7 +434,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 helper: t('Samo za prikaz u EUR. Obračun je uvek u dinarima.'),
               ),
               _section(t('EKRAN')),
-              const Text('Boja cene', style: TextStyle(color: Colors.white70)),
+              Text(t('Boja cene'), style: TextStyle(color: Colors.white70)),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
@@ -620,7 +620,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onPressed: _printing ? null : _testPrint,
                   icon: const Icon(Icons.receipt, color: Colors.amberAccent),
                   label: Text(
-                    _printing ? 'Štampam…' : t('Probna štampa'),
+                    _printing ? t('Štampam…') : t('Probna štampa'),
                     style: const TextStyle(color: Colors.amberAccent),
                   ),
                 ),

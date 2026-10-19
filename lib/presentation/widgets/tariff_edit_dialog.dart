@@ -233,7 +233,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
       title: Text(
-        widget.existing == null ? 'Nova tarifa' : t('Izmena tarife'),
+        widget.existing == null ? t('Nova tarifa') : t('Izmena tarife'),
         style: const TextStyle(color: Colors.white),
       ),
       content: SingleChildScrollView(

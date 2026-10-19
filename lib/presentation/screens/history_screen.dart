@@ -35,7 +35,7 @@ class HistoryScreen extends ConsumerWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Istorija vožnji'),
+        title: Text(t('Istorija vožnji')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

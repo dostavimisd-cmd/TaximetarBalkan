@@ -260,6 +260,18 @@ const Map<String, String> enStrings = {
   '\nFiksna cena: {0} din': '\nFixed fare: {0} RSD',
   '\n≈ {0} din (bez čekanja)': '\n≈ {0} RSD (without waiting)',
 
+  // ---- dopuna (naslovi i dugmad)
+  'Nije moguće menjati tarifu tokom aktivne vožnje!': 'The tariff cannot be changed during a ride!',
+  'Nova tarifa': 'New tariff',
+  'PODELI': 'SHARE',
+  'ŠTAMPAJ': 'PRINT',
+  'Vožnja završena': 'Ride finished',
+  'Štampam…': 'Printing…',
+
+  // vrednosti izbora pozadine (prikazuju se velikim slovima)
+  'crna': 'black',
+  'logo': 'logo',
+
   // ---- izveštaji (segmenti)
   'DAN': 'DAY',
   'NED.': 'WEEK',

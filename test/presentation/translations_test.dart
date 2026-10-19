@@ -81,4 +81,31 @@ void main() {
       }
     }
   });
+
+  // Čuvar: tekst napisan direktno u Text('...') ili kao grana uslova
+  // (x ? 'Tekst' : ...) zaobilazi prevod. Ovaj test je dodat posle greške
+  // gde su naslovi ekrana ostali na srpskom u engleskoj verziji.
+  test('nijedan tekst na ekranu nije napisan mimo t(...)', () {
+    final textLiteral = RegExp(r"(?<![A-Za-z0-9_])Text\(\s*'([^'\n]*)'");
+    final ternaryLiteral = RegExp(r"\?\s*'([^'\n]*)'\s*:");
+    final letters = RegExp(r'[A-Za-zČĆŽŠĐčćžšđ]');
+    // interne vrednosti izbora (prevode se na prikazu, u _choice)
+    final allowed = {'RSD', 'EUR', 'SR', 'EN', 'rs.taksimetar.balkan', 'crna'};
+    final offenders = <String>[];
+    for (final f in Directory('lib/presentation').listSync(recursive: true)) {
+      if (f is! File || !f.path.endsWith('.dart') || f.path.contains('l10n')) continue;
+      final lines = f.readAsLinesSync();
+      for (var i = 0; i < lines.length; i++) {
+        for (final re in [textLiteral, ternaryLiteral]) {
+          for (final m in re.allMatches(lines[i])) {
+            final body = m.group(1)!;
+            final plain = body.replaceAll(RegExp(r'\$\{[^}]*\}|\$\w+'), '');
+            if (allowed.contains(body) || letters.allMatches(plain).length < 3) continue;
+            offenders.add('${f.path}:${i + 1}: $body');
+          }
+        }
+      }
+    }
+    expect(offenders, isEmpty, reason: offenders.join('\n'));
+  });
 }

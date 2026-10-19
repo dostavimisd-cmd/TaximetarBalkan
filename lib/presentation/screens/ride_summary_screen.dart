@@ -44,7 +44,7 @@ class RideSummaryScreen extends ConsumerWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(onNewRide != null ? 'Vožnja završena' : t('Vožnja')),
+        title: Text(onNewRide != null ? t('Vožnja završena') : t('Vožnja')),
         leading: onNewRide != null
             ? IconButton(
                 icon: const Icon(Icons.close),
@@ -207,7 +207,7 @@ class RideSummaryScreen extends ConsumerWidget {
                 child: OutlinedButton.icon(
                   onPressed: () => printRideReceipt(context, ref, ride.id),
                   icon: const Icon(Icons.print, color: _gold),
-                  label: const Text('ŠTAMPAJ', style: TextStyle(color: _gold)),
+                  label: Text(t('ŠTAMPAJ'), style: TextStyle(color: _gold)),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     side: const BorderSide(color: _gold),
@@ -226,7 +226,7 @@ class RideSummaryScreen extends ConsumerWidget {
                     ),
                   ),
                   icon: const Icon(Icons.share, color: _gold),
-                  label: const Text('PODELI', style: TextStyle(color: _gold)),
+                  label: Text(t('PODELI'), style: TextStyle(color: _gold)),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     side: const BorderSide(color: _gold),

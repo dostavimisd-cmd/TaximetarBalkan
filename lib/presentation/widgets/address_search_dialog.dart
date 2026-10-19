@@ -85,7 +85,7 @@ class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
-      title: const Text('Kuda se vozi?', style: TextStyle(color: Colors.white)),
+      title: Text(t('Kuda se vozi?'), style: TextStyle(color: Colors.white)),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
@@ -152,7 +152,7 @@ class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('ZATVORI', style: TextStyle(color: Colors.white54)),
+          child: Text(t('ZATVORI'), style: TextStyle(color: Colors.white54)),
         ),
       ],
     );

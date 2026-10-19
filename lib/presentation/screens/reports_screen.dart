@@ -45,7 +45,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return shifts.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) =>
-          Text('Greška: $e', style: const TextStyle(color: Colors.redAccent)),
+          Text(t('Greška: {0}', [e]), style: const TextStyle(color: Colors.redAccent)),
       data: (list) {
         final open = list.where((s) => s.isOpen).firstOrNull;
         final index = (_shiftIndex ?? 0).clamp(
@@ -75,7 +75,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 color: Colors.white,
               ),
               label: Text(
-                open == null ? 'POČNI SMENU' : t('ZAVRŠI SMENU'),
+                open == null ? t('POČNI SMENU') : t('ZAVRŠI SMENU'),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -166,7 +166,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Izveštaji'),
+        title: Text(t('Izveštaji')),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

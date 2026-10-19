@@ -137,8 +137,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     final isRunning = ref.read(taximeterProvider).isRunning;
     if (isRunning) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nije moguće menjati tarifu tokom aktivne vožnje!'),
+        SnackBar(
+          content: Text(t('Nije moguće menjati tarifu tokom aktivne vožnje!')),
           backgroundColor: Colors.redAccent,
         ),
       );

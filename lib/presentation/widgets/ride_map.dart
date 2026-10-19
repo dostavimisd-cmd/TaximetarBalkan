@@ -64,7 +64,13 @@ class _RideMapState extends ConsumerState<RideMap> {
   // Živa pozicija dok vožnja ne traje (servis je tada ugašen, pa GPS ne radi).
   // Tokom vožnje poziciju šalje servis i ovaj tok se zatvara.
   StreamSubscription<Position>? _idleSub;
-  bool _centeredOnce = false;
+
+  /// Kamera prati poziciju (kao navigacija) dok korisnik ne pomeri mapu
+  /// prstom; dugme "moja lokacija" vraća praćenje.
+  bool _follow = true;
+
+  /// Okvir rute ostavlja mesta za traku sa adresom (gore) i dugmad (desno).
+  static const _routePadding = EdgeInsets.fromLTRB(36, 96, 64, 40);
 
   @override
   void initState() {
@@ -122,17 +128,55 @@ class _RideMapState extends ConsumerState<RideMap> {
     if (!mounted) return;
     final here = LatLng(p.latitude, p.longitude);
     setState(() => _here = here);
-    // kamera prati samo prvi fiks; posle toga korisnik slobodno pomera mapu
-    if (_ready && !_centeredOnce) {
-      _centeredOnce = true;
-      _controller.move(here, 16);
+    _followTo(here);
+  }
+
+  /// Pomera kameru na tačku ako je praćenje uključeno (zum bar 15).
+  void _followTo(LatLng point) {
+    if (!_ready || !_follow) return;
+    final zoom = _controller.camera.zoom < 15 ? 16.0 : _controller.camera.zoom;
+    _controller.move(point, zoom);
+  }
+
+  /// Mapa je spremna: ako je lokacija stigla pre toga, tek sada se centrira
+  /// (ranije se tad preskakalo, pa telefon koji stoji nikad nije bio u centru).
+  void _onMapReady() {
+    _ready = true;
+    final plan = _plan;
+    if (plan != null) {
+      _fitRoute(plan);
+    } else if (_here != null) {
+      _controller.move(_here!, 16);
     }
   }
 
-  /// Dugme "moja lokacija": vraća kameru na poziciju (i pali živu lokaciju).
+  /// Korisnik je pomerio mapu prstom: prestaje praćenje.
+  void _onCameraMoved(MapCamera camera, bool hasGesture) {
+    if (hasGesture && _follow) setState(() => _follow = false);
+  }
+
+  /// Dugme "moja lokacija": vraća praćenje i kameru na poziciju.
   void _recenter() {
+    setState(() => _follow = true);
     if (_here != null && _ready) _controller.move(_here!, 16);
     if (!ref.read(taximeterProvider).isRunning) _startIdleLocation();
+  }
+
+  /// Cela ruta (i trenutna pozicija) u kadru, sa mestom za trake preko mape.
+  void _fitRoute(RoutePlan plan) {
+    if (!_ready || plan.points.length < 2) return;
+    final coords = [for (final p in plan.points) LatLng(p.$1, p.$2), ?_here];
+    // posle iscrtavanja, kad je veličina mape poznata
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _controller.fitCamera(
+        CameraFit.coordinates(
+          coordinates: coords,
+          padding: _routePadding,
+          maxZoom: 17,
+        ),
+      );
+    });
   }
 
   Future<void> _findDestination() async {
@@ -166,15 +210,12 @@ class _RideMapState extends ConsumerState<RideMap> {
           .read(navigationServiceProvider)
           .route(from.latitude, from.longitude, place.lat, place.lon);
       if (!mounted) return;
-      setState(() => _plan = plan);
-      if (_ready && plan.points.length > 1) {
-        _controller.fitCamera(
-          CameraFit.coordinates(
-            coordinates: [for (final p in plan.points) LatLng(p.$1, p.$2)],
-            padding: const EdgeInsets.all(36),
-          ),
-        );
-      }
+      setState(() {
+        _plan = plan;
+        _follow =
+            false; // ruta ostaje cela u kadru dok se ne pritisne "moja lokacija"
+      });
+      _fitRoute(plan);
     } catch (e) {
       _showMessage(t('Ruta nije dostupna (internet?): {0}', [e]));
       if (_ready) _controller.move(to, 15);
@@ -207,10 +248,14 @@ class _RideMapState extends ConsumerState<RideMap> {
         : t('\n≈ {0} din (bez čekanja)', [price]);
   }
 
-  void _clearDestination() => setState(() {
-    _destination = null;
-    _plan = null;
-  });
+  void _clearDestination() {
+    setState(() {
+      _destination = null;
+      _plan = null;
+      _follow = true;
+    });
+    if (_here != null && _ready) _controller.move(_here!, 16);
+  }
 
   void _showMessage(String text) {
     if (!mounted) return;
@@ -225,7 +270,6 @@ class _RideMapState extends ConsumerState<RideMap> {
     if (next.isRunning && !(prev?.isRunning ?? false)) {
       _stopIdleLocation();
     } else if (!next.isRunning && (prev?.isRunning ?? false)) {
-      _centeredOnce = false;
       _startIdleLocation();
     }
     final lat = next.lat, lon = next.lon;
@@ -236,12 +280,7 @@ class _RideMapState extends ConsumerState<RideMap> {
       _route.add(point);
       _here = point;
     });
-    if (_ready && _plan == null) {
-      _controller.move(
-        point,
-        _controller.camera.zoom < 14 ? 16 : _controller.camera.zoom,
-      );
-    }
+    _followTo(point);
   }
 
   @override
@@ -257,7 +296,8 @@ class _RideMapState extends ConsumerState<RideMap> {
             options: MapOptions(
               initialCenter: _here ?? const LatLng(44.0, 20.9),
               initialZoom: _here == null ? 7 : 15,
-              onMapReady: () => _ready = true,
+              onMapReady: _onMapReady,
+              onPositionChanged: _onCameraMoved,
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),

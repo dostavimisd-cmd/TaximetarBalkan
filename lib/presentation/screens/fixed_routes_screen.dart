@@ -65,7 +65,7 @@ class _FixedRoutesScreenState extends ConsumerState<FixedRoutesScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Fiksne relacije'),
+        title: Text(t('Fiksne relacije')),
         actions: [
           IconButton(
             tooltip: t('Uvezi spisak'),
@@ -424,7 +424,7 @@ class _FixedRouteDialogState extends ConsumerState<_FixedRouteDialog> {
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
       title: Text(
-        widget.existing == null ? 'Nova relacija' : t('Izmena relacije'),
+        widget.existing == null ? t('Nova relacija') : t('Izmena relacije'),
         style: const TextStyle(color: Colors.white),
       ),
       content: SingleChildScrollView(
