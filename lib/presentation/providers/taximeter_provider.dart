@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/ride_service_controller.dart';
 
-enum RidePhase { idle, starting, running, stopping, finished }
+enum RidePhase { idle, starting, running, paused, stopping, finished }
 
 /// Konačan obračun vožnje, kako ga javlja servis u događaju 'stopped'.
 class RideResult {
@@ -15,6 +15,7 @@ class RideResult {
   final int waitingPrice;
   final int minPriceAdjustment;
   final int totalPrice;
+  final int pausedSeconds;
 
   const RideResult({
     required this.rideId,
@@ -25,6 +26,7 @@ class RideResult {
     required this.waitingPrice,
     required this.minPriceAdjustment,
     required this.totalPrice,
+    this.pausedSeconds = 0,
   });
 
   factory RideResult.fromEvent(Map<String, dynamic> e) {
@@ -38,6 +40,7 @@ class RideResult {
       waitingPrice: i('waiting_price'),
       minPriceAdjustment: i('min_price_adjustment'),
       totalPrice: i('total_price'),
+      pausedSeconds: i('paused_sec'),
     );
   }
 }
@@ -64,6 +67,9 @@ class TaximeterState {
   final int gapCount;
   final int gapMs;
 
+  /// Kada je pauza počela (lokalno, za prikaz proteklog vremena pauze).
+  final DateTime? pausedSince;
+
   /// Fiksna relacija vožnje u toku/završene; null = taksimetar po tarifi.
   final String? fixedRouteName;
 
@@ -89,6 +95,7 @@ class TaximeterState {
     this.lat,
     this.lon,
     this.fixedRouteName,
+    this.pausedSince,
     this.errorMessage,
     this.warningMessage,
   });
@@ -97,6 +104,7 @@ class TaximeterState {
   bool get isRunning =>
       phase == RidePhase.starting ||
       phase == RidePhase.running ||
+      phase == RidePhase.paused ||
       phase == RidePhase.stopping;
 
   /// Prelazna faza: komanda je poslata, čeka se odgovor servisa.
@@ -118,6 +126,8 @@ class TaximeterState {
     double? lat,
     double? lon,
     String? fixedRouteName,
+    DateTime? pausedSince,
+    bool clearPausedSince = false,
     bool clearFixedRoute = false,
     bool clearRideStartPrice = false,
     String? errorMessage,
@@ -147,6 +157,7 @@ class TaximeterState {
       fixedRouteName: clearFixedRoute
           ? null
           : (fixedRouteName ?? this.fixedRouteName),
+      pausedSince: clearPausedSince ? null : (pausedSince ?? this.pausedSince),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       warningMessage: clearWarning
           ? null
@@ -224,7 +235,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
         state = state.copyWith(
           isReady: true,
           phase: event['active'] == true
-              ? RidePhase.running
+              ? (event['paused'] == true ? RidePhase.paused : RidePhase.running)
               : (state.phase == RidePhase.finished
                     ? RidePhase.finished
                     : RidePhase.idle),
@@ -271,6 +282,23 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           fixedRouteName: event['fixed_route_name'] as String?,
           warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
           clearResult: true,
+          clearError: true,
+        );
+        break;
+      case 'paused':
+        if (state.phase == RidePhase.finished) break;
+        state = state.copyWith(
+          phase: RidePhase.paused,
+          pausedSince: DateTime.now(),
+          isWaitingNow: false,
+          clearError: true,
+        );
+        break;
+      case 'resumed':
+        if (state.phase == RidePhase.finished) break;
+        state = state.copyWith(
+          phase: RidePhase.running,
+          clearPausedSince: true,
           clearError: true,
         );
         break;
@@ -406,8 +434,27 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     }
   }
 
-  Future<void> stopRide() async {
+  /// Pauza: obračun staje, cena ostaje; nastavak je opet isti taster.
+  Future<void> pauseRide() async {
     if (state.phase != RidePhase.running) return;
+    state = state.copyWith(
+      phase: RidePhase.paused,
+      pausedSince: DateTime.now(),
+      isWaitingNow: false,
+    );
+    await ref.read(rideServiceControllerProvider).pauseRide();
+  }
+
+  Future<void> resumeRide() async {
+    if (state.phase != RidePhase.paused) return;
+    state = state.copyWith(phase: RidePhase.running, clearPausedSince: true);
+    await ref.read(rideServiceControllerProvider).resumeRide();
+  }
+
+  Future<void> stopRide() async {
+    if (state.phase != RidePhase.running && state.phase != RidePhase.paused) {
+      return;
+    }
     final controller = ref.read(rideServiceControllerProvider);
     state = state.copyWith(phase: RidePhase.stopping);
     await controller.stopRide();
@@ -426,6 +473,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       gapMs: 0,
       clearRideStartPrice: true,
       clearFixedRoute: true,
+      clearPausedSince: true,
       clearResult: true,
       clearError: true,
       clearWarning: true,

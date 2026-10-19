@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 10,
+      version: 11,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -35,6 +35,20 @@ class DatabaseHelper {
     await db.rawQuery('PRAGMA journal_mode=WAL');
     await db.rawQuery('PRAGMA busy_timeout=5000');
     await db.execute('PRAGMA foreign_keys=ON');
+  }
+
+  /// Pređena ruta vožnje (retko uzorkovane tačke) za prikaz na mapi.
+  static Future<void> _createPointsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE ride_points (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ride_id INTEGER NOT NULL,
+        ts INTEGER NOT NULL,
+        lat REAL NOT NULL,
+        lon REAL NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_points_ride ON ride_points(ride_id)');
   }
 
   /// Smene vozača (Faza 3).
@@ -122,7 +136,8 @@ class DatabaseHelper {
         waiting_speed_kmh INTEGER,
         gps_accuracy_m INTEGER,
         fixed_price INTEGER,
-        fixed_route_name TEXT
+        fixed_route_name TEXT,
+        paused_sec INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute(
@@ -146,6 +161,7 @@ class DatabaseHelper {
 
     await _createGapsTable(db);
     await _createShiftsTable(db);
+    await _createPointsTable(db);
 
     await db.execute('''
       CREATE TABLE fixed_routes (
@@ -206,6 +222,11 @@ class DatabaseHelper {
           db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+    if (oldVersion < 11) {
+      // Pauza (ukupno pauzirano vreme) i tačke rute za prikaz na mapi.
+      await _addColumn(db, 'rides', 'paused_sec', 'INTEGER NOT NULL DEFAULT 0');
+      await _createPointsTable(db);
     }
     if (oldVersion < 10) {
       // Fiksna relacija: cena i naziv koji su važili za vožnju (NULL = taksimetar).

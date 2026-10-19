@@ -224,6 +224,25 @@ class RideServiceController {
 
   /// Šalje komandu za kraj vožnje. Servis upisuje rezultat, a kontroler
   /// gasi servis kad stigne 'stopped'.
+  /// Pauza i nastavak vožnje (servis obrađuje komande redom).
+  Future<void> pauseRide() => _sendRideCommand('pause');
+  Future<void> resumeRide() => _sendRideCommand('resume');
+
+  Future<void> _sendRideCommand(String command) => _serialized(() async {
+    if (await _bridge.isRunningService()) {
+      _bridge.sendToTask({'command': command});
+      return;
+    }
+    // Servis je ubijen: vožnje u memoriji nema, pa UI treba da izađe iz vožnje.
+    _serviceReady = false;
+    _rideActive = false;
+    _emit({'event': 'stopped', 'ride_id': null});
+    _emit({
+      'event': 'warning',
+      'message': 'Servis nije radio; vožnja nije nastavljena.',
+    });
+  });
+
   Future<void> stopRide() => _serialized(() async {
     // Servis obrađuje komande redom, pa 'stop' šaljemo čim radi, i kad
     // prethodni 'status' nije stigao na vreme.

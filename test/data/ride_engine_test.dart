@@ -581,6 +581,85 @@ void main() {
     expect(await h.rides(), isEmpty);
   });
 
+  test('pauza: tokom pauze nema km ni čekanja; posle nastavka pauza se ne naplaćuje', () async {
+    await h.engine.receive(startCmd);
+    h.drive(20);
+    final distanceBefore = h.engine.tracker!.totalDistanceMeters;
+    final waitingBefore = h.engine.tracker!.totalWaitingMs;
+    final priceBefore = h.of('update').last['price'];
+
+    await h.engine.receive({'command': 'pause'});
+    expect(h.of('paused').single['paused'], true);
+    // 3 minuta vožnje i stajanja za vreme pauze: ništa se ne računa
+    final t = h.engine.tracker!.lastValidPoint!.timestamp.millisecondsSinceEpoch;
+    h.now = t + 3 * 60 * 1000;
+    h.engine.onPosition(LocationPoint(
+      latitude: 44.9, longitude: 20.5, accuracy: 5, speed: 10,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(h.now, isUtc: true),
+    ));
+    expect(h.engine.tracker!.totalDistanceMeters, distanceBefore);
+    expect(h.engine.tracker!.totalWaitingMs, waitingBefore);
+
+    await h.engine.receive({'command': 'resume'});
+    expect(h.of('resumed').single['paused'], false);
+    expect(h.of('resumed').single['paused_sec'], 180);
+
+    // prva tačka posle nastavka je samo polazna: bez skoka distance i bez rupe
+    final events = h.events.length;
+    h.drive(5, fromMs: h.now + 1000);
+    expect(h.of('gap').isEmpty, true);
+    expect(h.engine.tracker!.totalDistanceMeters - distanceBefore, lessThan(80));
+    expect(h.of('update').last['price'], greaterThanOrEqualTo(priceBefore as int));
+    expect(h.events.length, greaterThan(events));
+
+    await h.engine.receive({'command': 'stop'});
+    expect(h.of('stopped').single['paused_sec'], 180);
+    expect((await h.rides()).single['paused_sec'], 180);
+  });
+
+  test('stop dok je pauzirano završava vožnju i računa pauzu', () async {
+    await h.engine.receive(startCmd);
+    h.drive(10);
+    await h.engine.receive({'command': 'pause'});
+    h.now += 90 * 1000;
+    await h.engine.receive({'command': 'stop'});
+    expect(h.of('stopped').single['paused_sec'], 90);
+    expect((await h.rides()).single['status'], RideEngine.statusCompleted);
+    expect(h.engine.hasActiveRide, false);
+  });
+
+  test('pauza i nastavak bez vožnje ili dvaput ne rade ništa', () async {
+    await h.engine.receive({'command': 'pause'});
+    expect(h.of('paused'), isEmpty);
+    await h.engine.receive(startCmd);
+    await h.engine.receive({'command': 'resume'});
+    expect(h.of('resumed'), isEmpty);
+    await h.engine.receive({'command': 'pause'});
+    await h.engine.receive({'command': 'pause'});
+    expect(h.of('paused').length, 1);
+  });
+
+  test('ruta: tačke se upisuju retko i brišu sa vožnjom; pauza ne dodaje tačke', () async {
+    await h.engine.receive(startCmd);
+    h.drive(60); // ~600 m, tačka u sekundi
+    await h.engine.saveSnapshot();
+    final stored = await h.db.query('ride_points', orderBy: 'ts');
+    expect(stored.length, inInclusiveRange(10, 60)); // retko: ne svaka sekunda
+    for (var i = 1; i < stored.length; i++) {
+      expect((stored[i]['ts'] as int) - (stored[i - 1]['ts'] as int), greaterThanOrEqualTo(5000));
+    }
+    expect(stored.first['ride_id'], h.engine.currentRideId);
+
+    await h.engine.receive({'command': 'pause'});
+    final before = stored.length;
+    h.drive(30, fromMs: h.now + 1000);
+    await h.engine.saveSnapshot();
+    expect((await h.db.query('ride_points')).length, before);
+
+    await h.engine.receive({'command': 'stop'});
+    expect((await h.db.query('ride_points')).length, greaterThanOrEqualTo(before));
+  });
+
   test('status odražava aktivnu vožnju', () async {
     await h.engine.receive({'command': 'status'});
     expect(h.of('status').last['active'], false);

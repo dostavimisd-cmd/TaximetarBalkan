@@ -73,6 +73,17 @@ class RideEngine {
   int? _fixedPrice;
   String? _fixedRouteName;
   int _gapMs = 0;
+
+  // Pauza: dok traje, GPS tačke se ne obračunavaju (ni km ni čekanje).
+  bool _paused = false;
+  int _pausedMs = 0; // zbir završenih pauza
+  int? _pausedSince; // početak pauze u toku
+
+  // Ruta za mapu: tačke se skupljaju u memoriji i upisuju sa snapshot-om.
+  final List<Map<String, Object?>> _pendingPoints = [];
+  LocationPoint? _lastStoredPoint;
+  static const double routePointMinMeters = 15;
+  static const int routePointMinMs = 5000;
   // Dok traje zatvaranje vožnje snapshot ne sme da upiše novi red.
   bool _closing = false;
 
@@ -102,6 +113,12 @@ class RideEngine {
     switch (data['command']) {
       case 'start':
         await _handleStart(data);
+        break;
+      case 'pause':
+        _pause();
+        break;
+      case 'resume':
+        _resume();
         break;
       case 'stop':
         await _handleStop();
@@ -136,10 +153,12 @@ class RideEngine {
         maxClockSkewMs) {
       return;
     }
+    if (_paused) return; // pauza: ni km ni čekanje ne teku
     try {
       tracker!.processLocation(point);
       final gap = tracker!.lastGap;
       if (gap != null) _recordGap(gap);
+      _collectRoutePoint();
       _send({'event': 'update', ..._rideValues()});
     } catch (e) {
       _send({'event': 'error', 'message': 'Greška pri obradi GPS tačke: $e'});
@@ -149,6 +168,57 @@ class RideEngine {
   /// Cena vožnje u toku: fiksna relacija ili taksimetar po tarifi.
   int _currentPrice(RideTracker t) =>
       _fixedPrice ?? t.currentFare?.totalPrice ?? t.tariff.startPrice;
+
+  /// Pauza: obračun staje, cena ostaje, sat pauze teče.
+  void _pause() {
+    if (!hasActiveRide || _paused) return;
+    _paused = true;
+    _pausedSince = _nowMs();
+    _send({'event': 'paused', ..._rideValues()});
+  }
+
+  /// Nastavak: prva nova tačka postaje polazna (pauza se ne naplaćuje).
+  void _resume() {
+    if (!hasActiveRide || !_paused) return;
+    _pausedMs += _nowMs() - (_pausedSince ?? _nowMs());
+    _paused = false;
+    _pausedSince = null;
+    tracker!.dropLastPoint();
+    _send({'event': 'resumed', ..._rideValues()});
+  }
+
+  int get _pausedSecondsTotal =>
+      (_pausedMs + (_paused ? _nowMs() - (_pausedSince ?? _nowMs()) : 0)) ~/ 1000;
+
+  /// Tačka rute: ne češće od 5 s i ne bliže od 15 m prethodnoj sačuvanoj.
+  void _collectRoutePoint() {
+    final p = tracker?.lastValidPoint;
+    if (p == null || currentRideId == null) return;
+    final last = _lastStoredPoint;
+    if (last != null) {
+      final dt = p.timestamp.difference(last.timestamp).inMilliseconds;
+      final d = LocationFilter.calculateDistance(
+          last.latitude, last.longitude, p.latitude, p.longitude);
+      if (dt < routePointMinMs || d < routePointMinMeters) return;
+    }
+    _lastStoredPoint = p;
+    _pendingPoints.add({
+      'ride_id': currentRideId,
+      'ts': p.timestamp.millisecondsSinceEpoch,
+      'lat': p.latitude,
+      'lon': p.longitude,
+    });
+  }
+
+  Future<void> _flushPoints(DatabaseExecutor db) async {
+    if (_pendingPoints.isEmpty) return;
+    final batch = db.batch();
+    for (final row in _pendingPoints) {
+      batch.insert('ride_points', row);
+    }
+    await batch.commit(noResult: true);
+    _pendingPoints.clear();
+  }
 
   /// V12: rupa u signalu se broji odmah (za prikaz), a upis ide kroz red
   /// komandi, pa ne može da stigne posle zatvaranja vožnje.
@@ -195,6 +265,8 @@ class RideEngine {
       'start_price': t.tariff.startPrice,
       'waiting_speed_kmh':
           t.waiter.waitingSpeedThresholdKmh.round(),
+      'paused': _paused,
+      'paused_sec': _pausedSecondsTotal,
       'gap_count': _gapCount,
       'gap_ms': _gapMs,
       if (t.lastValidPoint != null) 'lat': t.lastValidPoint!.latitude,
@@ -325,6 +397,11 @@ class RideEngine {
       _snapshotFailures = 0;
       _gapCount = 0;
       _gapMs = 0;
+      _paused = false;
+      _pausedMs = 0;
+      _pausedSince = null;
+      _pendingPoints.clear();
+      _lastStoredPoint = null;
       onTrackingStart?.call();
 
       _send({'event': 'started', 'ride_id': currentRideId});
@@ -373,7 +450,9 @@ class RideEngine {
           'waiting_price': fare.waitingPrice,
           'total_price': fare.totalPrice,
           'min_price_adjustment': fare.minPriceAdjustment,
+          'paused_sec': _pausedSecondsTotal,
         }, where: 'id = ?', whereArgs: [rideId]);
+        await _flushPoints(txn);
 
         await txn.delete('ride_snapshots',
             where: 'ride_id = ?', whereArgs: [rideId]);
@@ -391,6 +470,11 @@ class RideEngine {
     }
 
     final fixedName = _fixedRouteName;
+    final pausedSec = _pausedSecondsTotal;
+    _paused = false;
+    _pausedMs = 0;
+    _pausedSince = null;
+    _lastStoredPoint = null;
     tracker = null;
     currentRideId = null;
     _fixedPrice = null;
@@ -401,6 +485,7 @@ class RideEngine {
       'event': 'stopped',
       'ride_id': rideId,
       'fixed_route_name': ?fixedName,
+      'paused_sec': pausedSec,
       'distance_m': distanceM,
       'waiting_sec': waitingSec,
       'start_price': fare.startPrice,
@@ -434,6 +519,7 @@ class RideEngine {
           'timestamp': t.lastValidPoint!.timestamp.millisecondsSinceEpoch,
           'saved_at': _nowMs(),
         });
+        await _flushPoints(txn);
       });
       _snapshotFailures = 0;
     } catch (e) {

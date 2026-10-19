@@ -12,6 +12,17 @@ class FakeController extends RideServiceController {
   @override
   Stream<Map<String, dynamic>> get events => fakeEvents.stream;
 
+  final List<String> commands = [];
+
+  @override
+  Future<void> pauseRide() async => commands.add('pause');
+
+  @override
+  Future<void> resumeRide() async => commands.add('resume');
+
+  @override
+  Future<void> stopRide() async => commands.add('stop');
+
   bool startResult = true;
   int startCalls = 0;
 
@@ -261,6 +272,59 @@ void main() {
     fake.fakeEvents.add({'event': 'update', 'waiting_speed_kmh': 6});
     await pump();
     expect(read().waitingSpeedKmh, 6);
+  });
+
+  test('pauza i nastavak: faza, komande servisu, isRunning ostaje', () async {
+    final n = container.read(taximeterProvider.notifier);
+    fake.fakeEvents.add({'event': 'started'});
+    await pump();
+    expect(read().phase, RidePhase.running);
+
+    await n.pauseRide();
+    expect(read().phase, RidePhase.paused);
+    expect(read().isRunning, true); // vožnja je i dalje u toku
+    expect(read().pausedSince, isNotNull);
+    expect(fake.commands, ['pause']);
+
+    fake.fakeEvents.add({'event': 'update', 'price': 300, 'distance': 500.0});
+    await pump();
+    expect(read().phase, RidePhase.paused); // update ne vraća u vožnju
+
+    await n.resumeRide();
+    expect(read().phase, RidePhase.running);
+    expect(read().pausedSince, isNull);
+    expect(fake.commands, ['pause', 'resume']);
+  });
+
+  test('pauza se ne šalje van vožnje, nastavak samo iz pauze', () async {
+    final n = container.read(taximeterProvider.notifier);
+    await n.pauseRide();
+    await n.resumeRide();
+    expect(fake.commands, isEmpty);
+    expect(read().phase, RidePhase.idle);
+  });
+
+  test('stop iz pauze je dozvoljen; status sa paused vraća pauzu', () async {
+    final n = container.read(taximeterProvider.notifier);
+    fake.fakeEvents.add({'event': 'status', 'active': true, 'paused': true, 'price': 300});
+    await pump();
+    expect(read().phase, RidePhase.paused);
+    await n.stopRide();
+    expect(read().phase, RidePhase.stopping);
+    expect(fake.commands, ['stop']);
+  });
+
+  test('paused/resumed događaji iz servisa i pauza u rezultatu', () async {
+    fake.fakeEvents.add({'event': 'started'});
+    fake.fakeEvents.add({'event': 'paused'});
+    await pump();
+    expect(read().phase, RidePhase.paused);
+    fake.fakeEvents.add({'event': 'resumed'});
+    await pump();
+    expect(read().phase, RidePhase.running);
+    fake.fakeEvents.add({'event': 'stopped', 'ride_id': 3, 'total_price': 500, 'paused_sec': 125});
+    await pump();
+    expect(read().lastResult!.pausedSeconds, 125);
   });
 
   test('copyWith: clearWarning briše upozorenje', () {
