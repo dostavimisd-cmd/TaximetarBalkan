@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,23 +59,78 @@ class _RideMapState extends ConsumerState<RideMap> {
     0, 0, 0, 1, 0, //
   ]);
 
+  // Živa pozicija dok vožnja ne traje (servis je tada ugašen, pa GPS ne radi).
+  // Tokom vožnje poziciju šalje servis i ovaj tok se zatvara.
+  StreamSubscription<Position>? _idleSub;
+  bool _centeredOnce = false;
+
   @override
   void initState() {
     super.initState();
-    _locateOnce();
+    if (!ref.read(taximeterProvider).isRunning) _startIdleLocation();
   }
 
-  /// Između vožnji GPS ne radi (servis je ugašen), pa mapu centriramo na
-  /// poslednju poznatu poziciju telefona.
-  Future<void> _locateOnce() async {
+  @override
+  void dispose() {
+    _idleSub?.cancel();
+    super.dispose();
+  }
+
+  /// Prvo svež fiks (ne keširana "poslednja poznata" tačka, koja može biti
+  /// stara kilometrima), pa tok sa pomerajem od 5 m dok je ekran otvoren.
+  Future<void> _startIdleLocation() async {
+    if (_idleSub != null) return;
     try {
-      final p = await Geolocator.getLastKnownPosition();
-      if (p == null || !mounted) return;
-      setState(() => _here = LatLng(p.latitude, p.longitude));
-      if (_ready) _controller.move(_here!, 15);
+      if (!await Geolocator.isLocationServiceEnabled()) return;
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+      _idleSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 5,
+        ),
+      ).listen(_onIdlePosition, onError: (_) {});
+      // brz prvi prikaz dok tok ne stigne
+      final first = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      ).timeout(const Duration(seconds: 12));
+      _onIdlePosition(first);
     } catch (_) {
-      // bez dozvole ili lokacije: ostaje podrazumevani prikaz
+      // bez dozvole, GPS-a ili vremena: ostaje poslednja poznata tačka
+      if (_here == null) {
+        try {
+          final p = await Geolocator.getLastKnownPosition();
+          if (p != null) _onIdlePosition(p);
+        } catch (_) {}
+      }
     }
+  }
+
+  void _stopIdleLocation() {
+    _idleSub?.cancel();
+    _idleSub = null;
+  }
+
+  void _onIdlePosition(Position p) {
+    if (!mounted) return;
+    final here = LatLng(p.latitude, p.longitude);
+    setState(() => _here = here);
+    // kamera prati samo prvi fiks; posle toga korisnik slobodno pomera mapu
+    if (_ready && !_centeredOnce) {
+      _centeredOnce = true;
+      _controller.move(here, 16);
+    }
+  }
+
+  /// Dugme "moja lokacija": vraća kameru na poziciju (i pali živu lokaciju).
+  void _recenter() {
+    if (_here != null && _ready) _controller.move(_here!, 16);
+    if (!ref.read(taximeterProvider).isRunning) _startIdleLocation();
   }
 
   Future<void> _findDestination() async {
@@ -162,6 +218,13 @@ class _RideMapState extends ConsumerState<RideMap> {
   void _onRide(TaximeterState? prev, TaximeterState next) {
     if (next.phase == RidePhase.starting && prev?.phase != RidePhase.starting) {
       setState(_route.clear); // nova vožnja, nova linija
+    }
+    // Servis preuzima GPS pri vožnji; ovde se tok zatvara i otvara posle nje.
+    if (next.isRunning && !(prev?.isRunning ?? false)) {
+      _stopIdleLocation();
+    } else if (!next.isRunning && (prev?.isRunning ?? false)) {
+      _centeredOnce = false;
+      _startIdleLocation();
     }
     final lat = next.lat, lon = next.lon;
     if (!next.isRunning || lat == null || lon == null) return;
@@ -266,6 +329,20 @@ class _RideMapState extends ConsumerState<RideMap> {
                 ],
               ),
             ],
+          ),
+          // Moja lokacija (dole desno)
+          Positioned(
+            bottom: 28,
+            right: 8,
+            child: FloatingActionButton.small(
+              heroTag: 'map_locate',
+              backgroundColor: const Color(0xEE1C1C1C),
+              onPressed: _recenter,
+              child: const Icon(
+                Icons.my_location,
+                color: Colors.lightBlueAccent,
+              ),
+            ),
           ),
           // Pretraga adrese (gore desno)
           Positioned(

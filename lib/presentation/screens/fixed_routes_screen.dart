@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/fixed_route_import.dart';
@@ -188,6 +190,22 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
     setState(() => _result = FixedRouteImport.parse(_text.text));
   }
 
+  /// Spisak iz tekstualnog fajla (UTF-8), npr. iz Preuzimanja ili sa Drive-a.
+  Future<void> _pickFile() async {
+    try {
+      final picked = await FilePicker.pickFiles();
+      if (picked.isEmpty) return;
+      final bytes = await picked.first.xFile.readAsBytes();
+      _text.text = utf8.decode(bytes, allowMalformed: true);
+      setState(() {
+        _message = null;
+        _result = FixedRouteImport.parse(_text.text);
+      });
+    } catch (e) {
+      setState(() => _message = 'Fajl nije mogao da se pročita: $e');
+    }
+  }
+
   Future<void> _import() async {
     try {
       final r = await ref
@@ -239,6 +257,14 @@ class _ImportDialogState extends ConsumerState<_ImportDialog> {
                   hintText: 'Nalepi spisak ovde',
                   hintStyle: TextStyle(color: Colors.white38),
                   border: OutlineInputBorder(),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _pickFile,
+                icon: const Icon(Icons.folder_open, color: Colors.amberAccent),
+                label: const Text(
+                  'Izaberi fajl (.txt)',
+                  style: TextStyle(color: Colors.amberAccent),
                 ),
               ),
               TextButton.icon(
