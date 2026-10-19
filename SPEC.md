@@ -17,3 +17,7 @@ Odluke korisnika (2026-10-19), vidi `docs/AUDIT_2026-10-19.md` (N17, U7).
 - Čekanje: `cena = sekunde * para_po_minutu / 6000`, zaokruženo na ceo dinar (.5 naviše).
 - Sve cene ≥ 0 i ≤ 1.000.000 din (čekanje ≤ 1.000.000 din/min); to je tehnička granica protiv prekoračenja, ne tarifa.
 - Vožnja čuva sopstvenu kopiju tarife (`rides.tariff_*`), pa izmena ili brisanje tarife ne menja istoriju.
+
+## Čekanje
+- Čekanje se računa kad je brzina ispod praga (km/h); inače se računa kilometraža. Korak ide ili u distancu ili u čekanje, nikad u oba.
+- Prag podešava korisnik (Podešavanja), ceo broj 1–50 km/h; bez unosa važi 8 km/h (dosadašnje ponašanje). Šalje se pri startu i upisuje u `rides.waiting_speed_kmh`, pa oporavljena vožnja koristi isti prag.

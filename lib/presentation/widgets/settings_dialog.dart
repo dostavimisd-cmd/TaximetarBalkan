@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/services/ride_engine.dart';
 import '../../domain/currency_converter.dart';
 import '../providers/tariffs_provider.dart';
 
@@ -21,12 +23,15 @@ class _SettingsDialog extends ConsumerStatefulWidget {
 
 class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
   late final TextEditingController _rate;
+  late final TextEditingController _speed;
   String? _error;
 
   @override
   void initState() {
     super.initState();
     final current = ref.read(eurRateProvider).value;
+    _speed = TextEditingController(
+        text: '${ref.read(waitingSpeedProvider).value ?? RideEngine.defaultWaitingSpeedKmh}');
     _rate = TextEditingController(
         text: current == null ? '' : CurrencyConverter.formatRate(current));
   }
@@ -34,16 +39,28 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
   @override
   void dispose() {
     _rate.dispose();
+    _speed.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    final milli = CurrencyConverter.parseRateMilli(_rate.text);
-    if (milli == null) {
+    final speed = int.tryParse(_speed.text.trim());
+    if (speed == null ||
+        speed < RideEngine.minWaitingSpeedKmh ||
+        speed > RideEngine.maxWaitingSpeedKmh) {
+      setState(() => _error =
+          'Brzina za čekanje: ceo broj od ${RideEngine.minWaitingSpeedKmh} do ${RideEngine.maxWaitingSpeedKmh} km/h.');
+      return;
+    }
+    // Kurs je opcion: prazno polje ostavlja EUR prikaz isključen.
+    final rateText = _rate.text.trim();
+    final milli = rateText.isEmpty ? null : CurrencyConverter.parseRateMilli(rateText);
+    if (rateText.isNotEmpty && milli == null) {
       setState(() => _error = 'Unesi kurs, npr. 117.2 (najviše 3 decimale).');
       return;
     }
-    await ref.read(eurRateProvider.notifier).set(milli);
+    await ref.read(waitingSpeedProvider.notifier).set(speed);
+    if (milli != null) await ref.read(eurRateProvider.notifier).set(milli);
     if (mounted) Navigator.pop(context, true);
   }
 
@@ -66,9 +83,22 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
               isDense: true,
             ),
           ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _speed,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              labelText: 'Čekanje se računa ispod (km/h)',
+              labelStyle: TextStyle(color: Colors.white54),
+              isDense: true,
+            ),
+          ),
           const SizedBox(height: 8),
           const Text(
-            'Koristi se samo za prikaz iznosa u EUR. Cene i obračun ostaju u dinarima.',
+            'Brzina ispod koje taksimetar računa čekanje umesto kilometara.\n'
+            'Kurs: koristi se samo za prikaz iznosa u EUR. Cene i obračun ostaju u dinarima.',
             style: TextStyle(color: Colors.white38, fontSize: 11),
           ),
           if (_error != null)

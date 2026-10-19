@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/database_helper.dart';
 import '../../data/repositories/settings_repository_impl.dart';
 import '../../data/repositories/tariff_repository_impl.dart';
+import '../../data/services/ride_engine.dart';
 import '../../domain/models/tariff.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../domain/repositories/tariff_repository.dart';
 
 const String eurRateSettingKey = 'eur_rate_milli';
+const String waitingSpeedSettingKey = 'waiting_speed_kmh';
 
 final tariffRepositoryProvider = Provider<TariffRepository>(
   (ref) => TariffRepositoryImpl(() => DatabaseHelper.instance.database),
@@ -56,3 +58,23 @@ class EurRateNotifier extends AsyncNotifier<int?> {
 
 final eurRateProvider =
     AsyncNotifierProvider<EurRateNotifier, int?>(EurRateNotifier.new);
+
+/// Brzina (km/h) ispod koje se računa čekanje. Korisnik je podešava;
+/// dok je ne promeni, važi dosadašnjih 8 km/h.
+class WaitingSpeedNotifier extends AsyncNotifier<int> {
+  SettingsRepository get _repo => ref.read(settingsRepositoryProvider);
+
+  @override
+  Future<int> build() async {
+    final value = await _repo.getSetting(waitingSpeedSettingKey);
+    return int.tryParse(value ?? '') ?? RideEngine.defaultWaitingSpeedKmh;
+  }
+
+  Future<void> set(int kmh) async {
+    await _repo.saveSetting(waitingSpeedSettingKey, '$kmh');
+    state = AsyncData(kmh);
+  }
+}
+
+final waitingSpeedProvider =
+    AsyncNotifierProvider<WaitingSpeedNotifier, int>(WaitingSpeedNotifier.new);

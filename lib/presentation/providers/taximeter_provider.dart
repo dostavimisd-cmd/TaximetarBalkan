@@ -56,6 +56,9 @@ class TaximeterState {
 
   /// Trenutno stajanje (čekanje se naplaćuje), a ne ukupno čekanje.
   final bool isWaitingNow;
+
+  /// Prag brzine za čekanje (km/h) vožnje u toku; null dok servis ne javi.
+  final int? waitingSpeedKmh;
   final String currency; // 'RSD', 'EUR'
   final String language; // 'sr', 'en'
   final String? errorMessage;
@@ -71,6 +74,7 @@ class TaximeterState {
     this.selectedTariffId = 1,
     this.rideStartPrice,
     this.isWaitingNow = false,
+    this.waitingSpeedKmh,
     this.currency = 'RSD',
     this.language = 'sr',
     this.errorMessage,
@@ -97,6 +101,7 @@ class TaximeterState {
     int? selectedTariffId,
     int? rideStartPrice,
     bool? isWaitingNow,
+    int? waitingSpeedKmh,
     bool clearRideStartPrice = false,
     String? currency,
     String? language,
@@ -118,6 +123,7 @@ class TaximeterState {
           ? null
           : (rideStartPrice ?? this.rideStartPrice),
       isWaitingNow: isWaitingNow ?? this.isWaitingNow,
+      waitingSpeedKmh: waitingSpeedKmh ?? this.waitingSpeedKmh,
       currency: currency ?? this.currency,
       language: language ?? this.language,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -201,6 +207,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           selectedTariffId: event['tariff_id'] as int?,
           rideStartPrice: event['start_price'] as int?,
           isWaitingNow: event['mode'] == 'waiting',
+          waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
           clearError: true,
         );
         break;
@@ -219,6 +226,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           selectedTariffId: event['tariff_id'] as int?,
           rideStartPrice: event['start_price'] as int?,
           isWaitingNow: event['mode'] == 'waiting',
+          waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
           warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
           clearResult: true,
           clearError: true,
@@ -237,6 +245,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           currentWaitingMs: event['waitingMs'] as int? ?? state.currentWaitingMs,
           currentPrice: event['price'] as int? ?? state.currentPrice,
           isWaitingNow: event['mode'] == 'waiting',
+          waitingSpeedKmh: event['waiting_speed_kmh'] as int?,
         );
         break;
       case 'stopped':
@@ -295,6 +304,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     required int waitingParaPerMin,
     required int minPrice,
     double calibration = 1.0,
+    int? waitingSpeedKmh,
   }) async {
     if (!state.isReady ||
         (state.phase != RidePhase.idle && state.phase != RidePhase.finished)) {
@@ -321,6 +331,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       waitingParaPerMin: waitingParaPerMin,
       minPrice: minPrice,
       calibration: calibration,
+      waitingSpeedKmh: waitingSpeedKmh,
     );
 
     // Komanda nije poslata, a nijedan događaj nije promenio fazu.

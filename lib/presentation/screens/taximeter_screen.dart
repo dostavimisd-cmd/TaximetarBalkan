@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/services/ride_engine.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/tariff.dart';
 import '../providers/taximeter_provider.dart';
@@ -67,6 +68,9 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     final isSr = state.language == 'sr';
     final tariffs = ref.watch(tariffsProvider).value ?? const <Tariff>[];
     final eurRate = ref.watch(eurRateProvider).value;
+    final speedSetting = ref.watch(waitingSpeedProvider).value ??
+        RideEngine.defaultWaitingSpeedKmh;
+    final badgeSpeed = state.waitingSpeedKmh ?? speedSetting;
     final tariff = _activeTariff;
     // EUR samo uz kurs koji je korisnik uneo; račun je celobrojan.
     final displayPrice = (state.currency == 'EUR' && eurRate != null)
@@ -129,8 +133,9 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                     onPressed: () async {
                       if (state.currency == 'RSD' && eurRate == null) {
                         // Nema ugrađenog kursa: prvo ga korisnik unosi.
-                        final saved = await showSettingsDialog(context, ref);
-                        if (saved != true) return;
+                        await showSettingsDialog(context, ref);
+                        // Bez unetog kursa EUR prikaz ne postoji.
+                        if (ref.read(eurRateProvider).value == null) return;
                       }
                       notifier.toggleCurrency();
                     },
@@ -174,7 +179,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                         const SizedBox(width: 8),
                         Text(
                           isWaiting
-                              ? (isSr ? 'ČEKANJE (STRIKTNO < 8 km/h)' : 'WAITING (< 8 km/h)')
+                              ? (isSr ? 'ČEKANJE (< $badgeSpeed km/h)' : 'WAITING (< $badgeSpeed km/h)')
                               : (isSr ? 'VOŽNJA' : 'DRIVING'),
                           style: TextStyle(
                             color: isWaiting ? Colors.orangeAccent : Colors.greenAccent,
@@ -360,6 +365,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                 pricePerKm: t.pricePerKm,
                                                 waitingParaPerMin: t.waitingParaPerMin,
                                                 minPrice: t.minPrice,
+                                                waitingSpeedKmh: speedSetting,
                                               );
                                             },
                                   style: _mainButtonStyle(const Color(0xFF2E7D32)),

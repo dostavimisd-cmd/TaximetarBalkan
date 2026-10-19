@@ -160,6 +160,7 @@ class RideServiceController {
     required int waitingParaPerMin,
     required int minPrice,
     required double calibration,
+    int? waitingSpeedKmh,
   }) =>
       _serialized(() async {
         if (_disposed) return false;
@@ -213,6 +214,7 @@ class RideServiceController {
           'waiting_para_per_min': waitingParaPerMin,
           'min_price': minPrice,
           'calibration': calibration,
+          'waiting_speed_kmh': ?waitingSpeedKmh,
         });
         return true;
       });

@@ -349,6 +349,58 @@ void main() {
     expect(h.of('status').last['start_price'], 200);
   });
 
+  /// Sporo kretanje: ~5 km/h (1,4 m/s) pravo na sever, jedna tačka u sekundi.
+  Future<void> crawl(int seconds) async {
+    final t0p = h.engine.tracker?.lastValidPoint?.timestamp.millisecondsSinceEpoch ?? t0;
+    for (var i = 1; i <= seconds; i++) {
+      h.now = t0p + i * 1000;
+      h.engine.onPosition(LocationPoint(
+        latitude: 44.8 + i * 0.0000126,
+        longitude: 20.46,
+        accuracy: 5,
+        speed: 1.4,
+        timestamp: DateTime.fromMillisecondsSinceEpoch(h.now, isUtc: true),
+      ));
+    }
+  }
+
+  test('prag brzine: 5 km/h je čekanje pri pragu 8, a vožnja pri pragu 3', () async {
+    await h.engine.receive(startCmd); // bez waiting_speed_kmh → 8
+    await crawl(40);
+    expect(h.engine.tracker!.totalWaitingMs, greaterThan(20000));
+    final distanceAt8 = h.engine.tracker!.totalDistanceMeters;
+    await h.engine.receive({'command': 'stop'});
+
+    await h.engine.receive({...startCmd, 'waiting_speed_kmh': 3});
+    await crawl(40);
+    expect(h.engine.tracker!.totalWaitingMs, 0);
+    expect(h.engine.tracker!.totalDistanceMeters, greaterThan(distanceAt8 + 20));
+    expect((await h.rides()).last['waiting_speed_kmh'], 3);
+    expect(h.of('update').last['waiting_speed_kmh'], 3);
+  });
+
+  test('prag brzine se oporavlja zajedno sa vožnjom', () async {
+    await h.engine.receive({...startCmd, 'waiting_speed_kmh': 3});
+    await crawl(30);
+    await h.engine.saveSnapshot();
+    final waited = h.engine.tracker!.totalWaitingMs;
+
+    h.now += 60 * 1000;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+    expect(engine2.tracker!.waiter.waitingSpeedThresholdKmh, 3.0);
+    expect(engine2.tracker!.totalWaitingMs, waited);
+  });
+
+  test('prag brzine van opsega → error{cmd:start}', () async {
+    for (final bad in [0, -5, 51, 500]) {
+      await h.engine.receive({...startCmd, 'waiting_speed_kmh': bad});
+    }
+    expect(h.of('error').length, 4);
+    expect(h.of('error').every((e) => e['cmd'] == 'start'), true);
+    expect(await h.rides(), isEmpty);
+  });
+
   test('status odražava aktivnu vožnju', () async {
     await h.engine.receive({'command': 'status'});
     expect(h.of('status').last['active'], false);

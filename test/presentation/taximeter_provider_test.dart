@@ -32,6 +32,7 @@ class FakeController extends RideServiceController {
     required int waitingParaPerMin,
     required int minPrice,
     required double calibration,
+    int? waitingSpeedKmh,
   }) async {
     startCalls++;
     return startResult;
@@ -248,6 +249,15 @@ void main() {
     await pump();
     expect(read().rideStartPrice, isNull);
     expect(read().selectedTariffId, 3); // izbor tarife za sledeću vožnju ostaje
+  });
+
+  test('prag brzine iz status/recovered/update događaja', () async {
+    fake.fakeEvents.add({'event': 'recovered', 'waiting_speed_kmh': 5});
+    await pump();
+    expect(read().waitingSpeedKmh, 5);
+    fake.fakeEvents.add({'event': 'update', 'waiting_speed_kmh': 6});
+    await pump();
+    expect(read().waitingSpeedKmh, 6);
   });
 
   test('copyWith: clearWarning briše upozorenje', () {

@@ -30,7 +30,7 @@ void main() {
     expect(await db.query('app_settings'), hasLength(3));
   });
 
-  test('5: migracija v1 → v4 čuva istoriju i prekida aktivnu vožnju', () async {
+  test('5: migracija v1 → v5 čuva istoriju i prekida aktivnu vožnju', () async {
     final dir = await Directory.systemTemp.createTemp('taksi_mig');
     addTearDown(() => dir.delete(recursive: true));
     final path = p.join(dir.path, 'v1.db');
@@ -93,6 +93,8 @@ void main() {
     expect(await columns(db, 'tariffs'), contains('waiting_para_per_min'));
     expect((await db.query('tariffs')).single['waiting_para_per_min'], 1500);
     expect(await columns(db, 'rides'), contains('tariff_waiting_para_per_min'));
+    // v5: prag brzine za čekanje po vožnji
+    expect(await columns(db, 'rides'), contains('waiting_speed_kmh'));
     expect(await indexes(db),
         containsAll(['idx_rides_client_uuid', 'idx_snapshots_ride']));
   });

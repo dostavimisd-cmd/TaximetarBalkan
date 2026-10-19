@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -87,7 +87,8 @@ class DatabaseHelper {
         tariff_waiting_para_per_min INTEGER DEFAULT 0,
         tariff_min_price INTEGER DEFAULT 0,
         min_price_adjustment INTEGER DEFAULT 0,
-        client_uuid TEXT
+        client_uuid TEXT,
+        waiting_speed_kmh INTEGER
       )
     ''');
     await db.execute(
@@ -168,6 +169,10 @@ class DatabaseHelper {
           db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+    if (oldVersion < 5) {
+      // Prag brzine za čekanje (km/h) koji je važio za vožnju; null = podrazumevani.
+      await db.execute('ALTER TABLE rides ADD COLUMN waiting_speed_kmh INTEGER');
     }
   }
 

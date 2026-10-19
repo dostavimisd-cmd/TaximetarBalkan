@@ -5,6 +5,7 @@ import '../../domain/models/fare_result.dart';
 import '../../domain/models/location_point.dart';
 import '../../domain/models/tariff.dart';
 import '../../domain/ride_tracker.dart';
+import '../../domain/smart_waiter.dart';
 
 typedef EventSink = void Function(Map<String, dynamic> event);
 
@@ -30,6 +31,22 @@ class RideEngine {
 
   // Oporavak dozvoljen samo ako je snapshot mlađi od 5 minuta
   static const int maxSnapshotAgeMs = 5 * 60 * 1000;
+
+  /// Prag brzine ispod koje se računa čekanje (km/h). Korisnik ga podešava;
+  /// podrazumevana vrednost je dosadašnje ponašanje aplikacije.
+  static const int defaultWaitingSpeedKmh = 8;
+  static const int minWaitingSpeedKmh = 1;
+  static const int maxWaitingSpeedKmh = 50;
+
+  static RideTracker _newTracker(Tariff tariff, double calibration, int? speedKmh) =>
+      RideTracker(
+        tariff: tariff,
+        calibrationMultiplier: calibration,
+        waiter: SmartWaiter(
+          waitingSpeedThresholdKmh:
+              (speedKmh ?? defaultWaitingSpeedKmh).toDouble(),
+        ),
+      );
 
   final Future<Database> Function() _database;
   final EventSink _send;
@@ -129,6 +146,8 @@ class RideEngine {
       'mode': t.isWaitingNow ? 'waiting' : 'driving',
       'tariff_id': t.tariff.id,
       'start_price': t.tariff.startPrice,
+      'waiting_speed_kmh':
+          t.waiter.waitingSpeedThresholdKmh.round(),
     };
   }
 
@@ -175,6 +194,18 @@ class RideEngine {
       );
       final calibration = (data['calibration'] as num?)?.toDouble() ?? 1.0;
 
+      final speedKmh = (data['waiting_speed_kmh'] as num?)?.toInt();
+      if (speedKmh != null &&
+          (speedKmh < minWaitingSpeedKmh || speedKmh > maxWaitingSpeedKmh)) {
+        _send({
+          'event': 'error',
+          'cmd': 'start',
+          'message':
+              'Brzina za čekanje mora biti od $minWaitingSpeedKmh do $maxWaitingSpeedKmh km/h.',
+        });
+        return;
+      }
+
       final invalid = tariff.validate();
       if (invalid != null) {
         _send({'event': 'error', 'cmd': 'start', 'message': invalid});
@@ -194,6 +225,7 @@ class RideEngine {
         'total_price': tariff.startPrice,
         'tariff_id': tariff.id,
         'applied_calibration': calibration,
+        'waiting_speed_kmh': speedKmh,
         'status': statusActive,
         'tariff_start_price': tariff.startPrice,
         'tariff_price_per_km': tariff.pricePerKm,
@@ -203,7 +235,7 @@ class RideEngine {
       });
 
       currentRideId = rideId;
-      tracker = RideTracker(tariff: tariff, calibrationMultiplier: calibration);
+      tracker = _newTracker(tariff, calibration, speedKmh);
       _snapshotFailures = 0;
       onTrackingStart?.call();
 
@@ -403,9 +435,10 @@ class RideEngine {
         return false;
       }
       currentRideId = rId;
-      tracker = RideTracker(
-        tariff: _tariffFromRide(ride),
-        calibrationMultiplier: (ride['applied_calibration'] as num).toDouble(),
+      tracker = _newTracker(
+        _tariffFromRide(ride),
+        (ride['applied_calibration'] as num).toDouble(),
+        ride['waiting_speed_kmh'] as int?,
       );
       _send({'event': 'recovered', 'ride_id': rId, ..._rideValues()});
       return true;
@@ -422,9 +455,10 @@ class RideEngine {
 
     final tariff = _tariffFromRide(ride);
 
-    final restored = RideTracker(
-      tariff: tariff,
-      calibrationMultiplier: (ride['applied_calibration'] as num).toDouble(),
+    final restored = _newTracker(
+      tariff,
+      (ride['applied_calibration'] as num).toDouble(),
+      ride['waiting_speed_kmh'] as int?,
     );
     restored.restoreFromSnapshot(
       restoredDistance: (snap['current_distance'] as num).toDouble(),
