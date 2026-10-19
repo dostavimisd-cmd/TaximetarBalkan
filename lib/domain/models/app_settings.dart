@@ -25,6 +25,13 @@ class AppSettings {
   static const String keyVoice = 'voice_announce';
   static const String keyPriceRefresh = 'price_refresh_s';
   static const String keyKeepScreenOn = 'keep_screen_on';
+  static const String keyPriceColor = 'price_color';
+  static const String keyPriceScale = 'price_scale';
+
+  /// Boje cene kao na taksimetrima (LED displeji); prikaz je u UI sloju.
+  static const List<String> priceColors = ['bela', 'crvena', 'zelena', 'plava', 'zuta', 'narandzasta'];
+  static const int minPriceScale = 60;
+  static const int maxPriceScale = 200;
 
   static const int defaultWaitingSpeedKmh = 8;
   static const int minWaitingSpeedKmh = 1;
@@ -84,6 +91,12 @@ class AppSettings {
   /// Ekran ne gasi dok je aplikacija otvorena (cena se stalno vidi).
   final bool keepScreenOn;
 
+  /// Boja cene na glavnom ekranu (jedna od [priceColors]).
+  final String priceColor;
+
+  /// Veličina cene u procentima (60–200); cena se ipak smanjuje ako nema mesta.
+  final int priceScale;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -104,6 +117,8 @@ class AppSettings {
     this.voiceAnnounce = false,
     this.priceRefreshSeconds = 1,
     this.keepScreenOn = true,
+    this.priceColor = 'bela',
+    this.priceScale = 100,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -147,6 +162,8 @@ class AppSettings {
           ? asInt(keyPriceRefresh)!
           : 1,
       keepScreenOn: m[keyKeepScreenOn] != '0',
+      priceColor: priceColors.contains(m[keyPriceColor]) ? m[keyPriceColor]! : 'bela',
+      priceScale: inRange(keyPriceScale, 100, minPriceScale, maxPriceScale),
     );
   }
 
@@ -171,6 +188,8 @@ class AppSettings {
         keyVoice: voiceAnnounce ? '1' : '0',
         keyPriceRefresh: '$priceRefreshSeconds',
         keyKeepScreenOn: keepScreenOn ? '1' : '0',
+        keyPriceColor: priceColor,
+        keyPriceScale: '$priceScale',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -190,6 +209,10 @@ class AppSettings {
     if (printCodePage < 0 || printCodePage > 255) return 'Neispravna kodna strana.';
     if (!PriceThrottle.allowedSeconds.contains(priceRefreshSeconds)) {
       return 'Osvežavanje cene: 1, 4, 6 ili 10 s.';
+    }
+    if (!priceColors.contains(priceColor)) return 'Nepoznata boja cene.';
+    if (priceScale < minPriceScale || priceScale > maxPriceScale) {
+      return 'Veličina cene: od $minPriceScale do $maxPriceScale %.';
     }
     if (receiptHeader.length > 500) return 'Zaglavlje računa je predugačko.';
     return null;
@@ -217,6 +240,8 @@ class AppSettings {
     bool? voiceAnnounce,
     int? priceRefreshSeconds,
     bool? keepScreenOn,
+    String? priceColor,
+    int? priceScale,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -240,6 +265,8 @@ class AppSettings {
       voiceAnnounce: voiceAnnounce ?? this.voiceAnnounce,
       priceRefreshSeconds: priceRefreshSeconds ?? this.priceRefreshSeconds,
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+      priceColor: priceColor ?? this.priceColor,
+      priceScale: priceScale ?? this.priceScale,
     );
   }
 }

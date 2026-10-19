@@ -33,6 +33,8 @@ void main() {
       printMode: PrintMode.cp1250,
       printCodePage: 45,
       receiptHeader: 'TAXI\n060 123',
+      priceColor: 'crvena',
+      priceScale: 150,
     );
     final back = AppSettings.fromMap(s.toMap());
     expect(back.toMap(), s.toMap());
@@ -62,6 +64,9 @@ void main() {
     expect(const AppSettings(eurRateMilli: 0).validate(), isNotNull);
     expect(const AppSettings(language: 'de').validate(), isNotNull);
     expect(const AppSettings(currency: 'USD').validate(), isNotNull);
+    expect(const AppSettings(priceColor: 'roze').validate(), isNotNull);
+    expect(const AppSettings(priceScale: 250).validate(), isNotNull);
+    expect(const AppSettings(priceScale: 50).validate(), isNotNull);
     expect(const AppSettings(gpsAccuracyM: 50, waitingSpeedKmh: 50).validate(), isNull);
   });
 

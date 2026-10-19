@@ -11,6 +11,7 @@ import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
 import '../printing/receipt_printer.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/price_colors.dart';
 import 'fixed_routes_screen.dart';
 import 'holidays_screen.dart';
 
@@ -36,6 +37,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _voice = false;
   int _refresh = 1;
   bool _keepOn = true;
+  String _priceColor = 'bela';
+  int _priceScale = 100;
   String? _logoPath;
   String? _receiptLogoPath;
   String? _printerMac;
@@ -65,6 +68,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _voice = s.voiceAnnounce;
     _refresh = s.priceRefreshSeconds;
     _keepOn = s.keepScreenOn;
+    _priceColor = s.priceColor;
+    _priceScale = s.priceScale;
     _logoPath = s.backgroundLogoPath;
     _receiptLogoPath = s.receiptLogoPath;
     _printerMac = s.printerMac;
@@ -111,6 +116,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       voiceAnnounce: _voice,
       priceRefreshSeconds: _refresh,
       keepScreenOn: _keepOn,
+      priceColor: _priceColor,
+      priceScale: _priceScale,
       backgroundLogoPath: _logoPath,
       printerMac: _printerMac,
       printerName: _printerName,
@@ -331,6 +338,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   decimal: true,
                   helper: 'Samo za prikaz u EUR. Obračun je uvek u dinarima.'),
               _section('EKRAN'),
+              const Text('Boja cene', style: TextStyle(color: Colors.white70)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final key in AppSettings.priceColors)
+                    ChoiceChip(
+                      label: Text(priceColorLabels[key]!),
+                      selected: _priceColor == key,
+                      avatar: CircleAvatar(backgroundColor: priceColorOf(key), radius: 8),
+                      onSelected: (_) => setState(() => _priceColor = key),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text('Veličina cene: $_priceScale %', style: const TextStyle(color: Colors.white70)),
+              Slider(
+                value: _priceScale.toDouble(),
+                min: AppSettings.minPriceScale.toDouble(),
+                max: AppSettings.maxPriceScale.toDouble(),
+                divisions: (AppSettings.maxPriceScale - AppSettings.minPriceScale) ~/ 10,
+                label: '$_priceScale %',
+                onChanged: (v) => setState(() => _priceScale = v.round()),
+              ),
+              Container(
+                color: Colors.black,
+                alignment: Alignment.center,
+                height: 110,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '1250',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.bold,
+                      color: priceColorOf(_priceColor),
+                      fontSize: 82 * _priceScale / 100,
+                    ),
+                  ),
+                ),
+              ),
               _choice('Osvežavanje cene (s)', const ['1', '4', '6', '10'], '$_refresh',
                   (v) => _refresh = int.parse(v)),
               const Text(

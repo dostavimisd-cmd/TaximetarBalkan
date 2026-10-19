@@ -19,6 +19,7 @@ import '../providers/settings_provider.dart';
 import 'history_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/price_colors.dart';
 import '../widgets/ride_map.dart';
 import '../widgets/tariff_edit_dialog.dart';
 import '../widgets/tariff_selection_sheet.dart';
@@ -397,10 +398,10 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                               children: [
                                 Text(
                                   displayPrice,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'monospace',
-                                    color: Colors.white,
-                                    fontSize: 82,
+                                    color: priceColorOf(settings.priceColor),
+                                    fontSize: 82 * settings.priceScale / 100,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: -3,
                                   ),
