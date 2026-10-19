@@ -19,7 +19,7 @@ class FakeController extends RideServiceController {
   Future<bool> Function()? connectOverride;
 
   @override
-  Future<bool> connect() {
+  Future<bool> connect({bool requestPermissions = true}) {
     connectCalls++;
     return connectOverride != null ? connectOverride!() : connectResult.future;
   }

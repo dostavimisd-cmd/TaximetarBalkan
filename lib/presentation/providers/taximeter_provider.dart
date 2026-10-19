@@ -140,14 +140,18 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
   void _onResume() {
     // Neuspeo connect ponavljamo; vožnja u toku se usklađuje sa servisom
     // (connect traži 'status'). Mirna aplikacija ne dira servis.
-    if (!state.isReady || state.isRunning) retryConnect();
+    if (!state.isReady || state.isRunning) {
+      retryConnect(requestPermissions: false);
+    }
   }
 
-  Future<void> _initConnection(RideServiceController controller) async {
+  Future<void> _initConnection(RideServiceController controller,
+      {bool requestPermissions = true}) async {
     if (_connecting) return;
     _connecting = true;
     try {
-      final connected = await controller.connect();
+      final connected =
+          await controller.connect(requestPermissions: requestPermissions);
       state = state.copyWith(isReady: connected);
     } finally {
       _connecting = false;
@@ -156,9 +160,10 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
 
   /// V8: ponovni pokušaj povezivanja (npr. posle odobrene dozvole ili
   /// uključenog GPS-a); poziva se i pri povratku aplikacije u prvi plan.
-  Future<void> retryConnect() {
+  Future<void> retryConnect({bool requestPermissions = true}) {
     if (state.isBusy) return Future.value();
-    return _initConnection(ref.read(rideServiceControllerProvider));
+    return _initConnection(ref.read(rideServiceControllerProvider),
+        requestPermissions: requestPermissions);
   }
 
   void _handleServiceEvent(Map<String, dynamic> event) {

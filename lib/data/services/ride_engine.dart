@@ -55,11 +55,14 @@ class RideEngine {
 
   /// Prima komandu iz UI-ja i stavlja je u red. Vraćeni Future se završava
   /// kad je komanda obrađena (za testove; handler ga ignoriše).
-  Future<void> receive(Map<String, dynamic> data) {
-    _queue = _queue.then((_) => _dispatch(data)).catchError((Object e) {
+  Future<void> receive(Map<String, dynamic> data) =>
+      _enqueue(() => _dispatch(data), cmd: data['command']);
+
+  Future<void> _enqueue(Future<void> Function() op, {Object? cmd}) {
+    _queue = _queue.then((_) => op()).catchError((Object e) {
       _send({
         'event': 'error',
-        'cmd': data['command'],
+        'cmd': ?cmd,
         'message': 'Greška pri obradi komande: $e',
       });
     });
@@ -266,7 +269,11 @@ class RideEngine {
     });
   }
 
-  Future<void> saveSnapshot() async {
+  /// Snapshot ide kroz isti red kao komande, pa ne može da upiše red
+  /// posle transakcije koja ga briše pri stop-u.
+  Future<void> saveSnapshot() => _enqueue(_saveSnapshot);
+
+  Future<void> _saveSnapshot() async {
     if (_closing || !hasActiveRide || tracker!.lastValidPoint == null) return;
     final rideId = currentRideId!;
     final t = tracker!;
@@ -416,6 +423,10 @@ class RideEngine {
       lastLon: (snap['last_lon'] as num).toDouble(),
       lastTimestamp: DateTime.fromMillisecondsSinceEpoch(snapTime, isUtc: true),
     );
+
+    // Vreme dok servis nije radio nije mereno: prva nova tačka postaje
+    // polazna, umesto da se ceo prekid naplati kao čekanje.
+    restored.dropLastPoint();
 
     currentRideId = rId;
     tracker = restored;

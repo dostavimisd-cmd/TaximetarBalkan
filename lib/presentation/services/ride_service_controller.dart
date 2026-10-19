@@ -114,19 +114,20 @@ class RideServiceController {
   /// Priključuje se na servis koji već radi, ili ga kratko podiže da bi
   /// oporavio prekinutu vožnju. Ako nema vožnje, servis se odmah gasi (K5).
   /// Vraća true ako kontroler može da primi [startRide].
-  Future<bool> connect() => _serialized(() async {
+  ///
+  /// [requestPermissions] = false samo proverava dozvole bez dijaloga (za
+  /// povratak u prvi plan: dijalog sam izaziva pause/resume i petlju).
+  Future<bool> connect({bool requestPermissions = true}) =>
+      _serialized(() async {
         if (_disposed) return false;
-        if (!await ensurePermissions()) return false;
+        if (!await ensurePermissions(request: requestPermissions)) return false;
         _prepare();
 
         try {
           if (await _bridge.isRunningService()) {
             // Servis već radi (npr. aplikacija ponovo otvorena): pitamo za stanje.
-            _serviceReady = true;
-            _statusCompleter = Completer<Map<String, dynamic>>();
-            _bridge.sendToTask({'command': 'status'});
-            final status =
-                await _statusCompleter!.future.timeout(_statusTimeout);
+            final status = await _attach();
+            if (status == null) return false;
             if (status['active'] != true) await _stopService();
             return true;
           }
@@ -136,7 +137,10 @@ class RideServiceController {
           if (ready['active'] != true) await _stopService();
           return true;
         } on TimeoutException {
+          // Servis koji smo upravo podigli nije javio 'ready': gasimo ga (K5).
+          // Eventualna vožnja ostaje u bazi i oporavlja se pri sledećem podizanju.
           _emit({'event': 'error', 'message': 'Servis ne odgovara.'});
+          await _stopService();
           return false;
         } catch (e) {
           _emit({
@@ -173,8 +177,14 @@ class RideServiceController {
         _prepare();
 
         try {
-          if (_serviceReady && !await _bridge.isRunningService()) {
-            _serviceReady = false; // servis je ubijen spolja
+          final running = await _bridge.isRunningService();
+          if (!running) {
+            _serviceReady = false; // servis ne radi ili je ubijen spolja
+          } else if (!_serviceReady) {
+            // Servis radi, ali se nismo uspešno priključili: pitamo za stanje.
+            final status = await _attach();
+            if (status == null) return false;
+            if (status['active'] == true) return false; // vožnja već postoji
           }
           if (!_serviceReady) {
             final ready = await _startServiceAndWait();
@@ -210,7 +220,9 @@ class RideServiceController {
   /// Šalje komandu za kraj vožnje. Servis upisuje rezultat, a kontroler
   /// gasi servis kad stigne 'stopped'.
   Future<void> stopRide() => _serialized(() async {
-        if (_serviceReady && await _bridge.isRunningService()) {
+        // Servis obrađuje komande redom, pa 'stop' šaljemo čim radi, i kad
+        // prethodni 'status' nije stigao na vreme.
+        if (await _bridge.isRunningService()) {
           _bridge.sendToTask({'command': 'stop'});
           return;
         }
@@ -240,8 +252,10 @@ class RideServiceController {
   /// Proverava dozvole i emituje grešku/upozorenje. Vraća false ako rad
   /// nije moguć.
   @protected
-  Future<bool> ensurePermissions() async {
-    final location = await Permission.locationWhenInUse.request();
+  Future<bool> ensurePermissions({bool request = true}) async {
+    final location = request
+        ? await Permission.locationWhenInUse.request()
+        : await Permission.locationWhenInUse.status;
     if (!location.isGranted) {
       _emit({
         'event': 'error',
@@ -269,8 +283,10 @@ class RideServiceController {
       return false;
     }
 
-    final notifications = await Permission.notification.request();
-    if (!notifications.isGranted) {
+    final notifications = request
+        ? await Permission.notification.request()
+        : await Permission.notification.status;
+    if (request && !notifications.isGranted) {
       // Ne blokira rad, ali notifikacija servisa možda neće biti vidljiva.
       _emit({
         'event': 'warning',
@@ -296,6 +312,24 @@ class RideServiceController {
     if (!_callbackRegistered) {
       _bridge.addCallback(_onReceiveTaskData);
       _callbackRegistered = true;
+    }
+  }
+
+  /// Traži 'status' od servisa koji radi. Vraća događaj ili null ako servis
+  /// ne odgovori na vreme (servis se ne gasi; vožnja možda postoji).
+  Future<Map<String, dynamic>?> _attach() async {
+    final completer = _statusCompleter = Completer<Map<String, dynamic>>();
+    _bridge.sendToTask({'command': 'status'});
+    try {
+      final status = await completer.future.timeout(_statusTimeout);
+      _serviceReady = true;
+      return status;
+    } on TimeoutException {
+      _serviceReady = false;
+      _emit({'event': 'error', 'message': 'Servis ne odgovara.'});
+      return null;
+    } finally {
+      if (identical(_statusCompleter, completer)) _statusCompleter = null;
     }
   }
 

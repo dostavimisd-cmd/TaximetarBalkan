@@ -291,6 +291,36 @@ void main() {
     expect(h.engine.tracker!.totalDistanceMeters, greaterThan(before + 50));
   });
 
+  test('review: prekid servisa se ne naplaćuje kao čekanje', () async {
+    await h.engine.receive(startCmd);
+    h.drive(60);
+    await h.engine.saveSnapshot();
+    final waitingBefore = h.engine.tracker!.totalWaitingMs;
+    final distanceBefore = h.engine.tracker!.totalDistanceMeters;
+
+    // servis ubijen, aplikacija otvorena posle 4 min
+    final resumeAt = h.now + 4 * min;
+    h.now = resumeAt;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+    h.engine = engine2;
+    h.drive(5, fromMs: resumeAt);
+
+    expect(engine2.tracker!.totalWaitingMs - waitingBefore, lessThan(10 * 1000));
+    expect(engine2.tracker!.totalDistanceMeters,
+        lessThan(distanceBefore + 100)); // samo novih 5 s vožnje
+  });
+
+  test('review: snapshot pokrenut tik pre stopa ne ostavlja red', () async {
+    await h.engine.receive(startCmd);
+    h.drive(30);
+    final snap = h.engine.saveSnapshot(); // timer okinuo, bez await-a
+    final stop = h.engine.receive({'command': 'stop'});
+    await Future.wait([snap, stop]);
+    expect(await h.snapshotCount(), 0);
+    expect((await h.rides()).single['status'], RideEngine.statusCompleted);
+  });
+
   test('status odražava aktivnu vožnju', () async {
     await h.engine.receive({'command': 'status'});
     expect(h.of('status').last['active'], false);

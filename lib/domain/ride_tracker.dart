@@ -82,6 +82,13 @@ class RideTracker {
     );
   }
 
+  /// Sledeća tačka postaje polazna (bez distance i čekanja do nje).
+  /// Zbirovi i cena ostaju.
+  void dropLastPoint() {
+    _lastValidPoint = null;
+    _recentPoints.clear();
+  }
+
   void restoreFromSnapshot({
     required double restoredDistance,
     required int restoredWaitingMs,

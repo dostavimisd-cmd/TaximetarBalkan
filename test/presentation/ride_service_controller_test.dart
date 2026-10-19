@@ -8,6 +8,7 @@ class FakeBridge implements ForegroundBridge {
   bool running = false;
   bool recoverOnStart = false;
   bool failStart = false;
+  bool silent = false;
   int starts = 0;
   int stops = 0;
   final List<Map<String, dynamic>> sent = [];
@@ -40,6 +41,7 @@ class FakeBridge implements ForegroundBridge {
   @override
   void sendToTask(Map<String, dynamic> data) {
     sent.add(data);
+    if (silent) return;
     switch (data['command']) {
       case 'start':
         if (failStart) {
@@ -74,7 +76,7 @@ class TestController extends RideServiceController {
   TestController(FakeBridge bridge) : super(bridge: bridge);
 
   @override
-  Future<bool> ensurePermissions() async => true;
+  Future<bool> ensurePermissions({bool request = true}) async => true;
 }
 
 Future<void> settle() async {
@@ -173,6 +175,28 @@ void main() {
     expect(await start(controller), true);
     await settle();
     expect(controller.rideActive, true);
+  });
+
+  test('review: status timeout ostavlja serviceReady=false, stop ipak stiže',
+      () async {
+    bridge.running = true;
+    bridge.silent = true;
+    expect(await controller.connect(), false);
+    expect(controller.serviceReady, false);
+    expect(bridge.running, true); // vožnja možda postoji: servis se ne gasi
+
+    await controller.stopRide();
+    expect(bridge.sent.last['command'], 'stop');
+    expect(events.any((e) => e['event'] == 'stopped'), false);
+  });
+
+  test('review: startRide na servis koji radi bez priključenja pita status',
+      () async {
+    bridge.running = true;
+    expect(await start(controller), true);
+    await settle();
+    expect(bridge.starts, 0); // nije pokušan drugi startService
+    expect(bridge.sent.map((d) => d['command']), ['status', 'start']);
   });
 
   test('stopRide kad servis ne radi vraća stopped bez ride_id', () async {
