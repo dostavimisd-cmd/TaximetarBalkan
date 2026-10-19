@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 class TaximeterDrawer extends StatelessWidget {
   final VoidCallback onTariffsTap;
   final VoidCallback onHistoryTap;
+  final VoidCallback onReportsTap;
   final VoidCallback onSettingsTap;
 
   const TaximeterDrawer({
     super.key,
     required this.onTariffsTap,
     required this.onHistoryTap,
+    required this.onReportsTap,
     required this.onSettingsTap,
   });
 
@@ -64,6 +66,14 @@ class TaximeterDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 onHistoryTap();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bar_chart, color: Colors.white70),
+              title: const Text('Izveštaji', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                onReportsTap();
               },
             ),
             ListTile(

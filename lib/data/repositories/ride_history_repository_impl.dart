@@ -22,6 +22,18 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
   }
 
   @override
+  Future<List<RideRecord>> getBetween(int fromUtcMs, int toUtcMs) async {
+    final db = await _database();
+    final rows = await db.query(
+      'rides',
+      where: "status != 'active' AND start_time >= ? AND start_time < ?",
+      whereArgs: [fromUtcMs, toUtcMs],
+      orderBy: 'start_time, id',
+    );
+    return rows.map(_fromRow).toList();
+  }
+
+  @override
   Future<List<GapInfo>> getGaps(int rideId) async {
     final db = await _database();
     final rows = await db.query('ride_gaps',

@@ -89,6 +89,15 @@ void main() {
     expect(await repo.getGaps(99), isEmpty);
   });
 
+  test('getBetween: interval [od, do), bez vožnje u toku, hronološki', () async {
+    await ride(1000, 'completed', end: 1500, total: 100);
+    await ride(2000, 'interrupted', end: 2500, total: 200);
+    await ride(2999, 'active');
+    await ride(3000, 'completed', end: 3500, total: 300); // tačno na kraju: van
+    final r = await repo.getBetween(1000, 3000);
+    expect(r.map((x) => x.totalPrice), [100, 200]);
+  });
+
   test('limit', () async {
     for (var i = 0; i < 5; i++) {
       await ride(1000 + i, 'completed', end: 2000 + i);

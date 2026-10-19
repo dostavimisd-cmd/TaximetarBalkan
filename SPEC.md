@@ -23,11 +23,14 @@ Pomoćna aplikacija za vozača (offline-first) koja računa cenu vožnje. Pomaž
 | 2 | Automatski/ručni režim tarifa | urađeno |
 | 2 | Korisnički definisani praznici | urađeno |
 | 3 | Istorija vožnji | urađeno (brisanje odloženo) |
-| 3 | Mesečni izveštaji | čeka |
+| 3 | Izveštaji (dan / nedelja / mesec) | urađeno (smene čekaju) |
 | 3 | Fiksne relacije | čeka |
 | 4 | Kalibracija | urađeno |
 | 4 | ESC/POS štampač (č,ć,ž,š,đ) | čeka |
 | 4 | Glasovna najava cene | čeka |
+| UI | Besplatna open-source mapa (OpenStreetMap) | sledeće |
+| UI | Pozadina: crna ili logo slika | sledeće |
+| UI | Ikonica aplikacije | kasnije |
 | — | Podešavanja (ekran, GPS prag tačnosti, pamćenje jezika/valute/tarife) | urađeno |
 
 ---

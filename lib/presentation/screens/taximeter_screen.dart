@@ -10,6 +10,7 @@ import '../providers/taximeter_provider.dart';
 import '../providers/tariffs_provider.dart';
 import '../providers/settings_provider.dart';
 import 'history_screen.dart';
+import 'reports_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/tariff_edit_dialog.dart';
 import '../widgets/tariff_selection_sheet.dart';
@@ -138,6 +139,9 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       drawer: TaximeterDrawer(
         onHistoryTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => const HistoryScreen()),
+        ),
+        onReportsTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const ReportsScreen()),
         ),
         onTariffsTap: () => _openTariffSheet(context),
         onSettingsTap: _openSettings,
