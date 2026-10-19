@@ -28,6 +28,12 @@ GPS Senzor -> Foreground Service -> Odbacivanje šuma -> FareCalculator -> Ažur
 - `error{message, cmd?}`: `cmd:'start'` → UI se vraća u `idle`, kontroler gasi servis; `cmd:'stop'` → upis nije uspeo, vožnja ostaje aktivna, Stop se može ponoviti.
 - UI faze (`RidePhase`): `idle → starting → running → stopping → finished` (`newRide()` → `idle`).
 
+## Oporavak vožnje (RideEngine)
+- Pri podizanju servisa: aktivna vožnja sa snapshot-om mlađim od 5 min (po `saved_at`) nastavlja se (`recovered`); stariji snapshot → `interrupted` sa iznosima iz snapshot-a (K1). Bez snapshot-a: sveža (< 5 min) nastavlja od nule, stara je `interrupted`.
+- Novi start zatvara sve zaostale `active` vožnje kao `interrupted`.
+- GPS tačka se odbacuje ako: tačnost je loša/0/NaN, vreme je dalje od ±30 s od sata telefona (N1), ili je lažna lokacija u release build-u (U6).
+- Tehnički dug: `RideTracker.processLocation` meri čekanje GPS vremenom (N1/U3 ublaženo proverom sata).
+
 ## Rizici i Tehnički Dug
 - **Rizik 1 (Baterija):** Android agresivno gasi servise (Xiaomi, Huawei). Moramo obezbediti ekran koji vodi vozača da isključi Battery Optimization.
 - **Rizik 2 (GPS Šum):** Stajanje u mestu može generisati mikropomake.
