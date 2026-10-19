@@ -2,9 +2,49 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/ride_service_controller.dart';
 
+enum RidePhase { idle, starting, running, stopping, finished }
+
+/// Konačan obračun vožnje, kako ga javlja servis u događaju 'stopped'.
+class RideResult {
+  final int rideId;
+  final int distanceMeters;
+  final int waitingSeconds;
+  final int startPrice;
+  final int kmPrice;
+  final int waitingPrice;
+  final int minPriceAdjustment;
+  final int totalPrice;
+
+  const RideResult({
+    required this.rideId,
+    required this.distanceMeters,
+    required this.waitingSeconds,
+    required this.startPrice,
+    required this.kmPrice,
+    required this.waitingPrice,
+    required this.minPriceAdjustment,
+    required this.totalPrice,
+  });
+
+  factory RideResult.fromEvent(Map<String, dynamic> e) {
+    int i(String k) => (e[k] as num?)?.toInt() ?? 0;
+    return RideResult(
+      rideId: i('ride_id'),
+      distanceMeters: i('distance_m'),
+      waitingSeconds: i('waiting_sec'),
+      startPrice: i('start_price'),
+      kmPrice: i('km_price'),
+      waitingPrice: i('waiting_price'),
+      minPriceAdjustment: i('min_price_adjustment'),
+      totalPrice: i('total_price'),
+    );
+  }
+}
+
 class TaximeterState {
   final bool isReady;
-  final bool isRunning;
+  final RidePhase phase;
+  final RideResult? lastResult;
   final int currentPrice;
   final double currentDistanceMeters;
   final int currentWaitingMs;
@@ -16,7 +56,8 @@ class TaximeterState {
 
   const TaximeterState({
     this.isReady = false,
-    this.isRunning = false,
+    this.phase = RidePhase.idle,
+    this.lastResult,
     this.currentPrice = 0,
     this.currentDistanceMeters = 0.0,
     this.currentWaitingMs = 0,
@@ -27,9 +68,20 @@ class TaximeterState {
     this.warningMessage,
   });
 
+  /// Vožnja je u toku (uključujući pokretanje i zaustavljanje).
+  bool get isRunning =>
+      phase == RidePhase.starting ||
+      phase == RidePhase.running ||
+      phase == RidePhase.stopping;
+
+  /// Prelazna faza: komanda je poslata, čeka se odgovor servisa.
+  bool get isBusy =>
+      phase == RidePhase.starting || phase == RidePhase.stopping;
+
   TaximeterState copyWith({
     bool? isReady,
-    bool? isRunning,
+    RidePhase? phase,
+    RideResult? lastResult,
     int? currentPrice,
     double? currentDistanceMeters,
     int? currentWaitingMs,
@@ -40,10 +92,12 @@ class TaximeterState {
     String? warningMessage,
     bool clearError = false,
     bool clearWarning = false,
+    bool clearResult = false,
   }) {
     return TaximeterState(
       isReady: isReady ?? this.isReady,
-      isRunning: isRunning ?? this.isRunning,
+      phase: phase ?? this.phase,
+      lastResult: clearResult ? null : (lastResult ?? this.lastResult),
       currentPrice: currentPrice ?? this.currentPrice,
       currentDistanceMeters: currentDistanceMeters ?? this.currentDistanceMeters,
       currentWaitingMs: currentWaitingMs ?? this.currentWaitingMs,
@@ -90,7 +144,11 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       case 'status':
         state = state.copyWith(
           isReady: true,
-          isRunning: event['active'] == true,
+          phase: event['active'] == true
+              ? RidePhase.running
+              : (state.phase == RidePhase.finished
+                  ? RidePhase.finished
+                  : RidePhase.idle),
           currentDistanceMeters: (event['distance'] as num?)?.toDouble() ?? 0.0,
           currentWaitingMs: event['waitingMs'] as int? ?? 0,
           currentPrice: event['price'] as int? ?? 0,
@@ -99,15 +157,17 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
         break;
       case 'started':
       case 'recovered':
-        state = state.copyWith(isRunning: true, clearError: true);
+        state = state.copyWith(
+            phase: RidePhase.running, clearResult: true, clearError: true);
         break;
       case 'already_active':
         state = state.copyWith(
-          isRunning: true,
+          phase: RidePhase.running,
           errorMessage: 'Vožnja je već bila aktivna u pozadini.',
         );
         break;
       case 'update':
+        if (state.phase == RidePhase.finished) break; // zakasneli događaj
         state = state.copyWith(
           currentDistanceMeters: (event['distance'] as num?)?.toDouble() ?? state.currentDistanceMeters,
           currentWaitingMs: event['waitingMs'] as int? ?? state.currentWaitingMs,
@@ -115,13 +175,25 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
         );
         break;
       case 'stopped':
-        state = state.copyWith(
-          isRunning: false,
-          currentDistanceMeters: 0.0,
-          currentWaitingMs: 0,
-          currentPrice: 0,
-          clearError: true,
-        );
+        if (event['ride_id'] == null) {
+          state = state.copyWith(
+            phase: RidePhase.idle,
+            currentDistanceMeters: 0.0,
+            currentWaitingMs: 0,
+            currentPrice: 0,
+            clearError: true,
+          );
+        } else {
+          final result = RideResult.fromEvent(event);
+          state = state.copyWith(
+            phase: RidePhase.finished,
+            lastResult: result,
+            currentDistanceMeters: result.distanceMeters.toDouble(),
+            currentWaitingMs: result.waitingSeconds * 1000,
+            currentPrice: result.totalPrice,
+            clearError: true,
+          );
+        }
         break;
       case 'snapshot_failing':
         state = state.copyWith(
@@ -134,24 +206,44 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
         );
         break;
       case 'error':
+        // K6: neuspeo start vraća UI u mirovanje; neuspeo stop ostavlja
+        // vožnju aktivnom da korisnik može ponovo da pritisne Stop.
+        final cmd = event['cmd'];
         state = state.copyWith(
+          phase: cmd == 'start'
+              ? RidePhase.idle
+              : (cmd == 'stop' ? RidePhase.running : state.phase),
           errorMessage: event['message'] as String?,
         );
         break;
     }
   }
 
-  void startRide({
+  Future<void> startRide({
     required int startPrice,
     required int pricePerKm,
     required int waitingPricePerMin,
     required int minPrice,
     double calibration = 1.0,
-  }) {
-    if (!state.isReady || state.isRunning) return;
+  }) async {
+    if (!state.isReady ||
+        (state.phase != RidePhase.idle && state.phase != RidePhase.finished)) {
+      return;
+    }
+
+    // 'starting' odmah, da drugi pritisak ne pošalje dupli start.
+    final previous = state;
+    state = state.copyWith(
+      phase: RidePhase.starting,
+      currentDistanceMeters: 0.0,
+      currentWaitingMs: 0,
+      currentPrice: 0,
+      clearResult: true,
+      clearError: true,
+    );
 
     final controller = ref.read(rideServiceControllerProvider);
-    final success = controller.sendStartCommand(
+    final sent = await controller.startRide(
       tariffId: state.selectedTariffId,
       startPrice: startPrice,
       pricePerKm: pricePerKm,
@@ -160,15 +252,37 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       calibration: calibration,
     );
 
-    if (success) {
-      state = state.copyWith(isRunning: true, clearError: true);
+    // Komanda nije poslata, a nijedan događaj nije promenio fazu.
+    if (!sent && state.phase == RidePhase.starting) {
+      state = state.copyWith(
+        phase: previous.phase,
+        lastResult: previous.lastResult,
+        currentDistanceMeters: previous.currentDistanceMeters,
+        currentWaitingMs: previous.currentWaitingMs,
+        currentPrice: previous.currentPrice,
+      );
     }
   }
 
-  void stopRide() {
-    if (!state.isRunning) return;
+  Future<void> stopRide() async {
+    if (state.phase != RidePhase.running) return;
     final controller = ref.read(rideServiceControllerProvider);
-    controller.sendStopCommand();
+    state = state.copyWith(phase: RidePhase.stopping);
+    await controller.stopRide();
+  }
+
+  /// Zatvara prikaz završene vožnje i vraća ekran u početno stanje.
+  void newRide() {
+    if (state.phase != RidePhase.finished) return;
+    state = state.copyWith(
+      phase: RidePhase.idle,
+      currentDistanceMeters: 0.0,
+      currentWaitingMs: 0,
+      currentPrice: 0,
+      clearResult: true,
+      clearError: true,
+      clearWarning: true,
+    );
   }
 
   void setTariff(int tariffId) {

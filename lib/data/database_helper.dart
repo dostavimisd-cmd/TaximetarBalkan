@@ -15,10 +15,13 @@ class DatabaseHelper {
 
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
+    return openAt(join(dbPath, filePath));
+  }
 
-    // Dižemo verziju na 2
-    return await openDatabase(
+  /// Otvara bazu na datoj putanji sa produkcijskom šemom i migracijama.
+  /// Testovi ovim otvaraju `inMemoryDatabasePath` preko sqflite_ffi.
+  static Future<Database> openAt(String path) {
+    return openDatabase(
       path,
       version: 2,
       onCreate: _createDB,
@@ -26,7 +29,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> _createDB(Database db, int version) async {
+  static Future<void> _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE app_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,7 +111,7 @@ class DatabaseHelper {
     await db.insert('app_settings', {'key': 'calibration_multiplier', 'value': '1.0'});
   }
 
-  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+  static Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       // Dodajemo nove kolone u postojeću tabelu rides
       await db.execute('ALTER TABLE rides ADD COLUMN tariff_start_price INTEGER DEFAULT 0');

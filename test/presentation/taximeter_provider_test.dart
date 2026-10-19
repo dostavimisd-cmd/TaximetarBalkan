@@ -12,8 +12,24 @@ class FakeController extends RideServiceController {
   @override
   Stream<Map<String, dynamic>> get events => fakeEvents.stream;
 
+  bool startResult = true;
+  int startCalls = 0;
+
   @override
   Future<bool> connect() => connectResult.future;
+
+  @override
+  Future<bool> startRide({
+    required int tariffId,
+    required int startPrice,
+    required int pricePerKm,
+    required int waitingPricePerMin,
+    required int minPrice,
+    required double calibration,
+  }) async {
+    startCalls++;
+    return startResult;
+  }
 }
 
 Future<void> pump() => Future<void>.delayed(Duration.zero);
@@ -71,6 +87,108 @@ void main() {
       await pump();
       expect(read().errorMessage, isNull, reason: event);
     }
+  });
+
+  test('K6/N2: error{cmd:start} vraća UI u mirovanje', () async {
+    fake.connectResult.complete(true);
+    fake.fakeEvents.add({'event': 'started'});
+    await pump();
+    expect(read().isRunning, true);
+    fake.fakeEvents.add(
+        {'event': 'error', 'cmd': 'start', 'message': 'Baza ne radi'});
+    await pump();
+    expect(read().isRunning, false);
+    expect(read().errorMessage, 'Baza ne radi');
+  });
+
+  test('K6/N3: error{cmd:stop} ostavlja vožnju aktivnom', () async {
+    fake.fakeEvents.add({'event': 'started'});
+    await pump();
+    fake.fakeEvents
+        .add({'event': 'error', 'cmd': 'stop', 'message': 'Upis pao'});
+    await pump();
+    expect(read().isRunning, true);
+    expect(read().errorMessage, 'Upis pao');
+  });
+
+  test('error bez cmd ne menja isRunning', () async {
+    fake.fakeEvents.add({'event': 'started'});
+    await pump();
+    fake.fakeEvents.add({'event': 'error', 'message': 'GPS šum'});
+    await pump();
+    expect(read().isRunning, true);
+  });
+
+  test('K3: stopped nosi rezultat, faza finished, cena ostaje', () async {
+    fake.fakeEvents.add({'event': 'started'});
+    await pump();
+    fake.fakeEvents.add({
+      'event': 'stopped',
+      'ride_id': 7,
+      'distance_m': 1500,
+      'waiting_sec': 90,
+      'start_price': 200,
+      'km_price': 150,
+      'waiting_price': 30,
+      'min_price_adjustment': 0,
+      'total_price': 380,
+    });
+    await pump();
+    expect(read().phase, RidePhase.finished);
+    expect(read().isRunning, false);
+    expect(read().currentPrice, 380);
+    expect(read().lastResult?.rideId, 7);
+    expect(read().lastResult?.kmPrice, 150);
+
+    // zakasneli update ne sme da pokvari prikaz završene cene
+    fake.fakeEvents.add({'event': 'update', 'price': 5, 'distance': 1.0});
+    await pump();
+    expect(read().currentPrice, 380);
+  });
+
+  test('K3: newRide vraća ekran u idle sa nulama', () async {
+    fake.fakeEvents.add({'event': 'stopped', 'ride_id': 1, 'total_price': 300});
+    await pump();
+    expect(read().phase, RidePhase.finished);
+    container.read(taximeterProvider.notifier).newRide();
+    expect(read().phase, RidePhase.idle);
+    expect(read().currentPrice, 0);
+    expect(read().lastResult, isNull);
+  });
+
+  test('K3: stopped bez ride_id vraća idle', () async {
+    fake.fakeEvents.add({'event': 'started'});
+    await pump();
+    fake.fakeEvents.add({'event': 'stopped', 'ride_id': null});
+    await pump();
+    expect(read().phase, RidePhase.idle);
+    expect(read().lastResult, isNull);
+  });
+
+  Future<void> startViaNotifier() =>
+      container.read(taximeterProvider.notifier).startRide(
+          startPrice: 200, pricePerKm: 100, waitingPricePerMin: 10, minPrice: 300);
+
+  test('startRide koji nije poslat vraća prethodnu fazu i rezultat', () async {
+    fake.connectResult.complete(true);
+    await pump();
+    fake.fakeEvents.add({'event': 'stopped', 'ride_id': 3, 'total_price': 450});
+    await pump();
+    fake.startResult = false;
+    await startViaNotifier();
+    expect(read().phase, RidePhase.finished);
+    expect(read().currentPrice, 450);
+    expect(read().lastResult?.rideId, 3);
+  });
+
+  test('startRide: starting odmah blokira drugi pritisak', () async {
+    fake.connectResult.complete(true);
+    await pump();
+    final first = startViaNotifier();
+    expect(read().phase, RidePhase.starting);
+    await startViaNotifier();
+    await first;
+    expect(fake.startCalls, 1);
   });
 
   test('copyWith: clearWarning briše upozorenje', () {
