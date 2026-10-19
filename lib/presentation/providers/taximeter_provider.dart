@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/ride_service_controller.dart';
 
@@ -121,8 +122,12 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     _subscription?.cancel();
     _subscription = controller.events.listen(_handleServiceEvent);
 
+    WidgetsFlutterBinding.ensureInitialized();
+    final lifecycle = AppLifecycleListener(onResume: _onResume);
+
     ref.onDispose(() {
       _subscription?.cancel();
+      lifecycle.dispose();
     });
 
     _initConnection(controller);
@@ -130,9 +135,30 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     return const TaximeterState();
   }
 
+  bool _connecting = false;
+
+  void _onResume() {
+    // Neuspeo connect ponavljamo; vožnja u toku se usklađuje sa servisom
+    // (connect traži 'status'). Mirna aplikacija ne dira servis.
+    if (!state.isReady || state.isRunning) retryConnect();
+  }
+
   Future<void> _initConnection(RideServiceController controller) async {
-    final connected = await controller.connect();
-    state = state.copyWith(isReady: connected);
+    if (_connecting) return;
+    _connecting = true;
+    try {
+      final connected = await controller.connect();
+      state = state.copyWith(isReady: connected);
+    } finally {
+      _connecting = false;
+    }
+  }
+
+  /// V8: ponovni pokušaj povezivanja (npr. posle odobrene dozvole ili
+  /// uključenog GPS-a); poziva se i pri povratku aplikacije u prvi plan.
+  Future<void> retryConnect() {
+    if (state.isBusy) return Future.value();
+    return _initConnection(ref.read(rideServiceControllerProvider));
   }
 
   void _handleServiceEvent(Map<String, dynamic> event) {
@@ -156,9 +182,21 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
         );
         break;
       case 'started':
-      case 'recovered':
         state = state.copyWith(
             phase: RidePhase.running, clearResult: true, clearError: true);
+        break;
+      case 'recovered':
+        // V7: vožnja nastavljena posle prekida servisa; preuzimamo tekuće vrednosti.
+        state = state.copyWith(
+          phase: RidePhase.running,
+          currentDistanceMeters:
+              (event['distance'] as num?)?.toDouble() ?? state.currentDistanceMeters,
+          currentWaitingMs: event['waitingMs'] as int? ?? state.currentWaitingMs,
+          currentPrice: event['price'] as int? ?? state.currentPrice,
+          warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
+          clearResult: true,
+          clearError: true,
+        );
         break;
       case 'already_active':
         state = state.copyWith(

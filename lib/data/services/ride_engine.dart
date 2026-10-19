@@ -94,8 +94,16 @@ class RideEngine {
     return active;
   }
 
+  /// N1: tačka čije je vreme dalje od sata telefona od ovoga je pogrešna;
+  /// jedna takva bi zamrznula vožnju (sve sledeće bi imale msPassed <= 0).
+  static const int maxClockSkewMs = 30 * 1000;
+
   void onPosition(LocationPoint point) {
     if (tracker == null) return;
+    if ((point.timestamp.millisecondsSinceEpoch - _nowMs()).abs() >
+        maxClockSkewMs) {
+      return;
+    }
     try {
       tracker!.processLocation(point);
       _send({

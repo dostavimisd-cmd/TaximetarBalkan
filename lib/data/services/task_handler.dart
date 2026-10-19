@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
@@ -56,6 +57,10 @@ class RideTaskHandler extends TaskHandler {
         intervalDuration: const Duration(seconds: 1),
       ),
     ).listen((position) {
+      // U6: lažne lokacije samo u debug build-u (emulator); accuracy 0 znači
+      // da uređaj nije dao preciznost, pa se tačka ne može proveriti.
+      if (kReleaseMode && position.isMocked) return;
+      if (position.accuracy <= 0) return;
       _engine.onPosition(LocationPoint(
         latitude: position.latitude,
         longitude: position.longitude,

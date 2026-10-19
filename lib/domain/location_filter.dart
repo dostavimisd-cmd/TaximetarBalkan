@@ -13,6 +13,12 @@ class LocationFilter {
   });
 
   bool isValid(LocationPoint newPoint, LocationPoint? lastPoint) {
+    // U2: NaN/Infinity bi zauvek zatrovali zbir distance.
+    if (!newPoint.latitude.isFinite ||
+        !newPoint.longitude.isFinite ||
+        !newPoint.accuracy.isFinite) {
+      return false;
+    }
     if (newPoint.accuracy > accuracyThresholdMeters) return false;
     if (lastPoint == null) return true;
 

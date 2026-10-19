@@ -53,6 +53,9 @@ class ForegroundBridge {
         eventAction: ForegroundTaskEventAction.nothing(),
         autoRunOnBoot: false,
         autoRunOnMyPackageReplaced: false,
+        // U1: bez automatskog restarta posle kill-a (na Androidu 12+ pokretanje
+        // FGS iz pozadine ne uspeva); vožnja se oporavlja pri otvaranju.
+        allowAutoRestart: false,
         allowWakeLock: true,
         allowWifiLock: false,
       ),
@@ -252,6 +255,17 @@ class RideServiceController {
 
     if (!await Geolocator.isLocationServiceEnabled()) {
       _emit({'event': 'error', 'message': 'GPS je isključen. Uključi lokaciju na telefonu.'});
+      return false;
+    }
+
+    // V9: "Približna lokacija" daje tačnost od kilometra; vožnja bi bila
+    // pogrešno obračunata, pa je ne dozvoljavamo.
+    if (await Geolocator.getLocationAccuracy() == LocationAccuracyStatus.reduced) {
+      _emit({
+        'event': 'error',
+        'message': 'Uključi "Preciznu lokaciju" za ovu aplikaciju u podešavanjima telefona.',
+        'permanent': true,
+      });
       return false;
     }
 

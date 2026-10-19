@@ -43,6 +43,7 @@ class Harness {
   /// Vožnja ~10 m/s na sever, jedna tačka u sekundi.
   void drive(int seconds, {int fromMs = t0}) {
     for (var i = 0; i <= seconds; i++) {
+      now = fromMs + i * 1000; // sat telefona prati GPS vreme
       engine.onPosition(LocationPoint(
         latitude: 44.8 + i * 0.00009,
         longitude: 20.46,
@@ -183,7 +184,7 @@ void main() {
     final distance = h.engine.tracker!.totalDistanceMeters.round();
     final expectedFare = h.engine.tracker!.currentFare!;
 
-    h.now = t0 + 6 * min;
+    h.now = t0 + 7 * min;
     final engine2 = h.newEngine();
     expect(await engine2.onServiceStart(), false);
 
@@ -272,6 +273,22 @@ void main() {
     expect(rides[0]['total_price'], expected);
     expect(rides[1]['status'], RideEngine.statusActive);
     expect(await h.snapshotCount(), 0);
+  });
+
+  test('N1: tačka +1 h ne zamrzava vožnju', () async {
+    await h.engine.receive(startCmd);
+    h.drive(20);
+    final before = h.engine.tracker!.totalDistanceMeters;
+
+    h.engine.onPosition(LocationPoint(
+      latitude: 44.9, longitude: 20.46, accuracy: 5, speed: 10,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(h.now + 60 * min, isUtc: true),
+    ));
+    expect(h.engine.tracker!.totalDistanceMeters, before);
+
+    // vožnja nastavlja normalno
+    h.drive(10, fromMs: h.now + 1000);
+    expect(h.engine.tracker!.totalDistanceMeters, greaterThan(before + 50));
   });
 
   test('status odražava aktivnu vožnju', () async {

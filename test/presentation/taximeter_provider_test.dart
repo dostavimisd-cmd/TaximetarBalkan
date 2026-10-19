@@ -15,8 +15,14 @@ class FakeController extends RideServiceController {
   bool startResult = true;
   int startCalls = 0;
 
+  int connectCalls = 0;
+  Future<bool> Function()? connectOverride;
+
   @override
-  Future<bool> connect() => connectResult.future;
+  Future<bool> connect() {
+    connectCalls++;
+    return connectOverride != null ? connectOverride!() : connectResult.future;
+  }
 
   @override
   Future<bool> startRide({
@@ -189,6 +195,33 @@ void main() {
     await startViaNotifier();
     await first;
     expect(fake.startCalls, 1);
+  });
+
+  test('V7: recovered preuzima vrednosti i upozorenje', () async {
+    fake.fakeEvents.add({
+      'event': 'recovered',
+      'ride_id': 4,
+      'distance': 1234.0,
+      'waitingMs': 45000,
+      'price': 420,
+    });
+    await pump();
+    expect(read().phase, RidePhase.running);
+    expect(read().currentDistanceMeters, 1234.0);
+    expect(read().currentWaitingMs, 45000);
+    expect(read().currentPrice, 420);
+    expect(read().warningMessage, isNotNull);
+  });
+
+  test('V8: retryConnect posle neuspelog connect-a', () async {
+    fake.connectResult.complete(false);
+    await pump();
+    expect(read().isReady, false);
+
+    fake.connectOverride = () async => true;
+    await container.read(taximeterProvider.notifier).retryConnect();
+    expect(read().isReady, true);
+    expect(fake.connectCalls, 2);
   });
 
   test('copyWith: clearWarning briše upozorenje', () {
