@@ -1,0 +1,39 @@
+name: iOS IPA (nepotpisan, za ličnu upotrebu)
+
+# Pokreće se ručno iz Actions taba (Run workflow) ili pri push-u na ovaj fajl.
+# Gradi na besplatnoj macOS mašini GitHub-a; rezultat je NEPOTPISAN .ipa,
+# za sideload (TrollStore / Sideloadly + AppSync) na jailbreakovan uređaj.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ios-ipa.yml'
+
+jobs:
+  build-ipa:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Zavisnosti
+        run: flutter pub get
+
+      - name: Build (bez potpisivanja)
+        run: flutter build ios --release --no-codesign
+
+      - name: Spakuj u .ipa
+        run: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r TaksimetarBalkan.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TaksimetarBalkan-ipa
+          path: build/ios/iphoneos/TaksimetarBalkan.ipa
+          retention-days: 14
