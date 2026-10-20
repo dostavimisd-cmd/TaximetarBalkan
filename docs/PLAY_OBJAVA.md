@@ -88,3 +88,31 @@ To keep it running with a locked screen, turn off battery restrictions for the a
 - Napraviti rezervnu kopiju `D:\kljucevi\taksimetar-upload.jks` (i zapisati lozinku na sigurno mesto, ne u projekat).
 - Snimiti video za deklaraciju foreground servisa.
 - Snimiti slike ekrana.
+
+## 7. Napomena verzije (za Play, „Šta je novo”)
+
+**Srpski (sr):**
+```
+Prva verzija.
+• Taksimetar: start, kilometraža, čekanje i minimalna cena, uz pauzu tokom vožnje.
+• Tarife unosite sami, uz automatski izbor po danu, satu i praznicima.
+• Fiksne relacije sa brzom pretragom i uvozom cenovnika.
+• Mapa sa pretragom adrese i procenom cene pre vožnje.
+• Izveštaji po danu, nedelji, mesecu i smeni.
+• Štampa računa na Bluetooth štampač od 58 mm.
+Napomena: aplikacija je pomoćni alat za evidenciju i procenu, nije overeni taksimetar niti fiskalni uređaj.
+```
+
+**English (en-US):**
+```
+First version.
+• Taximeter: base fare, distance, waiting and minimum fare, with pause during rides.
+• Your own tariffs, chosen automatically by day, time and holidays.
+• Fixed routes with quick search and bulk price list import.
+• Map with address search and a fare estimate before the ride.
+• Reports by day, week, month and shift.
+• Receipts on a 58 mm Bluetooth printer.
+Note: an auxiliary tool for recording and estimating, not a certified taximeter or fiscal device.
+```
+
+Dužina: SR 480, EN 471 znakova (limit 500).
