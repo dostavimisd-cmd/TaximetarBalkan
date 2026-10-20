@@ -56,3 +56,6 @@ docs/play/telefon_4_*
 
 # obfuskacioni simboli (čuvaju se lokalno, ne u gitu)
 docs/play/symbols-*/
+
+# video za Play deklaraciju (veliki, ne ide u git; upload na YouTube)
+videopotvrda.mp4
