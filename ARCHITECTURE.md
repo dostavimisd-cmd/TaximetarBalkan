@@ -30,6 +30,7 @@ GPS Senzor -> Foreground Service (`RideEngine`) -> Odbacivanje šuma -> FareCalc
 - **GPS stream i snapshot timer** postoje samo dok traje vožnja (`_startTracking()` posle starta/oporavka, `_stopTracking()` posle uspešnog stopa).
 - **Redosled komandi:** handler izvršava `start`/`stop`/`status` strogo redom (`_queue`); kontroler serijalizuje `connect`/`startRide`/`stopRide` (`_serialized`).
 - **Plugin iza `ForegroundBridge`** da bi se kontroler testirao bez uređaja.
+- **iOS (lična upotreba, van Play/App Store):** nema pravog Android-stil foreground servisa. `rideServiceControllerProvider` na Androidu daje pravi `ForegroundBridge` (bez izmena), a na ostalim platformama `InProcessRideBridge` (`presentation/services/in_process_ride_bridge.dart`) — isti `RideEngine`, bez posrednog izolata/servisa, vozi se u glavnoj niti dok je ekran upaljen i app u prvom planu. Bez zaključanog ekrana i bez štampe (nije potrebno za ličnu upotrebu).
 - **`RideEngine` (`lib/data/services/ride_engine.dart`)** drži svu logiku servisa: red komandi, upis vožnje, snapshot, oporavak. Prima `Database`, `send`, sat (`nowMs`) i kuke `onTrackingStart`/`onTrackingStop`; nema zavisnost od plugin-a, testira se preko sqflite_ffi (`test/data/ride_engine_test.dart`). `RideTaskHandler` je samo lepak: prosleđuje komande i GPS tačke i drži GPS stream/snapshot timer.
 - **Baza u testovima:** `DatabaseHelper.openAt(path)` otvara produkcijsku šemu i migracije na proizvoljnoj putanji.
 

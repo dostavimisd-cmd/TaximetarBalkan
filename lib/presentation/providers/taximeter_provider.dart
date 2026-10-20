@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/in_process_ride_bridge.dart';
 import '../services/ride_service_controller.dart';
 
 enum RidePhase { idle, starting, running, paused, stopping, finished }
@@ -487,7 +489,12 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
 }
 
 final rideServiceControllerProvider = Provider<RideServiceController>((ref) {
-  final controller = RideServiceController();
+  // Android: pravi foreground servis (bez izmena). Ostale platforme (npr.
+  // iOS, lična upotreba) nemaju pravi Android-stil servis, pa se vozi
+  // isti RideEngine u glavnoj niti (vidi in_process_ride_bridge.dart).
+  final controller = RideServiceController(
+    bridge: Platform.isAndroid ? const ForegroundBridge() : InProcessRideBridge(),
+  );
   ref.onDispose(() => controller.dispose());
   return controller;
 });
