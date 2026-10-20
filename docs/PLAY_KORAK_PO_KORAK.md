@@ -34,7 +34,7 @@ Play Console → **Main store listing**. Tekstovi su u `docs/PLAY_OBJAVA.md` (SR
 - **Grafika** (u `docs/play/`):
   - Ikona 512×512: `ikona_512.png`
   - Feature graphic 1024×500: `feature_graphic_1024x500.png`
-  - Snimci telefona (min. 2, imamo 3): `telefon_1_glavni_ekran.png`, `telefon_2_rezime_voznje.png`, `telefon_3_izvestaji.png`
+  - Snimci telefona na srpskom (4, odnos 2:1): `store_sr_1_glavni_ekran.png`, `store_sr_2_izvestaji.png`, `store_sr_3_fiksne_relacije.png`, `store_sr_4_rezime_voznje.png`
     - *Napomena:* snimci 2 i 3 prikazuju stvarne vožnje i zaradu. Ako ne želiš to javno, zameni ih (javi mi, snimim nove na praznoj bazi ili na engleskom).
 - Dodaj i engleski jezik (Store listing → Manage translations) i prenesi EN tekstove.
 
