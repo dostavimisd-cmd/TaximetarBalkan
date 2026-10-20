@@ -83,6 +83,12 @@ class ReceiptPrinter {
       if (!await PrintBluetoothThermal.writeBytes(bytes)) {
         throw const PrintException('Slanje na štampač nije uspelo.');
       }
+      // Neki štampači (npr. PT-210 na Honoru) preseku kraj računa ako se veza
+      // zatvori pre nego što se bafer isprazni. Čekamo srazmerno veličini
+      // (duži račun = više bajtova = duža pauza), sa gornjom granicom.
+      await Future.delayed(
+        Duration(milliseconds: (400 + bytes.length ~/ 10).clamp(400, 8000)),
+      );
     } finally {
       await PrintBluetoothThermal.disconnect;
     }
