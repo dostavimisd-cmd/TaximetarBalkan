@@ -6,6 +6,9 @@ import '../l10n/tr.dart';
 /// Adresa politike privatnosti (Firebase Hosting, folder `site/`).
 const String privacyPolicyUrl = 'https://taximetarbalkan.web.app/privacy';
 
+/// Zvanični veb-sajt aplikacije (Firebase Hosting).
+const String appWebsiteUrl = 'https://taximetarbalkan.web.app';
+
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
@@ -58,6 +61,18 @@ class AboutScreen extends ConsumerWidget {
                 : privacyPolicyUrl,
             style: muted,
           ),
+          const SizedBox(height: 24),
+          Text(t('Veb-sajt'), style: heading),
+          const SizedBox(height: 6),
+          const SelectableText(appWebsiteUrl, style: muted),
+          const SizedBox(height: 24),
+          Text(t('Kontakt'), style: heading),
+          const SizedBox(height: 6),
+          // Kontakt podaci korisnika se ne prevode.
+          const SelectableText('dostavimisd@gmail.com', style: muted),
+          const SizedBox(height: 2),
+          Text(t('Telefon (WhatsApp i Viber):'), style: muted),
+          const SelectableText('066 355 445', style: muted),
           const SizedBox(height: 24),
           Text(t('Podaci mape'), style: heading),
           const SizedBox(height: 6),

@@ -18,6 +18,12 @@ const Map<String, String> enStrings = {
       'The address will be published before the store release.',
   'Podaci mape':
       'Map data',
+  'Veb-sajt':
+      'Website',
+  'Kontakt':
+      'Contact',
+  'Telefon (WhatsApp i Viber):':
+      'Phone (WhatsApp and Viber):',
   'Telefon može da ugasi taksimetar kad je ekran zaključan. Da se to ne desi, isključi ograničenja baterije za ovu aplikaciju.':
       'The phone may shut the taximeter down while the screen is locked. To prevent that, turn off battery restrictions for this app.',
   'OTVORI PODEŠAVANJA BATERIJE':

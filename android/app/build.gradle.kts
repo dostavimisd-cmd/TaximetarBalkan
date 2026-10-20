@@ -58,6 +58,14 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // R8: uklanjanje i obfuskacija Java/Kotlin koda; Dart se obfuskuje
+            // preko `flutter build --obfuscate --split-debug-info`.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
