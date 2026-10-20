@@ -53,3 +53,6 @@ app.*.map.json
 # privremeni snimci za Play grafiku
 docs/play/raw/
 docs/play/telefon_4_*
+
+# obfuskacioni simboli (čuvaju se lokalno, ne u gitu)
+docs/play/symbols-*/
