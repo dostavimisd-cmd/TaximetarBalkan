@@ -96,8 +96,9 @@ class ReceiptPrinter {
 
   // ---------------------------------------------------------------- bajtovi
 
-  /// Širina logoa na papiru (tačke); ostatak do 384 je beli rub.
-  static const int logoWidth = 256;
+  /// Logo se štampa punom širinom papira (384 tačke), cela slika (bez sečenja),
+  /// visina srazmerno. Manja širina bi ostavila bele ivice (samo sredina lista).
+  static const int logoWidth = EscPos.dotsPerLine;
 
   /// Logo firme kao raster (dithering), centriran; null ako slika ne može da
   /// se pročita (tada se račun štampa bez logoa).
