@@ -13,6 +13,17 @@ class DeviceService {
     }
   }
 
+  /// Vibracija po šablonu (pauza, vibracija, … u ms); false ako nije moguća
+  /// (tada pozivalac koristi vibraciju dodira).
+  static Future<bool> vibrate(List<int> pattern) async {
+    try {
+      return await _channel.invokeMethod<bool>('vibrate', {'pattern': pattern}) ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Otvara sistemski spisak optimizacije baterije; false ako nije uspelo.
   static Future<bool> openBatterySettings() async {
     try {

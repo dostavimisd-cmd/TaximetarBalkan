@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import '../providers/taximeter_provider.dart';
+import 'device_service.dart';
 
 /// Šta se desilo sa vožnjom, za kratak signal vozaču (vibracija i zvuk).
 enum RideFeedback { started, paused, resumed, finished }
@@ -23,9 +24,21 @@ RideFeedback? rideFeedbackFor(RidePhase? prev, RidePhase next) {
   return null;
 }
 
+/// Šablon vibracije (pauza, vibracija, … u ms): start i kraj dva duža
+/// impulsa, pauza i nastavak jedan.
+List<int> rideVibrationPattern(RideFeedback feedback) => switch (feedback) {
+  RideFeedback.started || RideFeedback.finished => const [0, 250, 150, 250],
+  RideFeedback.paused || RideFeedback.resumed => const [0, 200],
+};
+
 /// Vibracija i sistemski zvuk dodira. Zvuk se čuje samo ako su zvuci dodira
-/// uključeni u podešavanjima telefona; vibracija prati sistemsku vibraciju.
+/// uključeni u podešavanjima telefona. Vibracija je prava vibracija telefona
+/// (Android); ako nije dostupna, koristi se vibracija dodira.
 Future<void> playRideFeedback(RideFeedback feedback) async {
+  if (await DeviceService.vibrate(rideVibrationPattern(feedback))) {
+    await SystemSound.play(SystemSoundType.click);
+    return;
+  }
   switch (feedback) {
     case RideFeedback.started:
     case RideFeedback.finished:

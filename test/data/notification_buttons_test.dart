@@ -17,7 +17,8 @@ void main() {
   });
 
   test('kraj vožnje sklanja dugmad; ostali događaji ih ne menjaju', () {
-    expect(ids({'event': 'stopped'}), isEmpty);
+    // posle kraja se servis gasi: obaveštenje se ne dira (inače ga podigne)
+    expect(rideNotificationButtons({'event': 'stopped'}, english: false), isNull);
     expect(ids({'event': 'update'}), isNull);
     expect(ids({'event': 'ready', 'active': true}), isNull);
     expect(ids({'event': 'error', 'cmd': 'stop'}), isNull);

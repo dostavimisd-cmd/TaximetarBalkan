@@ -31,9 +31,10 @@ List<NotificationButton>? rideNotificationButtons(
       return event['paused'] == true ? [resume, stop] : [pause, stop];
     case 'paused':
       return [resume, stop];
-    case 'stopped':
-      return const [];
   }
+  // Posle 'stopped' namerno ništa: servis se gasi, a updateService koji
+  // stigne posle stopService ga ponovo podigne (prazan servis koji ne
+  // odgovara, pa sledeći START javi „Servis ne odgovara”).
   return null;
 }
 
