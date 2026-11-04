@@ -69,6 +69,14 @@ class _RideMapState extends ConsumerState<RideMap> {
   /// prstom; dugme "moja lokacija" vraća praćenje.
   bool _follow = true;
 
+  /// Pozadina ispod pločica (vidi se dok se učitavaju): tamna kao mapa, a ne
+  /// podrazumevana svetlosiva koja je bljeskala kroz rupe pri zumu.
+  static const _background = Color(0xFF1B1B1F);
+
+  /// Ponovni pokušaj lokacije kad se aplikacija vrati u prvi plan (npr. posle
+  /// dozvole „samo ovaj put” ili uključenog GPS-a).
+  AppLifecycleListener? _lifecycle;
+
   /// Okvir rute ostavlja mesta za traku sa adresom (gore) i dugmad (desno).
   static const _routePadding = EdgeInsets.fromLTRB(36, 96, 64, 40);
 
@@ -76,12 +84,23 @@ class _RideMapState extends ConsumerState<RideMap> {
   void initState() {
     super.initState();
     if (!ref.read(taximeterProvider).isRunning) _startIdleLocation();
+    _lifecycle = AppLifecycleListener(onResume: _retryIdleLocation);
   }
 
   @override
   void dispose() {
+    _lifecycle?.dispose();
     _idleSub?.cancel();
     super.dispose();
+  }
+
+  /// Lokacija još nije stigla (dozvola, GPS ili greška toka): pokušaj ponovo.
+  void _retryIdleLocation() {
+    if (!mounted || ref.read(taximeterProvider).isRunning) return;
+    if (_idleSub == null || _here == null) {
+      _stopIdleLocation();
+      _startIdleLocation();
+    }
   }
 
   /// Prvo svež fiks (ne keširana "poslednja poznata" tačka, koja može biti
@@ -100,7 +119,12 @@ class _RideMapState extends ConsumerState<RideMap> {
           accuracy: LocationAccuracy.high,
           distanceFilter: 5,
         ),
-      ).listen(_onIdlePosition, onError: (_) {});
+      ).listen(
+        _onIdlePosition,
+        // tok je pao (npr. GPS isključen): sledeći pokušaj ga otvara iznova
+        onError: (_) => _stopIdleLocation(),
+        cancelOnError: true,
+      );
       // brz prvi prikaz dok tok ne stigne
       final first = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -158,8 +182,12 @@ class _RideMapState extends ConsumerState<RideMap> {
   /// Dugme "moja lokacija": vraća praćenje i kameru na poziciju.
   void _recenter() {
     setState(() => _follow = true);
-    if (_here != null && _ready) _controller.move(_here!, 16);
-    if (!ref.read(taximeterProvider).isRunning) _startIdleLocation();
+    if (_here != null && _ready) {
+      _controller.move(_here!, 16);
+    } else {
+      _showMessage(t('Čekam GPS lokaciju…'));
+    }
+    if (!ref.read(taximeterProvider).isRunning) _retryIdleLocation();
   }
 
   /// Cela ruta (i trenutna pozicija) u kadru, sa mestom za trake preko mape.
@@ -264,7 +292,15 @@ class _RideMapState extends ConsumerState<RideMap> {
 
   void _onRide(TaximeterState? prev, TaximeterState next) {
     if (next.phase == RidePhase.starting && prev?.phase != RidePhase.starting) {
-      setState(_route.clear); // nova vožnja, nova linija
+      // nova vožnja, nova linija; kamera ponovo prati vozača (i posle rute)
+      setState(() {
+        _route.clear();
+        _follow = true;
+      });
+    }
+    // Servis se povezao (dozvola je data posle otvaranja mape): lokacija sada.
+    if (next.isReady && !(prev?.isReady ?? false) && !next.isRunning) {
+      _retryIdleLocation();
     }
     // Servis preuzima GPS pri vožnji; ovde se tok zatvara i otvara posle nje.
     if (next.isRunning && !(prev?.isRunning ?? false)) {
@@ -296,6 +332,9 @@ class _RideMapState extends ConsumerState<RideMap> {
             options: MapOptions(
               initialCenter: _here ?? const LatLng(44.0, 20.9),
               initialZoom: _here == null ? 7 : 15,
+              minZoom: 3,
+              maxZoom: 19,
+              backgroundColor: _background,
               onMapReady: _onMapReady,
               onPositionChanged: _onCameraMoved,
               interactionOptions: const InteractionOptions(
@@ -308,6 +347,11 @@ class _RideMapState extends ConsumerState<RideMap> {
                 child: TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'rs.taksimetar.balkan',
+                  maxNativeZoom: 19,
+                  // Pločica koja se nije učitala (slab signal) se ponovo traži
+                  // kad izađe iz kadra, umesto da zauvek ostane prazna.
+                  evictErrorTileStrategy:
+                      EvictErrorTileStrategy.notVisibleRespectMargin,
                 ),
               ),
               if (_plan != null && _plan!.points.length > 1)

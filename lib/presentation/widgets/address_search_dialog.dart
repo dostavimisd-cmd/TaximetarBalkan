@@ -1,11 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/services/navigation_service.dart';
 import '../../domain/models/navigation.dart';
+import '../../domain/place_search.dart';
 import '../l10n/tr.dart';
 
-/// Pretraga adrese: upit ide tek na "Traži" (ne pri svakom slovu), jer javni
-/// Nominatim dozvoljava najviše jedan upit u sekundi.
+/// Pretraga adrese sa predlozima dok se kuca (upit ide kad se zastane sa
+/// kucanjem), najbliži vozaču prvi.
 Future<Place?> showAddressSearch(
   BuildContext context,
   NavigationService service, {
@@ -43,18 +45,41 @@ class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
   List<Place> _results = const [];
   bool _loading = false;
   String? _message;
+  Timer? _debounce;
+  // redni broj upita: zakasneli odgovor starijeg upita se odbacuje
+  int _seq = 0;
+
+  /// Pauza u kucanju posle koje ide upit (ne šalje se svako slovo).
+  static const _typingPause = Duration(milliseconds: 450);
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _query.dispose();
     super.dispose();
   }
 
+  void _onChanged(String text) {
+    _debounce?.cancel();
+    if (text.trim().length < 3) {
+      _seq++;
+      setState(() {
+        _results = const [];
+        _loading = false;
+        _message = null;
+      });
+      return;
+    }
+    _debounce = Timer(_typingPause, _search);
+  }
+
   Future<void> _search() async {
+    _debounce?.cancel();
     if (_query.text.trim().length < 3) {
       setState(() => _message = t('Unesi bar 3 slova adrese.'));
       return;
     }
+    final seq = ++_seq;
     setState(() {
       _loading = true;
       _message = null;
@@ -65,7 +90,7 @@ class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
         nearLat: widget.nearLat,
         nearLon: widget.nearLon,
       );
-      if (!mounted) return;
+      if (!mounted || seq != _seq) return;
       setState(() {
         _results = r;
         _message = r.isEmpty
@@ -73,11 +98,11 @@ class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
             : null;
       });
     } catch (e) {
-      if (mounted) {
+      if (mounted && seq == _seq) {
         setState(() => _message = t('Pretraga nije uspela (internet?): {0}', [e]));
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && seq == _seq) setState(() => _loading = false);
     }
   }
 
@@ -95,6 +120,7 @@ class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
               controller: _query,
               autofocus: true,
               textInputAction: TextInputAction.search,
+              onChanged: _onChanged,
               onSubmitted: (_) => _search(),
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
@@ -136,6 +162,15 @@ class _AddressSearchDialogState extends ConsumerState<_AddressSearchDialog> {
                           fontSize: 13,
                         ),
                       ),
+                      trailing: p.distanceMeters == null
+                          ? null
+                          : Text(
+                              PlaceSearch.formatDistance(p.distanceMeters!),
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
                       onTap: () => Navigator.pop(context, p),
                     ),
                 ],

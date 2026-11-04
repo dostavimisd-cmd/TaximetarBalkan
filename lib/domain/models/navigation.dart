@@ -4,7 +4,18 @@ class Place {
   final double lat;
   final double lon;
 
-  const Place({required this.label, required this.lat, required this.lon});
+  /// Vazdušna udaljenost od vozača (m); null kad lokacija nije poznata.
+  final int? distanceMeters;
+
+  const Place({
+    required this.label,
+    required this.lat,
+    required this.lon,
+    this.distanceMeters,
+  });
+
+  Place withDistance(int meters) =>
+      Place(label: label, lat: lat, lon: lon, distanceMeters: meters);
 }
 
 /// Predlog rute do odredišta (samo za orijentaciju vozača; ne utiče na

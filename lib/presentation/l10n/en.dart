@@ -124,6 +124,8 @@ const Map<String, String> enStrings = {
       'Remove',
   'Naziv doplate je obavezan.':
       'Extra name is required.',
+  'Čekam GPS lokaciju…':
+      'Waiting for GPS location…',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

@@ -42,24 +42,69 @@ void main() {
         throwsA(isA<NavigationException>()));
   });
 
-  test('search: kratak upit ne ide na mrežu; šalje User-Agent i viewbox', () async {
+  // Photon: ćirilica iz OSM-a, reka (izbacuje se), dalji grad pre bližeg u odgovoru
+  const photon = '''{"features": [
+    {"geometry": {"coordinates": [20.4612, 44.8125]},
+     "properties": {"name": "Карађорђева", "city": "Београд", "osm_key": "highway"}},
+    {"geometry": {"coordinates": [20.93, 44.62]},
+     "properties": {"name": "Дунав", "osm_key": "waterway"}},
+    {"geometry": {"coordinates": [20.927, 44.664]},
+     "properties": {"name": "Карађорђева", "city": "Смедерево", "osm_key": "highway"}},
+    {"geometry": {"coordinates": [20.819, 44.635]},
+     "properties": {"street": "Цара Лазара", "housenumber": "7", "village": "Сеоне", "osm_key": "place"}},
+    {"properties": {"name": "bez koordinata"}}
+  ]}''';
+
+  test('parsePhoton: latinica, ulica i broj, bez reka i neispravnih', () {
+    final places = NavigationService.parsePhoton(photon);
+    expect(places.map((p) => p.label), [
+      'Karađorđeva, Beograd',
+      'Karađorđeva, Smederevo',
+      'Cara Lazara 7, Seone',
+    ]);
+    expect(NavigationService.parsePhoton('[]'), isEmpty);
+  });
+
+  test('search: kratak upit ne ide na mrežu; Photon sa lokacijom, najbliže prvo', () async {
     late http.Request seen;
     final service = NavigationService(
       client: MockClient((req) async {
         seen = req;
         // bez charset-a u zaglavlju, kao kad server ne navede kodiranje
-        return http.Response.bytes(utf8.encode(nominatim), 200);
+        return http.Response.bytes(utf8.encode(photon), 200);
       }),
     );
     expect(await service.search('ab'), isEmpty);
 
-    final places = await service.search('Knez Mihailova', nearLat: 44.8, nearLon: 20.4);
-    expect(places.length, 2);
-    expect(places.last.label, 'Đure Jakšića, Novi Sad'); // UTF-8 bez charset-a
+    // vozač u Smederevu
+    final places = await service.search(' Karađorđeva ', nearLat: 44.66, nearLon: 20.93);
+    expect(seen.url.host, 'photon.komoot.io');
+    expect(seen.url.queryParameters['q'], 'Karadjordjeva'); // đ → dj
+    expect(seen.url.queryParameters['lat'], '44.66');
+    expect(seen.url.queryParameters['bbox'], isNotNull);
     expect(seen.headers['User-Agent'], contains('rs.taksimetar.balkan'));
-    expect(seen.url.host, 'nominatim.openstreetmap.org');
-    expect(seen.url.queryParameters['q'], 'Knez Mihailova');
-    expect(seen.url.queryParameters['viewbox'], isNotNull);
+    expect(places.map((p) => p.label), [
+      'Karađorđeva, Smederevo',
+      'Cara Lazara 7, Seone',
+      'Karađorđeva, Beograd',
+    ]);
+    expect(places.first.distanceMeters, lessThan(1000));
+  });
+
+  test('search: Photon ne radi → Nominatim (UTF-8 bez charset-a)', () async {
+    final hosts = <String>[];
+    final service = NavigationService(
+      client: MockClient((req) async {
+        hosts.add(req.url.host);
+        if (req.url.host == 'photon.komoot.io') return http.Response('', 503);
+        expect(req.url.queryParameters['viewbox'], isNotNull);
+        return http.Response.bytes(utf8.encode(nominatim), 200);
+      }),
+    );
+    final places = await service.search('Knez Mihailova', nearLat: 44.8, nearLon: 20.4);
+    expect(hosts, ['photon.komoot.io', 'nominatim.openstreetmap.org']);
+    expect(places.first.label, 'Knez Mihailova, Beograd'); // bliži
+    expect(places.last.label, 'Đure Jakšića, Novi Sad');
   });
 
   test('route: greška servera → NavigationException', () async {
