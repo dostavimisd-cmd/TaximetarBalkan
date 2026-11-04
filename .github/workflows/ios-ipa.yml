@@ -22,6 +22,9 @@ jobs:
       - name: Zavisnosti
         run: flutter pub get
 
+      - name: Verzija iz pubspec.yaml
+        run: echo "VERZIJA=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')" >> "$GITHUB_ENV"
+
       - name: Build (bez potpisivanja)
         run: flutter build ios --release --no-codesign
 
@@ -30,10 +33,10 @@ jobs:
           cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
-          zip -r TaksimetarBalkan.ipa Payload
+          zip -r "TaksimetarBalkan-$VERZIJA.ipa" Payload
 
       - uses: actions/upload-artifact@v4
         with:
-          name: TaksimetarBalkan-ipa
-          path: build/ios/iphoneos/TaksimetarBalkan.ipa
+          name: TaksimetarBalkan-ipa-${{ env.VERZIJA }}
+          path: build/ios/iphoneos/TaksimetarBalkan-${{ env.VERZIJA }}.ipa
           retention-days: 14

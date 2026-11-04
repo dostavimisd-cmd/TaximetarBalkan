@@ -91,6 +91,36 @@ To keep it running with a locked screen, turn off battery restrictions for the a
 
 ## 7. Napomena verzije (za Play, „Šta je novo”)
 
+### 1.1.0 (versionCode 2)
+
+**Srpski (sr):**
+```
+Verzija 1.1.0
+• Doplate dugmetom „+” tokom vožnje (spisak unosite u Podešavanjima).
+• Cena prvog kilometra u tarifi (može i uračunat u start).
+• Pauza i kraj vožnje iz obaveštenja, uz vibraciju na start, pauzu i kraj.
+• Račun se može štampati sam na kraju vožnje.
+• Rezervna kopija svih podataka i izveštaji u PDF i CSV (Excel).
+• Pretraga adrese daje predloge dok kucate, najbliže prvo.
+• Popravke mape i stabilnosti.
+```
+
+**English (en-US):**
+```
+Version 1.1.0
+• Extras with the "+" button during a ride (set them up in Settings).
+• First-kilometre price in the tariff (or included in the base fare).
+• Pause and end the ride from the notification, with vibration on start, pause and end.
+• Optional automatic receipt printing at the end of a ride.
+• Full data backup and reports in PDF and CSV (Excel).
+• Address search suggests places as you type, nearest first.
+• Map and stability fixes.
+```
+
+Dužina: SR 418, EN 444 znakova (limit 500). Fajl: `docs/play/raw/TaksimetarBalkan-1.1.0.aab` (nije u gitu), simboli: `docs/play/symbols-1.1.0/`.
+
+### 1.0.0 (versionCode 1)
+
 **Srpski (sr):**
 ```
 Prva verzija.
