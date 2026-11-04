@@ -1,0 +1,137 @@
+# Plan izrade — premium osećaj (posle v1.0.0)
+
+Stanje na dan 04.11.2026. Polazna tačka: v1.0.0 na Google Play, baza v11, 241 test.
+Pravila iz `CLAUDE.md` važe za svaki korak: novac je `int`, vreme UTC ms, cene i tarife unosi korisnik (ne izmišljamo ih), `FareCalculator` bez Fluttera; pre izmene čitati `ARCHITECTURE.md` i `DATA_MODEL.md`, posle veće izmene ažurirati `ARCHITECTURE.md`.
+
+## Redosled ukratko
+| Faza | Izdanje | Šta | Zašto prvo |
+|---|---|---|---|
+| A | v1.1.0 | Vibracija i zvuk, dugmad u obaveštenju, automatska štampa | Brzo, vidi se odmah, malo rizika |
+| B | v1.2.0 | Rezervna kopija, izveštaj u CSV i PDF | Podaci ne smeju da nestanu; knjigovođa |
+| C | v1.3.0 | „Prvi km”, doplate, pomoćnik za kalibraciju | Poverenje u cenu; traži tvoje odluke |
+| D | v1.4.0 | Čarobnjak prvog pokretanja, raspored za držač | Prvi utisak novih korisnika |
+| E | paralelno | Više jezika, snimci ekrana na engleskom | Tržište „Balkan” |
+| F | v2.0.0 | Premium (Play Billing), sopstveni server mape | Prodaje se kad A–D postoje |
+
+Pre faze C sačekaj 2 nedelje povratnih informacija od kolega; mogu da promene redosled.
+
+## Alati
+
+**Modeli**
+- **Opus:** obračun, migracije baze, životni ciklus servisa, uvoz podataka, plaćanje.
+- **Sonnet:** ekrani, izveštaji, tekstovi, testovi, snimci ekrana.
+- **Haiku:** prevodi na nove jezike i sitne izmene teksta.
+
+**Paketi**
+- Već postoje: `file_picker` (izbor fajla), `share_plus` (slanje fajla), `path_provider`, `flutter_foreground_task` (obaveštenje), `print_bluetooth_thermal`.
+- Novi, dodaju se tek kad korak počne: `pdf` (izveštaj u PDF; uz ugrađen TTF font da bi č ć ž š đ bila ispravna), `in_app_purchase` (Premium).
+- Bez paketa: vibracija (`HapticFeedback`), zvuk (`SystemSound`), CSV i JSON (`dart:convert`).
+
+**Provera svakog koraka**
+- `flutter analyze` i `flutter test` (svi testovi moraju da prođu).
+- Telefon: Samsung preko USB-a, Honor bežično (`adb tcpip 5555`); uputstvo u `docs/GDE_SMO_STALI.md`.
+- Objava: `pubspec.yaml` verzija +1, `flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info`, prvo interno testiranje u Play Console, pa produkcija. Simbole sačuvati u `docs/play/symbols-<verzija>/`.
+
+---
+
+## Faza A — v1.1.0 (brzo i vidljivo)
+
+### A1. Vibracija i zvuk na START, PAUZA, ZAVRŠI
+- Kratka vibracija i zvuk, da vozač ne mora da gleda u ekran. Prekidač u Podešavanjima (podrazumevano uključeno).
+- Fajlovi: `taximeter_screen.dart`, `app_settings.dart` (+ ključ), `settings_screen.dart`, `en.dart`.
+- Veličina S, rizik nizak. **Sonnet.**
+
+### A2. Dugmad PAUZA/NASTAVI i ZAVRŠI u obaveštenju (Android)
+- Vožnja se kontroliše iz obaveštenja dok je otvorena druga aplikacija (navigacija, Viber).
+- `RideTaskHandler.onNotificationButtonPressed` šalje iste komande engine-u (`pause`, `resume`, `stop`); dugmad se menjaju preko `updateService`. UI već reaguje na događaje `paused`, `resumed`, `stopped`.
+- iOS se ne dira (nema obaveštenja servisa).
+- Testovi: komande iz obaveštenja kroz `RideEngine` (pauza, nastavak, stop), kontroler kad stop ne dolazi iz UI-ja.
+- Veličina M, rizik srednji (životni ciklus servisa). **Opus.**
+
+### A3. Automatska štampa računa na kraju vožnje
+- Opcija u Podešavanjima; posle ZAVRŠI račun ide na izabrani štampač bez dodatnog dodira. Greška štampe ne sme da blokira kraj vožnje.
+- Veličina S, rizik nizak. **Sonnet.**
+
+**Gotovo kad:** na Samsungu i Honoru vibracija i zvuk rade, dugmad iz obaveštenja pauziraju i završavaju vožnju sa zaključanim ekranom, račun izlazi sam.
+
+---
+
+## Faza B — v1.2.0 (podaci)
+
+### B1. Rezervna kopija (izvoz i uvoz)
+- Izvoz u jedan JSON fajl: tarife, praznici, fiksne relacije, podešavanja, istorija vožnji (sa rutom i prekidima signala). Fajl se šalje preko `share_plus` (Viber, Drive, e-mail).
+- Uvoz preko `file_picker`: proverava verziju šeme, sve u jednoj transakciji, **ništa se ne briše dok uvoz ne uspe**; pre uvoza pitanje „zameni” ili „dodaj”. Aktivna vožnja blokira uvoz.
+- Testovi: izvoz → uvoz vraća iste podatke; oštećen fajl i stara verzija šeme ne menjaju bazu.
+- Veličina M, rizik srednji (uvoz u bazu). **Opus** za format i uvoz, **Sonnet** za ekran.
+
+### B2. Izveštaj u CSV i PDF
+- Iz ekrana Izveštaji: period (dan, nedelja, mesec, smena) → CSV (Excel) ili PDF (logo, zaglavlje, zbir, spisak vožnji), slanje preko `share_plus`.
+- PDF ne prevodi korisničke podatke; naslovi prate jezik aplikacije.
+- Veličina M, rizik nizak. **Sonnet.**
+
+**Gotovo kad:** izvezeš na Samsungu, uvezeš na Honoru i dobiješ iste tarife, relacije i istoriju; PDF se otvara sa ispravnim slovima.
+
+---
+
+## Faza C — v1.3.0 (poverenje u cenu) — traži tvoje odluke
+
+### C1. „Prvi km” i doplate (jedna migracija v12)
+- Tarifa dobija nova polja za prvi km (oblik zavisi od odluke 1 ispod), vožnja dobija doplate (tabela `ride_extras`: naziv, iznos u dinarima).
+- Tokom vožnje: dugmad za doplate koje je vozač uneo (npr. „Prtljag +100”). Doplate se vide u rezimeu, na računu i u izveštajima.
+- `FareCalculator` računa novu stavku; tarifa i doplate se snimaju uz vožnju (kao i do sada), pa stare vožnje ostaju iste.
+- Testovi: svi postojeći scenariji obračuna + novi (prvi km kraći/duži od vožnje, doplate i minimalna cena, migracija v11 → v12 čuva istoriju).
+- Veličina L, rizik visok (obračun i baza). **Opus.**
+
+### C2. Pomoćnik za kalibraciju
+- U rezimeu vožnje: „Zvanični taksimetar je pokazao ___ km”. Aplikacija izračuna kalibraciju u promilima (`zvanično / izmereno × 1000`, celobrojno) i ponudi da je sačuva.
+- Čista funkcija u `domain/calibration.dart` + test.
+- Veličina S, rizik nizak. **Sonnet.**
+
+**Gotovo kad:** probna vožnja daje istu cenu kao zvanični taksimetar na tvom cenovniku.
+
+---
+
+## Faza D — v1.4.0 (prvi utisak)
+
+### D1. Čarobnjak prvog pokretanja
+- Posle napomene: 1) unesi tarifu, 2) uvezi fiksne relacije (opciono), 3) izaberi štampač (opciono), 4) uputstvo za bateriju. Svaki korak se može preskočiti; cene se ne predlažu.
+- Veličina M, rizik nizak. **Sonnet.**
+
+### D2. Raspored za držač u kolima
+- Provera i dorada horizontalnog rasporeda glavnog ekrana (velika cena, dugmad dostupna jednim palcem).
+- Automatski svetli/tamni režim **samo ako ga traže kolege** (taksimetri su obično tamni).
+- Veličina S–M, rizik nizak. **Sonnet.**
+
+---
+
+## Faza E — paralelno (tržište)
+
+### E1. Prevod na više jezika
+- `Tr` danas zna samo srpski i engleski (`english: bool`). Prepravka na kod jezika (`Tr('hr')`) i rečnik po jeziku; test-čuvar proverava svaki jezik.
+- Prepravka: **Sonnet** (S–M). Prevodi (hrvatski, bosanski, crnogorski, makedonski, slovenački, srpska ćirilica): **Haiku**, uz tvoju proveru ili proveru kolege iz te zemlje.
+
+### E2. Prodavnica po jeziku
+- Snimci ekrana na engleskom (i ostalim jezicima), opis prodavnice po zemlji. **Sonnet.**
+
+---
+
+## Faza F — v2.0.0
+
+### F1. Premium (Play Billing)
+- Jednokratna kupovina (oko 1 €), `in_app_purchase`, otključavanje radi i bez interneta (keš), dugme „Vrati kupovinu”, jedan `premiumProvider` koji zaključava funkcije.
+- Data safety i politika privatnosti se ažuriraju.
+- Veličina L, rizik visok (novac). **Opus.**
+
+### F2. Sopstveni ili plaćeni server mape (ruta, pretraga)
+- Tek kad broj korisnika naraste; obračun ostaje nezavisan od mape. **Opus**, košta mesečno.
+
+---
+
+## Tvoje odluke (blokiraju određene korake)
+1. **„Prvi km” (C1):** šta znači u tvom cenovniku? Start uključuje prvih X km, prvi km ima posebnu cenu, ili nešto treće?
+2. **Doplate (C1):** stalna lista koju vozač unese (naziv + iznos) ili slobodan iznos? Da li ulaze u minimalnu cenu?
+3. **„Van teritorije” (C1):** 80 din/km do 100 km i 70 preko — važi za ceo put ili samo za deo preko granice?
+4. **Premium (F1):** šta ostaje besplatno, a šta se plaća.
+5. **Jezici (E1):** kojim redom.
+
+Faze A i B ne zavise od ovih odluka i mogu odmah.
