@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../domain/calibration.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
 import '../../domain/models/gap_info.dart';
@@ -27,6 +28,151 @@ class RideSummaryScreen extends ConsumerWidget {
   final VoidCallback? onNewRide;
 
   const RideSummaryScreen({super.key, required this.ride, this.onNewRide});
+
+  /// Vozač upiše km sa zvaničnog taksimetra; aplikacija izračuna kalibraciju
+  /// iz izmerene distance i, na potvrdu, sačuva je za sledeće vožnje.
+  Future<void> _calibrate(BuildContext context, WidgetRef ref) async {
+    final t = ref.read(trProvider);
+    final current = ref.read(appSettingsProvider).value?.calibrationPermille ??
+        Calibration.neutralPermille;
+    final controller = TextEditingController();
+    String? error;
+    final permille = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          void compute() {
+            final official = Calibration.parseKm(controller.text);
+            final p = official == null
+                ? null
+                : Calibration.fromOfficial(
+                    measuredMeters: ride.distanceMeters,
+                    officialMeters: official,
+                  );
+            if (p == null) {
+              setState(
+                () => error = t(
+                  'Upiši km sa zvaničnog taksimetra (npr. 12,35). Razlika može biti najviše ±50%.',
+                ),
+              );
+              return;
+            }
+            Navigator.pop(ctx, p);
+          }
+
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E1E1E),
+            title: Text(
+              t('Uskladi sa zvaničnim taksimetrom'),
+              style: const TextStyle(color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t('Aplikacija je izmerila {0} km (bez kalibracije). Koliko km je pokazao zvanični taksimetar za ovu vožnju?', [
+                    (ride.distanceMeters / 1000).toStringAsFixed(2),
+                  ]),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: t('Zvanični taksimetar (km)'),
+                    labelStyle: const TextStyle(color: Colors.white54),
+                  ),
+                  onSubmitted: (_) => compute(),
+                ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      error!,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  t('ODUSTANI'),
+                  style: const TextStyle(color: Colors.white54),
+                ),
+              ),
+              TextButton(
+                onPressed: compute,
+                child: Text(
+                  t('IZRAČUNAJ'),
+                  style: const TextStyle(color: Colors.amberAccent),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    controller.dispose();
+    if (permille == null || !context.mounted) return;
+
+    final save = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text(
+          t('Nova kalibracija: {0} %', [Calibration.formatPercent(permille)]),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          t('Trenutno: {0} %. Važi od sledeće vožnje; završene vožnje se ne menjaju. Za tačniji rezultat uporedi dužu vožnju (5 km i više).', [
+            Calibration.formatPercent(current),
+          ]),
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              t('ODUSTANI'),
+              style: const TextStyle(color: Colors.white54),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              t('SAČUVAJ'),
+              style: const TextStyle(color: Colors.amberAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (save != true) return;
+    await ref
+        .read(appSettingsProvider.notifier)
+        .change((s) => s.copyWith(calibrationPermille: permille));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            t('Kalibracija sačuvana: {0} %', [
+              Calibration.formatPercent(permille),
+            ]),
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -194,6 +340,19 @@ class RideSummaryScreen extends ConsumerWidget {
               ],
             ),
           ),
+
+          // ---- pomoćnik za kalibraciju (C2)
+          if (ride.distanceMeters >= Calibration.minCompareMeters) ...[
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () => _calibrate(context, ref),
+              icon: const Icon(Icons.straighten, color: Colors.white70),
+              label: Text(
+                t('Uskladi km sa zvaničnim taksimetrom'),
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ),
+          ],
 
           // ---- prekidi signala
           if (gaps.isNotEmpty) ...[

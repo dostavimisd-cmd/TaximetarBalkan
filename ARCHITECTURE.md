@@ -7,7 +7,7 @@
 
 ## Glavni Moduli
 1. **GPS Engine (Foreground Service):** Sluša lokaciju i drži Android WakeLock. Odbacuje tačke sa lošom tačnošću (prag iz Podešavanja, 5–50 m, podrazumevano 15 m; upisuje se uz vožnju).
-2. **Obračun Cene (FareCalculator):** Pametno čekanje kada je brzina ispod praga (Podešavanja, podrazumevano 8 km/h); kalibracija distance u promilima. Prvi km tarife (opciono: prazno = kao ostali, 0 = u startu, > 0 = svoja cena za prvih 1000 m). Doplate (`withExtras`) se dodaju posle minimalne cene. Sve celobrojno (vidi `SPEC.md`).
+2. **Obračun Cene (FareCalculator):** Pametno čekanje kada je brzina ispod praga (Podešavanja, podrazumevano 8 km/h); kalibracija distance u promilima. Prvi km tarife (opciono: prazno = kao ostali, 0 = u startu, > 0 = svoja cena za prvih 1000 m). Pomoćnik za kalibraciju (`Calibration.fromOfficial`): iz km zvaničnog taksimetra i izmerene distance vožnje (bez kalibracije) računa promile; nudi se u rezimeu vožnje. Doplate (`withExtras`) se dodaju posle minimalne cene. Sve celobrojno (vidi `SPEC.md`).
 3. **Lokalna Baza (sqflite, šema v12):** Offline-first. Vožnja se periodično upisuje u `ride_snapshots`. Detalji u `DATA_MODEL.md`.
 4. **Tarife (Faza 2):** tarife, raspored i praznike unosi korisnik; `TariffSelector` bira tarifu samo pri startu (praznik → raspored → ručni izbor).
 5. **Izveštaji i istorija (Faza 3):** `RideHistoryRepository` (čitanje, brisanje završenih vožnji), `ReportRange`/`RideStats` (dan, nedelja, mesec).

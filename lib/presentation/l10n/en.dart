@@ -126,6 +126,24 @@ const Map<String, String> enStrings = {
       'Extra name is required.',
   'Čekam GPS lokaciju…':
       'Waiting for GPS location…',
+  'Uskladi km sa zvaničnim taksimetrom':
+      'Match km with the official taximeter',
+  'Uskladi sa zvaničnim taksimetrom':
+      'Match with the official taximeter',
+  'Upiši km sa zvaničnog taksimetra (npr. 12,35). Razlika može biti najviše ±50%.':
+      'Enter the km shown by the official taximeter (e.g. 12.35). The difference can be at most ±50%.',
+  'Aplikacija je izmerila {0} km (bez kalibracije). Koliko km je pokazao zvanični taksimetar za ovu vožnju?':
+      'The app measured {0} km (without calibration). How many km did the official taximeter show for this ride?',
+  'Zvanični taksimetar (km)':
+      'Official taximeter (km)',
+  'IZRAČUNAJ':
+      'CALCULATE',
+  'Nova kalibracija: {0} %':
+      'New calibration: {0} %',
+  'Trenutno: {0} %. Važi od sledeće vožnje; završene vožnje se ne menjaju. Za tačniji rezultat uporedi dužu vožnju (5 km i više).':
+      'Current: {0} %. Applies from the next ride; finished rides do not change. For a more accurate result compare a longer ride (5 km or more).',
+  'Kalibracija sačuvana: {0} %':
+      'Calibration saved: {0} %',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

@@ -30,4 +30,31 @@ class Calibration {
   }
 
   static bool isValid(int permille) => permille >= minPermille && permille <= maxPermille;
+
+  /// Najkraća vožnja za poređenje sa zvaničnim taksimetrom: na kraćoj
+  /// zaokruživanje zvaničnog prikaza (obično 10 m) pravi preveliku grešku.
+  static const int minCompareMeters = 1000;
+
+  /// "12,35" / "12.35" / "12" km → metri (najviše 3 decimale); null ako nije broj.
+  static int? parseKm(String input) {
+    final text = input.trim().replaceAll(',', '.');
+    final match = RegExp(r'^(\d{1,4})(?:\.(\d{1,3}))?$').firstMatch(text);
+    if (match == null) return null;
+    final frac = (match.group(2) ?? '').padRight(3, '0');
+    return int.parse(match.group(1)!) * 1000 + int.parse(frac);
+  }
+
+  /// Pomoćnik (C2): zvanični taksimetar je pokazao [officialMeters], a
+  /// aplikacija je izmerila [measuredMeters] (bez kalibracije, kao u
+  /// `rides.distance_m`). Vraća promile (zaokruženo .5 naviše, celobrojno)
+  /// ili null ako je vožnja prekratka ili je razlika van ±50%.
+  static int? fromOfficial({
+    required int measuredMeters,
+    required int officialMeters,
+  }) {
+    if (measuredMeters < minCompareMeters || officialMeters <= 0) return null;
+    final permille =
+        (officialMeters * 1000 + measuredMeters ~/ 2) ~/ measuredMeters;
+    return isValid(permille) ? permille : null;
+  }
 }
