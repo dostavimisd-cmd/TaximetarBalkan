@@ -23,7 +23,9 @@ jobs:
         run: flutter pub get
 
       - name: Verzija iz pubspec.yaml
-        run: echo "VERZIJA=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')" >> "$GITHUB_ENV"
+        run: |
+          VERZIJA=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          echo "VERZIJA=$VERZIJA" >> "$GITHUB_ENV"
 
       - name: Build (bez potpisivanja)
         run: flutter build ios --release --no-codesign
