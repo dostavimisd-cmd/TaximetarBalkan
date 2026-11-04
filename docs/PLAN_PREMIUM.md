@@ -134,6 +134,7 @@ Pre faze C sačekaj 2 nedelje povratnih informacija od kolega; mogu da promene r
 - **„Van teritorije” (80/70 din/km):** nije potvrđeno, ne pravi se.
 - **Mapa (novo, pre F):** popraviti povremeno loše iscrtavanje i zum koji ne približava; pretraga adrese daje predloge dok se kuca, poređane po blizini (prvo ulice u mestu, pa okolina, pa drugi gradovi). Javni Nominatim zabranjuje predloge dok se kuca, pa se za to koristi Photon (komoot, OSM, besplatno, pretraga po blizini).
 - **Premium (F1):** šta je besplatno, a šta se plaća, određuje se na kraju.
+- **Premium odložen (04.11.2026):** aplikacija ostaje potpuno besplatna dok ne naraste broj korisnika; F1 i F2 se ne rade do tada.
 
 ## Prvobitna pitanja
 1. **„Prvi km” (C1):** šta znači u tvom cenovniku? Start uključuje prvih X km, prvi km ima posebnu cenu, ili nešto treće?
