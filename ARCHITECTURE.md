@@ -25,7 +25,8 @@
 GPS Senzor -> Foreground Service (`RideEngine`) -> Odbacivanje šuma -> FareCalculator -> događaji (`update`…) -> Riverpod -> UI Prikaz & sqflite backup.
 
 ## Životni ciklus servisa
-- **Vlasnik servisa je `RideServiceController` (UI isolate).** On pali i gasi foreground servis; handler (`RideTaskHandler`) nikad ne zove `stopService()`.
+- **Vlasnik servisa je `RideServiceController` (UI isolate).** On pali i gasi foreground servis. Jedini izuzetak: kad se vožnja završi dugmetom ZAVRŠI u obaveštenju, handler posle 3 s sam zove `stopService()` (aplikacija je možda zatvorena pa nema ko drugi); ako je UI otvoren, on ga gasi pre toga i tajmer nestaje sa izolatom.
+- **Dugmad u obaveštenju (Android):** `rideNotificationButtons` bira PAUZA/NASTAVI i ZAVRŠI posle događaja `started`/`recovered`/`paused`/`resumed`/`stopped`; pritisak ide u `RideEngine` kao ista komanda kao iz UI-ja (`pause`, `resume`, `stop`). Jezik dugmadi se čita iz `app_settings`.
 - **Servis radi samo dok postoji vožnja.** `connect()` pri otvaranju aplikacije kratko podiže servis radi oporavka; ako `ready{active:false}` / `status{active:false}`, odmah ga gasi. `startRide()` podiže servis ako ne radi. Događaj `stopped` → kontroler gasi servis.
 - **GPS stream i snapshot timer** postoje samo dok traje vožnja (`_startTracking()` posle starta/oporavka, `_stopTracking()` posle uspešnog stopa).
 - **Redosled komandi:** handler izvršava `start`/`stop`/`status` strogo redom (`_queue`); kontroler serijalizuje `connect`/`startRide`/`stopRide` (`_serialized`).
