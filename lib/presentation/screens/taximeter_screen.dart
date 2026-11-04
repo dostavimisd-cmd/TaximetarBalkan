@@ -14,6 +14,7 @@ import '../providers/tariffs_provider.dart';
 import '../../domain/announcement.dart';
 import '../../domain/price_throttle.dart';
 import '../printing/receipt_printer.dart';
+import '../services/ride_feedback.dart';
 import '../services/voice_service.dart';
 import '../providers/settings_provider.dart';
 import 'history_screen.dart';
@@ -172,6 +173,10 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       final finishedNow =
           next.phase == RidePhase.finished && prev?.phase != RidePhase.finished;
       final s = ref.read(appSettingsProvider).value;
+      final feedback = rideFeedbackFor(prev?.phase, next.phase);
+      if (feedback != null && (s?.buttonFeedback ?? true)) {
+        playRideFeedback(feedback);
+      }
       if (finishedNow && next.lastResult != null) {
         _showSummary(next.lastResult!.rideId);
       }

@@ -26,6 +26,10 @@ const Map<String, String> enStrings = {
       'Phone (WhatsApp and Viber):',
   'Ne mogu da otvorim vezu.':
       'Cannot open the link.',
+  'Vibracija i zvuk':
+      'Vibration and sound',
+  'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':
+      'A short signal when a ride starts, pauses, resumes or ends.',
   'Telefon može da ugasi taksimetar kad je ekran zaključan. Da se to ne desi, isključi ograničenja baterije za ovu aplikaciju.':
       'The phone may shut the taximeter down while the screen is locked. To prevent that, turn off battery restrictions for this app.',
   'OTVORI PODEŠAVANJA BATERIJE':

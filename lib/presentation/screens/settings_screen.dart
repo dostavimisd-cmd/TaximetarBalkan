@@ -37,6 +37,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _autoTariff = false;
   bool _showMap = true;
   bool _voice = false;
+  bool _feedback = true;
   int _refresh = 1;
   bool _keepOn = true;
   String _priceColor = 'bela';
@@ -70,6 +71,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _autoTariff = s.autoTariff;
     _showMap = s.showMap;
     _voice = s.voiceAnnounce;
+    _feedback = s.buttonFeedback;
     _refresh = s.priceRefreshSeconds;
     _keepOn = s.keepScreenOn;
     _priceColor = s.priceColor;
@@ -120,6 +122,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       autoTariff: _autoTariff,
       showMap: _showMap,
       voiceAnnounce: _voice,
+      buttonFeedback: _feedback,
       priceRefreshSeconds: _refresh,
       keepScreenOn: _keepOn,
       priceColor: _priceColor,
@@ -518,6 +521,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 subtitle: Text(
                   t('Telefon izgovori ukupan iznos. Koristi sintetizator govora telefona.'),
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _feedback,
+                onChanged: (v) => setState(() => _feedback = v),
+                title: Text(
+                  t('Vibracija i zvuk'),
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  t('Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.'),
                   style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),

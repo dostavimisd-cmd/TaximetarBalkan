@@ -29,6 +29,7 @@ class AppSettings {
   static const String keyPriceScale = 'price_scale';
   static const String keyDisclaimer = 'disclaimer_accepted';
   static const String keyBatteryGuide = 'battery_guide_shown';
+  static const String keyButtonFeedback = 'button_feedback';
 
   /// Boje cene kao na taksimetrima (LED displeji); prikaz je u UI sloju.
   static const List<String> priceColors = ['bela', 'crvena', 'zelena', 'plava', 'zuta', 'narandzasta'];
@@ -105,6 +106,9 @@ class AppSettings {
   /// Uputstvo za rad u pozadini je već prikazano pri prvom pokretanju.
   final bool batteryGuideShown;
 
+  /// Vibracija i zvuk kad vožnja počne, stane na pauzu, nastavi se ili završi.
+  final bool buttonFeedback;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -129,6 +133,7 @@ class AppSettings {
     this.priceScale = 100,
     this.disclaimerAccepted = false,
     this.batteryGuideShown = false,
+    this.buttonFeedback = true,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -176,6 +181,7 @@ class AppSettings {
       priceScale: inRange(keyPriceScale, 100, minPriceScale, maxPriceScale),
       disclaimerAccepted: m[keyDisclaimer] == '1',
       batteryGuideShown: m[keyBatteryGuide] == '1',
+      buttonFeedback: m[keyButtonFeedback] != '0',
     );
   }
 
@@ -204,6 +210,7 @@ class AppSettings {
         keyPriceScale: '$priceScale',
         keyDisclaimer: disclaimerAccepted ? '1' : '0',
         keyBatteryGuide: batteryGuideShown ? '1' : '0',
+        keyButtonFeedback: buttonFeedback ? '1' : '0',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -258,6 +265,7 @@ class AppSettings {
     int? priceScale,
     bool? disclaimerAccepted,
     bool? batteryGuideShown,
+    bool? buttonFeedback,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -285,6 +293,7 @@ class AppSettings {
       priceScale: priceScale ?? this.priceScale,
       disclaimerAccepted: disclaimerAccepted ?? this.disclaimerAccepted,
       batteryGuideShown: batteryGuideShown ?? this.batteryGuideShown,
+      buttonFeedback: buttonFeedback ?? this.buttonFeedback,
     );
   }
 }

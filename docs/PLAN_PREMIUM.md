@@ -127,7 +127,15 @@ Pre faze C sačekaj 2 nedelje povratnih informacija od kolega; mogu da promene r
 
 ---
 
-## Tvoje odluke (blokiraju određene korake)
+## Odluke vlasnika (04.11.2026)
+- **Redosled:** A → B (oba Opus) → C → popravka mape i pretraga adrese → F na kraju. Faza E (jezici) se odlaže: za sada SR i EN.
+- **Prvi kilometar (C1):** opciono polje u tarifi. Prazno = kao do sada (sve po ceni km); 0 = prvi km uključen u start; iznos > 0 = prvi km po toj ceni, ostatak po ceni km. Vrednost unosi vozač ili firma.
+- **Doplata / Extra (C1):** programibilna lista (naziv + iznos u dinarima) u Podešavanjima; vozač je dodaje tokom vožnje. SR naziv „Doplata”, EN „Extra”. Dodaje se **posle** minimalne cene (pretpostavka; vlasnik nije rekao drugačije).
+- **„Van teritorije” (80/70 din/km):** nije potvrđeno, ne pravi se.
+- **Mapa (novo, pre F):** popraviti povremeno loše iscrtavanje i zum koji ne približava; pretraga adrese daje predloge dok se kuca, poređane po blizini (prvo ulice u mestu, pa okolina, pa drugi gradovi). Javni Nominatim zabranjuje predloge dok se kuca, pa se za to koristi Photon (komoot, OSM, besplatno, pretraga po blizini).
+- **Premium (F1):** šta je besplatno, a šta se plaća, određuje se na kraju.
+
+## Prvobitna pitanja
 1. **„Prvi km” (C1):** šta znači u tvom cenovniku? Start uključuje prvih X km, prvi km ima posebnu cenu, ili nešto treće?
 2. **Doplate (C1):** stalna lista koju vozač unese (naziv + iznos) ili slobodan iznos? Da li ulaze u minimalnu cenu?
 3. **„Van teritorije” (C1):** 80 din/km do 100 km i 70 preko — važi za ceo put ili samo za deo preko granice?
