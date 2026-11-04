@@ -30,6 +30,36 @@ const Map<String, String> enStrings = {
       'Print the receipt when the ride ends',
   'Račun se sam šalje na štampač kad završiš vožnju.':
       'The receipt is sent to the printer automatically when you end the ride.',
+  'REZERVNA KOPIJA':
+      'BACKUP',
+  'Tarife, relacije, vožnje, podešavanja i logo u jednom fajlu. Sačuvaj ga na Drive ili pošalji sebi, pa ga vrati na novom telefonu.':
+      'Tariffs, routes, rides, settings and logo in one file. Save it to Drive or send it to yourself, then restore it on a new phone.',
+  'Sačuvaj kopiju':
+      'Save backup',
+  'Vrati iz kopije':
+      'Restore backup',
+  'Poništi poslednje vraćanje':
+      'Undo last restore',
+  'Vrati podatke iz kopije?':
+      'Restore data from backup?',
+  'Sve tarife, relacije, vožnje i podešavanja na ovom telefonu biće zamenjeni podacima iz kopije. Trenutni podaci se čuvaju, pa vraćanje možeš da poništiš.':
+      'All tariffs, routes, rides and settings on this phone will be replaced with the backup. Current data is kept, so you can undo the restore.',
+  'Otkaži':
+      'Cancel',
+  'IZABERI FAJL':
+      'CHOOSE FILE',
+  'Podaci su vraćeni iz kopije.':
+      'Data restored from backup.',
+  'Kopija nije napravljena: {0}':
+      'Backup was not created: {0}',
+  'Vožnja je u toku. Završi je pa vrati kopiju.':
+      'A ride is in progress. End it, then restore the backup.',
+  'Fajl nije rezervna kopija ove aplikacije.':
+      'This file is not a backup of this app.',
+  'Kopija je napravljena novijom verzijom aplikacije. Prvo ažuriraj aplikaciju.':
+      'The backup was made with a newer app version. Update the app first.',
+  'Rezervna kopija je oštećena.':
+      'The backup is damaged.',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':
@@ -413,6 +443,8 @@ const Map<String, String> enStrings = {
 /// Poruke sa promenljivim krajem: prevodi se početak, ostatak (tehnički opis
 /// greške ili vrednosti) ostaje kakav jeste.
 const Map<String, String> enMessagePrefixes = {
+  'Vraćanje kopije nije uspelo, podaci nisu menjani: ':
+      'Restore failed, data was not changed: ',
   'Greška pri povezivanju sa servisom: ': 'Could not connect to the service: ',
   'Greška pri pokretanju servisa: ': 'Could not start the service: ',
   'Neuspelo pokretanje servisa: ': 'Failed to start the service: ',

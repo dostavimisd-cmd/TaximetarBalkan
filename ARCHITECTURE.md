@@ -17,9 +17,12 @@
 
 9. **Prvo pokretanje i rad u pozadini:** `showFirstLaunch` (widgets/first_launch.dart) pri prvom startu traži prihvatanje napomene (nije overeni taksimetar), pa jednom prikazuje uputstvo za bateriju. `showBatteryGuide` (widgets/battery_guide.dart) otvara sistemski ekran optimizacije baterije (`ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`, bez dozvole `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) i prikazuje korake po proizvođaču (`batteryGroupFor`, domain/battery_guide.dart). Proizvođač i sistemski ekran dolaze preko `MethodChannel` `rs.taksimetar.balkan/device` (`MainActivity.kt`, `DeviceService`). Ekran `AboutScreen` (verzija preko `package_info_plus`, napomena, adresa politike privatnosti `privacyPolicyUrl` — još prazna).
 
+10. **Rezervna kopija:** `BackupService` (`data/services/backup_service.dart`) izvozi tabele i slike logoa u JSON i vraća ih; `backup_actions.dart` (presentation) šalje fajl preko `share_plus`, bira ga preko `file_picker` i osvežava providere. Kopija iz novije šeme se odbija, kolone kojih nema u bazi se preskaču.
+
 ## Ko piše u bazu
 - `rides`, `ride_snapshots`, `ride_gaps` za vožnju u toku: samo servis (`RideEngine`).
 - UI isolate: `tariffs`, `holidays`, `app_settings`, i brisanje **završenih** vožnji iz istorije (kratka transakcija; WAL + `busy_timeout` sprečavaju sudar sa servisom).
+- **Vraćanje rezervne kopije** (`BackupService.restore`, UI isolate): briše i ponovo upisuje sve tabele u jednoj transakciji. Dozvoljeno samo kad nema aktivne vožnje (provera u bazi i u UI-ju), pa servis tada ne radi. Pre vraćanja se trenutni podaci čuvaju u `pre_vracanja_kopije.json` (dugme „Poništi poslednje vraćanje”).
 
 ## Tok Podataka
 GPS Senzor -> Foreground Service (`RideEngine`) -> Odbacivanje šuma -> FareCalculator -> događaji (`update`…) -> Riverpod -> UI Prikaz & sqflite backup.

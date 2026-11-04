@@ -10,6 +10,7 @@ import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
 import '../printing/receipt_printer.dart';
 import '../providers/settings_provider.dart';
+import '../services/backup_actions.dart';
 import '../widgets/battery_guide.dart';
 import '../widgets/price_colors.dart';
 import 'fixed_routes_screen.dart';
@@ -709,6 +710,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       t('Svaki red posebno. Na dnu računa uvek piše da nije fiskalni.'),
                   helperStyle: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
+              ),
+              _section(t('REZERVNA KOPIJA')),
+              Text(
+                t('Tarife, relacije, vožnje, podešavanja i logo u jednom fajlu. Sačuvaj ga na Drive ili pošalji sebi, pa ga vrati na novom telefonu.'),
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () => exportBackup(context, ref),
+                    icon: const Icon(Icons.backup, color: Colors.amberAccent),
+                    label: Text(
+                      t('Sačuvaj kopiju'),
+                      style: TextStyle(color: Colors.amberAccent),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      if (await restoreBackup(context, ref) && context.mounted) {
+                        Navigator.of(context).pop(); // bez snimanja starih vrednosti
+                      }
+                    },
+                    icon: const Icon(Icons.restore, color: Colors.white70),
+                    label: Text(
+                      t('Vrati iz kopije'),
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  FutureBuilder<bool>(
+                    future: hasUndoBackup(),
+                    builder: (_, snap) => snap.data == true
+                        ? TextButton(
+                            onPressed: () async {
+                              if (await undoRestore(context, ref) &&
+                                  context.mounted) {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                            child: Text(
+                              t('Poništi poslednje vraćanje'),
+                              style: TextStyle(color: Colors.white54),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
               ),
               _section(t('RAD U POZADINI')),
               Text(
