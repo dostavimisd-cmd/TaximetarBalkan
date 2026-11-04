@@ -60,6 +60,42 @@ const Map<String, String> enStrings = {
       'The backup was made with a newer app version. Update the app first.',
   'Rezervna kopija je oštećena.':
       'The backup is damaged.',
+  'Broj':
+      'No.',
+  'CSV (Excel, za knjigovođu)':
+      'CSV (Excel, for the accountant)',
+  'Datum':
+      'Date',
+  'Izvezi izveštaj':
+      'Export report',
+  'Izveštaj':
+      'Report',
+  'Izvoz nije uspeo: {0}':
+      'Export failed: {0}',
+  'Km':
+      'Km',
+  'Kraj':
+      'End',
+  'Napomena':
+      'Note',
+  'Nema vožnji u ovom periodu.':
+      'No rides in this period.',
+  'PDF (za štampu i slanje)':
+      'PDF (to print and send)',
+  'Početak':
+      'Start',
+  'Smena':
+      'Shift',
+  'Taksimetar Balkan — pomoćni alat za evidenciju, nije fiskalni dokument.':
+      'Taksimetar Balkan — auxiliary record-keeping tool, not a fiscal document.',
+  'Trajanje':
+      'Duration',
+  'Ukupno (din)':
+      'Total (RSD)',
+  'prekinuta':
+      'interrupted',
+  'Čekanje (din)':
+      'Waiting (RSD)',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':
