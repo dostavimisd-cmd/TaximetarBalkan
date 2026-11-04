@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 // ZAMENI 'ime_tvog_projekta' sa tačnim nazivom iz pubspec.yaml
 import 'package:taksimetar_balkan/domain/fare_calculator.dart';
+import 'package:taksimetar_balkan/domain/models/fare_result.dart';
 import 'package:taksimetar_balkan/domain/models/tariff.dart';
 
 void main() {
@@ -134,5 +135,67 @@ void main() {
     expect(f.startPrice, 2000);
     expect(f.kmPrice + f.waitingPrice + f.minPriceAdjustment, 0);
     expect(() => FareCalculator.fixed(0), throwsArgumentError);
+  });
+
+  group('Prvi kilometar', () {
+    const base = Tariff(
+      startPrice: 200,
+      pricePerKm: 100,
+      waitingParaPerMin: 0,
+      minPrice: 0,
+    );
+    FareResult calc(Tariff t, int m, {int cal = 1000}) => FareCalculator.calculate(
+        tariff: t, distanceMeters: m, waitingSeconds: 0, calibrationPermille: cal);
+
+    test('bez cene prvog km: isto kao ranije', () {
+      expect(calc(base, 2500).kmPrice, 250);
+    });
+
+    test('0 = prvi km uračunat u start', () {
+      final t = base.copyWith(firstKmPrice: 0);
+      expect(calc(t, 600).kmPrice, 0);
+      expect(calc(t, 1000).kmPrice, 0);
+      expect(calc(t, 2500).kmPrice, 150);
+      expect(calc(t, 2500).totalPrice, 350);
+    });
+
+    test('> 0 = prvi km po svojoj ceni, ostatak po ceni po km', () {
+      final t = base.copyWith(firstKmPrice: 300);
+      expect(calc(t, 500).kmPrice, 150);
+      expect(calc(t, 2500).kmPrice, 300 + 150);
+      // zaokruživanje jednom, na zbir: 1005 m = 300 + 0,5 → 301
+      expect(calc(t, 1005).kmPrice, 301);
+    });
+
+    test('prvi km se meri posle kalibracije', () {
+      final t = base.copyWith(firstKmPrice: 0);
+      // 1000 m * 1,1 = 1100 m → 100 m po 100 din/km = 10
+      expect(calc(t, 1000, cal: 1100).kmPrice, 10);
+    });
+
+    test('negativna cena prvog km nije ispravna; brisanje vraća null', () {
+      expect(base.copyWith(firstKmPrice: -1).validate(), isNotNull);
+      expect(base.copyWith(firstKmPrice: 5).copyWith(clearFirstKm: true).firstKmPrice, isNull);
+    });
+  });
+
+  group('Doplate', () {
+    const t = Tariff(startPrice: 100, pricePerKm: 0, waitingParaPerMin: 0, minPrice: 400);
+
+    test('dodaju se posle minimalne cene', () {
+      final base = FareCalculator.calculate(tariff: t, distanceMeters: 0, waitingSeconds: 0);
+      expect(base.totalPrice, 400);
+      final f = FareCalculator.withExtras(base, 150);
+      expect(f.minPriceAdjustment, 300);
+      expect(f.extrasPrice, 150);
+      expect(f.totalPrice, 550);
+    });
+
+    test('na fiksnu cenu; 0 ne menja ništa; negativno baca', () {
+      expect(FareCalculator.withExtras(FareCalculator.fixed(1500), 200).totalPrice, 1700);
+      final b = FareCalculator.fixed(1500);
+      expect(identical(FareCalculator.withExtras(b, 0), b), isTrue);
+      expect(() => FareCalculator.withExtras(b, -1), throwsArgumentError);
+    });
   });
 }

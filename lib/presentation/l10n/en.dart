@@ -96,6 +96,34 @@ const Map<String, String> enStrings = {
       'interrupted',
   'Čekanje (din)':
       'Waiting (RSD)',
+  '+{0} din':
+      '+{0} RSD',
+  'DOPLATA':
+      'EXTRA',
+  'DOPLATE':
+      'EXTRAS',
+  'Dodaj doplatu':
+      'Add extra',
+  'Dodato u ovoj vožnji':
+      'Added in this ride',
+  'Doplata':
+      'Extra',
+  'Drugi iznos':
+      'Other amount',
+  'Dugme „+” tokom vožnje dodaje doplatu na cenu (posle minimalne).':
+      'The "+" button during a ride adds an extra to the price (after the minimum).',
+  'Iznos (din)':
+      'Amount (RSD)',
+  'Prvi km (din/km)':
+      'First km (RSD/km)',
+  'Prazno = kao ostali km. 0 = prvi km je uračunat u start.':
+      'Empty = same as other km. 0 = the first km is included in the start.',
+  'Stalne doplate (npr. prtljag) unosiš u Podešavanjima.':
+      'Set up regular extras (e.g. luggage) in Settings.',
+  'Ukloni':
+      'Remove',
+  'Naziv doplate je obavezan.':
+      'Extra name is required.',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

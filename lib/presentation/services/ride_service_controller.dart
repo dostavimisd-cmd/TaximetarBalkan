@@ -164,6 +164,7 @@ class RideServiceController {
     required int calibrationPermille,
     int? waitingSpeedKmh,
     int? gpsAccuracyM,
+    int? firstKmPrice,
     int? fixedPrice,
     String? fixedRouteName,
   }) => _serialized(() async {
@@ -214,6 +215,7 @@ class RideServiceController {
       'price_per_km': pricePerKm,
       'waiting_para_per_min': waitingParaPerMin,
       'min_price': minPrice,
+      'first_km_price': ?firstKmPrice,
       'calibration_permille': calibrationPermille,
       'waiting_speed_kmh': ?waitingSpeedKmh,
       'gps_accuracy_m': ?gpsAccuracyM,
@@ -226,12 +228,20 @@ class RideServiceController {
   /// Šalje komandu za kraj vožnje. Servis upisuje rezultat, a kontroler
   /// gasi servis kad stigne 'stopped'.
   /// Pauza i nastavak vožnje (servis obrađuje komande redom).
-  Future<void> pauseRide() => _sendRideCommand('pause');
-  Future<void> resumeRide() => _sendRideCommand('resume');
+  Future<void> pauseRide() => _sendRideCommand({'command': 'pause'});
+  Future<void> resumeRide() => _sendRideCommand({'command': 'resume'});
 
-  Future<void> _sendRideCommand(String command) => _serialized(() async {
+  /// Doplata tokom vožnje; servis je upisuje i javlja novu cenu ('update').
+  Future<void> addExtra(String name, int amount) => _sendRideCommand(
+    {'command': 'add_extra', 'name': name, 'amount': amount},
+  );
+  Future<void> removeExtra(int id) =>
+      _sendRideCommand({'command': 'remove_extra', 'id': id});
+
+  Future<void> _sendRideCommand(Map<String, dynamic> command) =>
+      _serialized(() async {
     if (await _bridge.isRunningService()) {
-      _bridge.sendToTask({'command': command});
+      _bridge.sendToTask(command);
       return;
     }
     // Servis je ubijen: vožnje u memoriji nema, pa UI treba da izađe iz vožnje.

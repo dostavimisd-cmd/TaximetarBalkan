@@ -1,6 +1,7 @@
 import '../calibration.dart';
 import '../price_throttle.dart';
 import '../printing/escpos.dart';
+import 'extra_charge.dart';
 
 /// Podešavanja koja unosi korisnik. Čuvaju se u `app_settings` kao parovi
 /// ključ/tekst; ovde su tipizirana i proverena. Podrazumevane vrednosti su
@@ -31,6 +32,7 @@ class AppSettings {
   static const String keyBatteryGuide = 'battery_guide_shown';
   static const String keyButtonFeedback = 'button_feedback';
   static const String keyAutoPrint = 'auto_print';
+  static const String keyExtras = 'extras';
 
   /// Boje cene kao na taksimetrima (LED displeji); prikaz je u UI sloju.
   static const List<String> priceColors = ['bela', 'crvena', 'zelena', 'plava', 'zuta', 'narandzasta'];
@@ -113,6 +115,9 @@ class AppSettings {
   /// Račun se sam šalje na izabrani štampač kad se vožnja završi.
   final bool autoPrint;
 
+  /// Spisak doplata za dugme „+” tokom vožnje (naziv + iznos); unosi korisnik.
+  final List<ExtraCharge> extras;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -139,6 +144,7 @@ class AppSettings {
     this.batteryGuideShown = false,
     this.buttonFeedback = true,
     this.autoPrint = false,
+    this.extras = const [],
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -188,6 +194,7 @@ class AppSettings {
       batteryGuideShown: m[keyBatteryGuide] == '1',
       buttonFeedback: m[keyButtonFeedback] != '0',
       autoPrint: m[keyAutoPrint] == '1',
+      extras: ExtraCharge.decodeList(m[keyExtras]),
     );
   }
 
@@ -218,6 +225,7 @@ class AppSettings {
         keyBatteryGuide: batteryGuideShown ? '1' : '0',
         keyButtonFeedback: buttonFeedback ? '1' : '0',
         keyAutoPrint: autoPrint ? '1' : '0',
+        keyExtras: ExtraCharge.encodeList(extras),
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -243,6 +251,13 @@ class AppSettings {
       return 'Veličina cene: od $minPriceScale do $maxPriceScale %.';
     }
     if (receiptHeader.length > 500) return 'Zaglavlje računa je predugačko.';
+    if (extras.length > ExtraCharge.maxCount) {
+      return 'Najviše ${ExtraCharge.maxCount} doplata.';
+    }
+    for (final e in extras) {
+      final error = e.validate();
+      if (error != null) return error;
+    }
     return null;
   }
 
@@ -274,6 +289,7 @@ class AppSettings {
     bool? batteryGuideShown,
     bool? buttonFeedback,
     bool? autoPrint,
+    List<ExtraCharge>? extras,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -303,6 +319,7 @@ class AppSettings {
       batteryGuideShown: batteryGuideShown ?? this.batteryGuideShown,
       buttonFeedback: buttonFeedback ?? this.buttonFeedback,
       autoPrint: autoPrint ?? this.autoPrint,
+      extras: extras ?? this.extras,
     );
   }
 }

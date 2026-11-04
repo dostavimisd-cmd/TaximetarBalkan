@@ -11,7 +11,9 @@ import '../../domain/models/app_settings.dart';
 import '../printing/receipt_printer.dart';
 import '../providers/settings_provider.dart';
 import '../services/backup_actions.dart';
+import '../../domain/models/extra_charge.dart';
 import '../widgets/battery_guide.dart';
+import '../widgets/extras_sheet.dart';
 import '../widgets/price_colors.dart';
 import 'fixed_routes_screen.dart';
 import 'holidays_screen.dart';
@@ -140,6 +142,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           : _printOption.codePage,
       receiptHeader: _header.text.trim(),
       receiptLogoPath: _receiptLogoPath,
+      // vrednosti koje se ne menjaju ovim formularom ostaju kakve jesu
+      disclaimerAccepted: current.disclaimerAccepted,
+      batteryGuideShown: current.batteryGuideShown,
+      extras: current.extras,
     );
     final invalid = next.validate();
     if (invalid != null) {
@@ -256,6 +262,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) setState(() => _printing = false);
     }
   }
+
+  /// Spisak doplata se čuva odmah (kao izbor štampača), ne tek na SAČUVAJ.
+  Future<void> _editExtras(
+    List<ExtraCharge> Function(List<ExtraCharge> list) edit,
+  ) => ref
+      .read(appSettingsProvider.notifier)
+      .change((s) => s.copyWith(extras: edit(List.of(s.extras))));
+
+  Widget _extrasSection(List<ExtraCharge> extras) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        t('Dugme „+” tokom vožnje dodaje doplatu na cenu (posle minimalne).'),
+        style: const TextStyle(color: Colors.white38, fontSize: 11),
+      ),
+      for (final (i, e) in extras.indexed)
+        ListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text(e.name, style: const TextStyle(color: Colors.white)),
+          subtitle: Text(
+            t('{0} din', [e.amount]),
+            style: const TextStyle(color: Colors.amberAccent),
+          ),
+          onTap: () async {
+            final edited = await showExtraChargeDialog(context, ref, existing: e);
+            if (edited != null) await _editExtras((l) => l..[i] = edited);
+          },
+          trailing: IconButton(
+            tooltip: t('Ukloni'),
+            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            onPressed: () => _editExtras((l) => l..removeAt(i)),
+          ),
+        ),
+      if (extras.length < ExtraCharge.maxCount)
+        OutlinedButton.icon(
+          onPressed: () async {
+            final added = await showExtraChargeDialog(context, ref);
+            if (added != null) await _editExtras((l) => l..add(added));
+          },
+          icon: const Icon(Icons.add, color: Colors.amberAccent),
+          label: Text(
+            t('Dodaj doplatu'),
+            style: const TextStyle(color: Colors.amberAccent),
+          ),
+        ),
+    ],
+  );
 
   Widget _section(String title) => Padding(
     padding: const EdgeInsets.fromLTRB(0, 22, 0, 6),
@@ -413,6 +467,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: TextStyle(color: Colors.amberAccent),
                 ),
               ),
+              _section(t('DOPLATE')),
+              _extrasSection(settings.value?.extras ?? const []),
               _section(t('GPS')),
               _number(
                 t('Najveća dozvoljena nepreciznost (m)'),

@@ -36,6 +36,7 @@ class RideSummary {
         'Čekanje: ${r.waitingPrice} din',
         if (r.minPriceAdjustment > 0) 'Do minimalne: ${r.minPriceAdjustment} din',
       ],
+      for (final e in r.extrasOr('Doplata')) '${e.name}: ${e.amount} din',
       'UKUPNO: ${r.totalPrice} din',
       if (r.isInterrupted) '(vožnja prekinuta, iznos do prekida)',
       '',

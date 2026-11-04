@@ -179,6 +179,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               t('Kilometraža'),
               t('Čekanje (din)'),
               t('Dopuna do minimalne'),
+              t('Doplata'),
               t('Ukupno (din)'),
               t('Napomena'),
               t('Broj'),

@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 11,
+      version: 12,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -62,6 +62,20 @@ class DatabaseHelper {
     ''');
   }
 
+  /// Doplate dodate tokom vožnje (v12).
+  static Future<void> _createExtrasTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE ride_extras (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ride_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        added_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_extras_ride ON ride_extras(ride_id)');
+  }
+
   /// V12: prekidi GPS signala tokom vožnje i kako su obračunati.
   static Future<void> _createGapsTable(Database db) async {
     await db.execute('''
@@ -98,7 +112,8 @@ class DatabaseHelper {
         rules_json TEXT,
         schedule_days INTEGER NOT NULL DEFAULT 0,
         schedule_start_min INTEGER NOT NULL DEFAULT 0,
-        schedule_end_min INTEGER NOT NULL DEFAULT 0
+        schedule_end_min INTEGER NOT NULL DEFAULT 0,
+        first_km_price INTEGER
       )
     ''');
 
@@ -137,7 +152,9 @@ class DatabaseHelper {
         gps_accuracy_m INTEGER,
         fixed_price INTEGER,
         fixed_route_name TEXT,
-        paused_sec INTEGER NOT NULL DEFAULT 0
+        paused_sec INTEGER NOT NULL DEFAULT 0,
+        tariff_first_km_price INTEGER,
+        extras_total INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute(
@@ -162,6 +179,7 @@ class DatabaseHelper {
     await _createGapsTable(db);
     await _createShiftsTable(db);
     await _createPointsTable(db);
+    await _createExtrasTable(db);
 
     await db.execute('''
       CREATE TABLE fixed_routes (
@@ -222,6 +240,13 @@ class DatabaseHelper {
           db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+    if (oldVersion < 12) {
+      // Prvi kilometar u tarifi (NULL = kao ostali) i doplate u vožnji.
+      await _addColumn(db, 'tariffs', 'first_km_price', 'INTEGER');
+      await _addColumn(db, 'rides', 'tariff_first_km_price', 'INTEGER');
+      await _addColumn(db, 'rides', 'extras_total', 'INTEGER NOT NULL DEFAULT 0');
+      await _createExtrasTable(db);
     }
     if (oldVersion < 11) {
       // Pauza (ukupno pauzirano vreme) i tačke rute za prikaz na mapi.

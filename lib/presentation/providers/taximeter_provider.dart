@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/models/extra_charge.dart';
 import '../services/in_process_ride_bridge.dart';
 import '../services/ride_service_controller.dart';
 
@@ -16,6 +17,7 @@ class RideResult {
   final int kmPrice;
   final int waitingPrice;
   final int minPriceAdjustment;
+  final List<ExtraCharge> extras;
   final int totalPrice;
   final int pausedSeconds;
 
@@ -27,6 +29,7 @@ class RideResult {
     required this.kmPrice,
     required this.waitingPrice,
     required this.minPriceAdjustment,
+    this.extras = const [],
     required this.totalPrice,
     this.pausedSeconds = 0,
   });
@@ -41,6 +44,7 @@ class RideResult {
       kmPrice: i('km_price'),
       waitingPrice: i('waiting_price'),
       minPriceAdjustment: i('min_price_adjustment'),
+      extras: ExtraCharge.decodeList(e['extras']),
       totalPrice: i('total_price'),
       pausedSeconds: i('paused_sec'),
     );
@@ -75,6 +79,9 @@ class TaximeterState {
   /// Fiksna relacija vožnje u toku/završene; null = taksimetar po tarifi.
   final String? fixedRouteName;
 
+  /// Doplate vožnje u toku (već su u [currentPrice]).
+  final List<ExtraCharge> extras;
+
   /// Poslednja važeća GPS tačka vožnje (za mapu); null dok je nema.
   final double? lat;
   final double? lon;
@@ -97,6 +104,7 @@ class TaximeterState {
     this.lat,
     this.lon,
     this.fixedRouteName,
+    this.extras = const [],
     this.pausedSince,
     this.errorMessage,
     this.warningMessage,
@@ -128,6 +136,7 @@ class TaximeterState {
     double? lat,
     double? lon,
     String? fixedRouteName,
+    List<ExtraCharge>? extras,
     DateTime? pausedSince,
     bool clearPausedSince = false,
     bool clearFixedRoute = false,
@@ -159,6 +168,7 @@ class TaximeterState {
       fixedRouteName: clearFixedRoute
           ? null
           : (fixedRouteName ?? this.fixedRouteName),
+      extras: extras ?? this.extras,
       pausedSince: clearPausedSince ? null : (pausedSince ?? this.pausedSince),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       warningMessage: clearWarning
@@ -253,6 +263,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           lat: (event['lat'] as num?)?.toDouble(),
           lon: (event['lon'] as num?)?.toDouble(),
           fixedRouteName: event['fixed_route_name'] as String?,
+          extras: ExtraCharge.decodeList(event['extras']),
           clearError: true,
         );
         break;
@@ -282,6 +293,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           lat: (event['lat'] as num?)?.toDouble(),
           lon: (event['lon'] as num?)?.toDouble(),
           fixedRouteName: event['fixed_route_name'] as String?,
+          extras: ExtraCharge.decodeList(event['extras']),
           warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
           clearResult: true,
           clearError: true,
@@ -326,6 +338,9 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           lat: (event['lat'] as num?)?.toDouble(),
           lon: (event['lon'] as num?)?.toDouble(),
           fixedRouteName: event['fixed_route_name'] as String?,
+          extras: event.containsKey('extras')
+              ? ExtraCharge.decodeList(event['extras'])
+              : state.extras,
         );
         break;
       case 'stopped':
@@ -338,6 +353,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
             isWaitingNow: false,
             gapCount: 0,
             gapMs: 0,
+            extras: const [],
             clearRideStartPrice: true,
             clearError: true,
           );
@@ -349,6 +365,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
             currentDistanceMeters: result.distanceMeters.toDouble(),
             currentWaitingMs: result.waitingSeconds * 1000,
             currentPrice: result.totalPrice,
+            extras: const [],
             isWaitingNow: false,
             gapCount: 0,
             gapMs: 0,
@@ -388,6 +405,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     int calibrationPermille = 1000,
     int? waitingSpeedKmh,
     int? gpsAccuracyM,
+    int? firstKmPrice,
     int? fixedPrice,
     String? fixedRouteName,
   }) async {
@@ -406,6 +424,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       currentDistanceMeters: 0.0,
       currentWaitingMs: 0,
       currentPrice: 0,
+      extras: const [],
       clearResult: true,
       clearError: true,
     );
@@ -417,6 +436,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       pricePerKm: pricePerKm,
       waitingParaPerMin: waitingParaPerMin,
       minPrice: minPrice,
+      firstKmPrice: firstKmPrice,
       calibrationPermille: calibrationPermille,
       waitingSpeedKmh: waitingSpeedKmh,
       gpsAccuracyM: gpsAccuracyM,
@@ -462,6 +482,23 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
     await controller.stopRide();
   }
 
+  /// Doplata tokom vožnje (i u pauzi); cena se menja kad servis potvrdi.
+  Future<void> addExtra(ExtraCharge extra) async {
+    if (state.phase != RidePhase.running && state.phase != RidePhase.paused) {
+      return;
+    }
+    await ref
+        .read(rideServiceControllerProvider)
+        .addExtra(extra.name, extra.amount);
+  }
+
+  Future<void> removeExtra(int id) async {
+    if (state.phase != RidePhase.running && state.phase != RidePhase.paused) {
+      return;
+    }
+    await ref.read(rideServiceControllerProvider).removeExtra(id);
+  }
+
   /// Zatvara prikaz završene vožnje i vraća ekran u početno stanje.
   void newRide() {
     if (state.phase != RidePhase.finished) return;
@@ -473,6 +510,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
       isWaitingNow: false,
       gapCount: 0,
       gapMs: 0,
+      extras: const [],
       clearRideStartPrice: true,
       clearFixedRoute: true,
       clearPausedSince: true,

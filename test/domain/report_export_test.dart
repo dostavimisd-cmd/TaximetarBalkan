@@ -29,7 +29,7 @@ RideRecord ride(int id, DateTime startUtc, {
 
 const headers = [
   'Datum', 'Početak', 'Kraj', 'Trajanje', 'Km', 'Čekanje', 'Start',
-  'Kilometraža', 'Čekanje (din)', 'Dopuna do minimalne', 'Ukupno (din)', 'Napomena', 'Broj',
+  'Kilometraža', 'Čekanje (din)', 'Dopuna do minimalne', 'Doplata', 'Ukupno (din)', 'Napomena', 'Broj',
 ];
 
 void main() {
@@ -63,7 +63,7 @@ void main() {
     final total = lines.last.split(';');
     expect(total.first, 'Ukupno');
     expect(total[4], '3,52');
-    expect(total[10], '759');
+    expect(total[11], '759');
     for (final l in lines) {
       expect(l.split(';'), hasLength(ReportExport.csvColumns));
     }

@@ -64,13 +64,14 @@ class Receipt {
       sep,
       if (ride.fixedRouteName != null) ...[
         ReceiptLine('Relacija: ${ride.fixedRouteName}'),
-        row('Fiksna cena', '${ride.totalPrice} din'),
+        row('Fiksna cena', '${ride.priceWithoutExtras} din'),
       ] else ...[
         row('Start', '${ride.startPrice} din'),
         row('Kilometraža', '${ride.kmPrice} din'),
         row('Čekanje', '${ride.waitingPrice} din'),
         if (ride.minPriceAdjustment > 0) row('Do minimalne', '${ride.minPriceAdjustment} din'),
       ],
+      for (final e in ride.extrasOr('Doplata')) row(e.name, '${e.amount} din'),
       sep,
       const ReceiptLine('UKUPNO', align: ReceiptAlign.center, bold: true),
       ReceiptLine('${ride.totalPrice} din', align: ReceiptAlign.center, bold: true, large: true),

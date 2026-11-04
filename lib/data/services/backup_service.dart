@@ -32,7 +32,11 @@ class BackupService {
     'ride_gaps',
     'ride_points',
     'shifts',
+    'ride_extras',
   ];
+
+  /// Tabele koje kopije iz starije verzije nemaju; tada su prazne.
+  static const Set<String> optionalTables = {'ride_extras'};
 
   /// Ključevi podešavanja koji pokazuju na sliku (fajl ide u kopiju).
   static const List<String> imageKeys = ['receipt_logo', 'background_logo'];
@@ -97,6 +101,11 @@ class BackupService {
       );
     }
     final data = backup['tables'];
+    if (data is Map<String, dynamic>) {
+      for (final t in optionalTables) {
+        data[t] ??= <Object?>[];
+      }
+    }
     if (data is! Map<String, dynamic> ||
         tables.any((t) => data[t] is! List) ||
         tables.any((t) => (data[t] as List).any((r) => r is! Map))) {

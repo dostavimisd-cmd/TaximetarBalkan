@@ -43,7 +43,7 @@ class ReportExport {
     return parts.join(', ');
   }
 
-  /// Kolone CSV-a (13), istim redom kao [csvHeaders] koji daje UI.
+  /// Kolone CSV-a (14), istim redom kao [csvHeaders] koji daje UI.
   static List<String> csvRow(RideRecord r, {required String interruptedLabel}) => [
         date(r.startTime),
         time(r.startTime),
@@ -55,12 +55,13 @@ class ReportExport {
         '${r.kmPrice}',
         '${r.waitingPrice}',
         '${r.minPriceAdjustment}',
+        '${r.extrasTotal}',
         '${r.totalPrice}',
         note(r, interruptedLabel: interruptedLabel),
         '${r.id}',
       ];
 
-  static const int csvColumns = 13;
+  static const int csvColumns = 14;
 
   static String _cell(String v) {
     if (v.contains(';') || v.contains('"') || v.contains('\n') || v.contains('\r')) {
@@ -90,6 +91,7 @@ class ReportExport {
         km(list.fold(0, (s, r) => s + r.distanceMeters)),
         clock(list.fold(0, (s, r) => s + r.waitingSeconds)),
         '', '', '', '',
+        '${list.fold(0, (s, r) => s + r.extrasTotal)}',
         '${list.fold(0, (s, r) => s + r.totalPrice)}',
         '', '',
       ],

@@ -58,6 +58,11 @@ Odluke korisnika (2026-10-19), vidi `docs/AUDIT_2026-10-19.md` (N17, U7).
 - Sve cene ≥ 0 i ≤ 1.000.000 din (čekanje ≤ 1.000.000 din/min); to je tehnička granica protiv prekoračenja, ne tarifa.
 - Vožnja čuva sopstvenu kopiju tarife (`rides.tariff_*`), pa izmena ili brisanje tarife ne menja istoriju.
 
+## Prvi kilometar i doplate (odluke vlasnika, 04.11.2026)
+- Tarifa ima opciono polje „prvi km” (din/km): prazno = prvi km kao i ostali; 0 = prvi km je uračunat u start; > 0 = prvih 1000 m (posle kalibracije) po toj ceni, ostatak po ceni po km. Iznos km se zaokružuje jednom, na zbir.
+- Doplata (SR) / Extra (EN): spisak naziv + iznos (celi dinari) unosi korisnik u Podešavanjima; tokom vožnje se dodaje dugmetom „+” (može i drugi iznos), može se ukloniti do kraja vožnje.
+- Doplate se dodaju **posle** minimalne cene: `total = max(start + km + čekanje, min) + doplate`. Važe i za fiksnu relaciju.
+
 ## Čekanje
 - Čekanje se računa kad je brzina ispod praga (km/h); inače se računa kilometraža. Korak ide ili u distancu ili u čekanje, nikad u oba.
 - Prag podešava korisnik (Podešavanja), ceo broj 1–50 km/h; bez unosa važi 8 km/h (dosadašnje ponašanje). Šalje se pri startu i upisuje u `rides.waiting_speed_kmh`, pa oporavljena vožnja koristi isti prag.

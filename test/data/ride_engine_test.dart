@@ -670,4 +670,62 @@ void main() {
     expect(status['active'], true);
     expect(status['distance'] as double, greaterThan(50));
   });
+
+  test('doplata: dodaje se na cenu, upisuje odmah i ulazi u ukupno', () async {
+    await h.engine.receive({...startCmd, 'min_price': 500});
+    h.drive(10);
+    await h.engine.receive({'command': 'add_extra', 'name': 'Prtljag', 'amount': 100});
+    final u = h.of('update').last;
+    expect(u['extras_total'], 100);
+    expect(u['price'], 500 + 100); // minimalna pa doplata
+    expect((await h.db.query('ride_extras')).single['name'], 'Prtljag');
+
+    await h.engine.receive({'command': 'add_extra', 'name': 'Noćna', 'amount': 50});
+    final id = ((h.of('update').last['extras'] as List).last as Map)['id'];
+    await h.engine.receive({'command': 'remove_extra', 'id': id});
+    expect(h.of('update').last['extras_total'], 100);
+
+    await h.engine.receive({'command': 'stop'});
+    final stopped = h.of('stopped').single;
+    expect(stopped['extras_total'], 100);
+    expect(stopped['total_price'], 600);
+    expect(stopped['min_price_adjustment'], greaterThan(0));
+    final ride = (await h.rides()).single;
+    expect(ride['extras_total'], 100);
+    expect(ride['total_price'], 600);
+  });
+
+  test('doplata: neispravna ili bez vožnje se ne dodaje', () async {
+    await h.engine.receive({'command': 'add_extra', 'name': 'X', 'amount': 100});
+    expect(await h.db.query('ride_extras'), isEmpty);
+    await h.engine.receive(startCmd);
+    await h.engine.receive({'command': 'add_extra', 'name': '', 'amount': 100});
+    await h.engine.receive({'command': 'add_extra', 'name': 'X', 'amount': 0});
+    expect(await h.db.query('ride_extras'), isEmpty);
+    expect(h.of('error'), hasLength(2));
+  });
+
+  test('doplata i prvi km se oporavljaju; prekid zadržava doplatu', () async {
+    await h.engine.receive({...startCmd, 'first_km_price': 0});
+    h.drive(30);
+    await h.engine.receive({'command': 'add_extra', 'name': 'Prtljag', 'amount': 100});
+    await h.engine.saveSnapshot();
+    expect((await h.rides()).single['tariff_first_km_price'], 0);
+
+    h.now += min;
+    final engine2 = h.newEngine();
+    expect(await engine2.onServiceStart(), true);
+    final rec = h.of('recovered').single;
+    expect(rec['extras_total'], 100);
+    // ~300 m, prvi km u startu: 200 + 0 + doplata
+    expect(rec['price'], 300);
+
+    await engine2.saveSnapshot();
+    h.now += 10 * min;
+    await h.newEngine().receive(startCmd);
+    final first = (await h.rides()).first;
+    expect(first['status'], RideEngine.statusInterrupted);
+    expect(first['extras_total'], 100);
+    expect(first['total_price'], 300);
+  });
 }

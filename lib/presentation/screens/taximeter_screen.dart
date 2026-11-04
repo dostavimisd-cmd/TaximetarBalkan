@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../domain/currency_converter.dart';
 import '../../domain/models/app_settings.dart';
+import '../../domain/models/extra_charge.dart';
 import '../../domain/models/fixed_route.dart';
 import '../../domain/models/holiday.dart';
 import '../../domain/models/tariff.dart';
@@ -23,6 +24,7 @@ import '../providers/history_provider.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/first_launch.dart';
+import '../widgets/extras_sheet.dart';
 import '../widgets/fixed_route_picker.dart';
 import '../widgets/price_colors.dart';
 import '../widgets/ride_map.dart';
@@ -578,7 +580,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                 if (state.fixedRouteName != null)
                                   _ResultLine(
                                     t('Fiksno: {0}', [state.fixedRouteName]),
-                                    result.totalPrice,
+                                    result.startPrice,
                                   )
                                 else ...[
                                   _ResultLine(
@@ -599,6 +601,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                     t('Dopuna do minimalne'),
                                     result.minPriceAdjustment,
                                   ),
+                                for (final e in result.extras)
+                                  _ResultLine(e.name, e.amount),
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: TextButton.icon(
@@ -783,6 +787,52 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                     ],
                                   ),
                                 ),
+                              )
+                            // Doplata tokom vožnje: „+” na mestu relacija
+                            else if (!state.isBusy)
+                              GestureDetector(
+                                onTap: () => showExtrasSheet(context),
+                                child: Container(
+                                  height: 74,
+                                  width: 74,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1C1C1C),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: state.extras.isEmpty
+                                          ? Colors.white24
+                                          : Colors.amberAccent,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.add_circle_outline,
+                                        color: state.extras.isEmpty
+                                            ? Colors.white70
+                                            : Colors.amberAccent,
+                                        size: 26,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      FittedBox(
+                                        child: Text(
+                                          state.extras.isEmpty
+                                              ? t('DOPLATA')
+                                              : '+${ExtraCharge.total(state.extras)}',
+                                          style: TextStyle(
+                                            color: state.extras.isEmpty
+                                                ? Colors.white70
+                                                : Colors.amberAccent,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
 
                             // Masivno Start / Stop dugme
@@ -877,6 +927,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                   waitingParaPerMin:
                                                       t.waitingParaPerMin,
                                                   minPrice: t.minPrice,
+                                                  firstKmPrice: t.firstKmPrice,
                                                   waitingSpeedKmh:
                                                       settings.waitingSpeedKmh,
                                                   calibrationPermille: settings
@@ -969,6 +1020,8 @@ ButtonStyle _mainButtonStyle(Color color) => ElevatedButton.styleFrom(
   backgroundColor: color,
   disabledBackgroundColor: Colors.white12,
   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+  // mali bočni razmak: PAUZA/ZAVRŠI staju i pored dugmeta za doplatu
+  padding: const EdgeInsets.symmetric(horizontal: 8),
   elevation: 6,
 );
 

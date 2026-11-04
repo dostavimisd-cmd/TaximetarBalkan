@@ -37,6 +37,11 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Probna kopija za telefon koji ima verziju sa Play-a (drugi potpis):
+        // TAKSI_PROBA=1 daje poseban paket i naziv, pa stoji pored prave.
+        val proba = System.getenv("TAKSI_PROBA") == "1"
+        if (proba) applicationIdSuffix = ".proba"
+        manifestPlaceholders["appLabel"] = if (proba) "Taksimetar PROBA" else "Taksimetar Balkan"
     }
 
     signingConfigs {

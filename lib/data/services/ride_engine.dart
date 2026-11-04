@@ -4,6 +4,7 @@ import '../../domain/calibration.dart';
 import '../../domain/fare_calculator.dart';
 import '../../domain/location_filter.dart';
 import '../../domain/models/app_settings.dart';
+import '../../domain/models/extra_charge.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/fare_result.dart';
 import '../../domain/models/location_point.dart';
@@ -74,6 +75,10 @@ class RideEngine {
   String? _fixedRouteName;
   int _gapMs = 0;
 
+  // Doplate vožnje u toku (redovi iz `ride_extras`); dodaju se na cenu.
+  final List<ExtraCharge> _extras = [];
+  int get _extrasTotal => ExtraCharge.total(_extras);
+
   // Pauza: dok traje, GPS tačke se ne obračunavaju (ni km ni čekanje).
   bool _paused = false;
   int _pausedMs = 0; // zbir završenih pauza
@@ -126,6 +131,12 @@ class RideEngine {
       case 'status':
         _sendStatus();
         break;
+      case 'add_extra':
+        await _addExtra(data);
+        break;
+      case 'remove_extra':
+        await _removeExtra(data);
+        break;
     }
   }
 
@@ -165,9 +176,63 @@ class RideEngine {
     }
   }
 
-  /// Cena vožnje u toku: fiksna relacija ili taksimetar po tarifi.
+  /// Cena vožnje u toku: fiksna relacija ili taksimetar po tarifi, plus doplate.
   int _currentPrice(RideTracker t) =>
-      _fixedPrice ?? t.currentFare?.totalPrice ?? t.tariff.startPrice;
+      (_fixedPrice ?? t.currentFare?.totalPrice ?? t.tariff.startPrice) +
+      _extrasTotal;
+
+  /// Doplata tokom vožnje (i u pauzi): upisuje se odmah, pa preživi oporavak.
+  Future<void> _addExtra(Map<String, dynamic> data) async {
+    if (!hasActiveRide || _closing) return;
+    final name = data['name'], amount = data['amount'];
+    final extra = ExtraCharge(
+      name: name is String ? name.trim() : '',
+      amount: amount is num ? amount.toInt() : 0,
+    );
+    final invalid = extra.validate() ??
+        (_extras.length >= ExtraCharge.maxCount
+            ? 'Najviše ${ExtraCharge.maxCount} doplata po vožnji.'
+            : null);
+    if (invalid != null) {
+      _send({'event': 'error', 'message': invalid});
+      return;
+    }
+    final db = await _database();
+    final id = await db.insert('ride_extras', {
+      'ride_id': currentRideId,
+      'name': extra.name,
+      'amount': extra.amount,
+      'added_at': _nowMs(),
+    });
+    _extras.add(ExtraCharge(id: id, name: extra.name, amount: extra.amount));
+    _send({'event': 'update', ..._rideValues()});
+  }
+
+  Future<void> _removeExtra(Map<String, dynamic> data) async {
+    if (!hasActiveRide || _closing) return;
+    final id = (data['id'] as num?)?.toInt();
+    if (id == null || !_extras.any((e) => e.id == id)) return;
+    final db = await _database();
+    await db.delete('ride_extras',
+        where: 'id = ? AND ride_id = ?', whereArgs: [id, currentRideId]);
+    _extras.removeWhere((e) => e.id == id);
+    _send({'event': 'update', ..._rideValues()});
+  }
+
+  Future<void> _loadExtras(Database db, int rideId) async {
+    final rows = await db.query('ride_extras',
+        where: 'ride_id = ?', whereArgs: [rideId], orderBy: 'id');
+    _extras
+      ..clear()
+      ..addAll([
+        for (final r in rows)
+          ExtraCharge(
+            id: r['id'] as int,
+            name: r['name'] as String,
+            amount: r['amount'] as int,
+          ),
+      ]);
+  }
 
   /// Pauza: obračun staje, cena ostaje, sat pauze teče.
   void _pause() {
@@ -267,6 +332,8 @@ class RideEngine {
           t.waiter.waitingSpeedThresholdKmh.round(),
       'paused': _paused,
       'paused_sec': _pausedSecondsTotal,
+      'extras': [for (final e in _extras) e.toJson()],
+      'extras_total': _extrasTotal,
       'gap_count': _gapCount,
       'gap_ms': _gapMs,
       if (t.lastValidPoint != null) 'lat': t.lastValidPoint!.latitude,
@@ -314,6 +381,7 @@ class RideEngine {
         pricePerKm: data['price_per_km'] as int,
         waitingParaPerMin: data['waiting_para_per_min'] as int,
         minPrice: data['min_price'] as int,
+        firstKmPrice: (data['first_km_price'] as num?)?.toInt(),
       );
       final calibration =
           (data['calibration_permille'] as num?)?.toInt() ?? Calibration.neutralPermille;
@@ -387,6 +455,7 @@ class RideEngine {
         'tariff_price_per_km': tariff.pricePerKm,
         'tariff_waiting_para_per_min': tariff.waitingParaPerMin,
         'tariff_min_price': tariff.minPrice,
+        'tariff_first_km_price': tariff.firstKmPrice,
         'min_price_adjustment': 0,
       });
 
@@ -397,6 +466,7 @@ class RideEngine {
       _snapshotFailures = 0;
       _gapCount = 0;
       _gapMs = 0;
+      _extras.clear();
       _paused = false;
       _pausedMs = 0;
       _pausedSince = null;
@@ -429,15 +499,19 @@ class RideEngine {
 
     _closing = true;
     final FareResult fare;
+    final extras = List<ExtraCharge>.of(_extras);
     try {
-      fare = _fixedPrice != null
-          ? FareCalculator.fixed(_fixedPrice!)
-          : FareCalculator.calculate(
-              tariff: tracker!.tariff,
-              distanceMeters: distanceM,
-              waitingSeconds: waitingSec,
-              calibrationPermille: tracker!.calibrationPermille,
-            );
+      fare = FareCalculator.withExtras(
+        _fixedPrice != null
+            ? FareCalculator.fixed(_fixedPrice!)
+            : FareCalculator.calculate(
+                tariff: tracker!.tariff,
+                distanceMeters: distanceM,
+                waitingSeconds: waitingSec,
+                calibrationPermille: tracker!.calibrationPermille,
+              ),
+        ExtraCharge.total(extras),
+      );
 
       final db = await _database();
       await db.transaction((txn) async {
@@ -450,6 +524,7 @@ class RideEngine {
           'waiting_price': fare.waitingPrice,
           'total_price': fare.totalPrice,
           'min_price_adjustment': fare.minPriceAdjustment,
+          'extras_total': fare.extrasPrice,
           'paused_sec': _pausedSecondsTotal,
         }, where: 'id = ?', whereArgs: [rideId]);
         await _flushPoints(txn);
@@ -479,6 +554,7 @@ class RideEngine {
     currentRideId = null;
     _fixedPrice = null;
     _fixedRouteName = null;
+    _extras.clear();
     _closing = false;
     await onTrackingStop?.call();
     _send({
@@ -492,6 +568,8 @@ class RideEngine {
       'km_price': fare.kmPrice,
       'waiting_price': fare.waitingPrice,
       'min_price_adjustment': fare.minPriceAdjustment,
+      'extras': [for (final e in extras) e.toJson()],
+      'extras_total': fare.extrasPrice,
       'total_price': fare.totalPrice,
     });
   }
@@ -556,6 +634,7 @@ class RideEngine {
         pricePerKm: ride['tariff_price_per_km'] as int,
         waitingParaPerMin: ride['tariff_waiting_para_per_min'] as int,
         minPrice: ride['tariff_min_price'] as int,
+        firstKmPrice: ride['tariff_first_km_price'] as int?,
       );
 
   /// K1: prekinutu vožnju zatvara sa iznosima iz poslednjeg snapshot-a
@@ -564,9 +643,17 @@ class RideEngine {
       Database db, Map<String, Object?> ride, Map<String, Object?>? snap) async {
     final rideId = ride['id'] as int;
     final values = <String, Object?>{'status': statusInterrupted};
+    final extras = ((await db.rawQuery(
+                'SELECT COALESCE(SUM(amount), 0) AS s FROM ride_extras WHERE ride_id = ?',
+                [rideId]))
+            .first['s'] as num)
+        .toInt();
+    values['extras_total'] = extras;
 
     if (snap == null) {
       values['end_time'] = ride['start_time'];
+      // Nema merenja: ostaje upisani start (ili fiksna cena) i doplate.
+      values['total_price'] = (ride['start_price'] as int) + extras;
     } else {
       values['end_time'] = snap['timestamp'];
       final distanceM = (snap['current_distance'] as num).round();
@@ -575,14 +662,17 @@ class RideEngine {
       values['waiting_time_sec'] = waitingSec;
       try {
         final fixed = ride['fixed_price'] as int?;
-        final fare = fixed != null
-            ? FareCalculator.fixed(fixed)
-            : FareCalculator.calculate(
-                tariff: _tariffFromRide(ride),
-                distanceMeters: distanceM,
-                waitingSeconds: waitingSec,
-                calibrationPermille: _permilleOf(ride),
-              );
+        final fare = FareCalculator.withExtras(
+          fixed != null
+              ? FareCalculator.fixed(fixed)
+              : FareCalculator.calculate(
+                  tariff: _tariffFromRide(ride),
+                  distanceMeters: distanceM,
+                  waitingSeconds: waitingSec,
+                  calibrationPermille: _permilleOf(ride),
+                ),
+          extras,
+        );
         values['km_price'] = fare.kmPrice;
         values['waiting_price'] = fare.waitingPrice;
         values['total_price'] = fare.totalPrice;
@@ -650,6 +740,7 @@ class RideEngine {
       currentRideId = rId;
       _fixedPrice = ride['fixed_price'] as int?;
       _fixedRouteName = ride['fixed_route_name'] as String?;
+      await _loadExtras(db, rId);
       tracker = _newTracker(
         _tariffFromRide(ride),
         _permilleOf(ride),
@@ -694,6 +785,7 @@ class RideEngine {
     _fixedPrice = ride['fixed_price'] as int?;
     _fixedRouteName = ride['fixed_route_name'] as String?;
     await _loadGaps(db, rId);
+    await _loadExtras(db, rId);
     await _addRestartGap(db, rId, savedAt);
 
     _send({'event': 'recovered', 'ride_id': currentRideId, ..._rideValues()});

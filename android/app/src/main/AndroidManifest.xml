@@ -32,7 +32,7 @@
         tools:node="remove" />
 
     <application
-        android:label="Taksimetar Balkan"
+        android:label="${appLabel}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

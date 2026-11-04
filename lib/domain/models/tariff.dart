@@ -13,6 +13,10 @@ class Tariff {
   final int waitingParaPerMin;
   final int minPrice;
 
+  /// Cena po km za prvi kilometar (prvih 1000 m posle kalibracije).
+  /// null = prvi km kao i ostali; 0 = prvi km je uračunat u start.
+  final int? firstKmPrice;
+
   /// Raspored za automatski izbor; null = samo ručni izbor.
   final TariffSchedule? schedule;
 
@@ -23,14 +27,15 @@ class Tariff {
     required this.pricePerKm,
     required this.waitingParaPerMin,
     required this.minPrice,
+    this.firstKmPrice,
     this.schedule,
   });
 
   /// N19: vraća opis greške ili null ako je tarifa ispravna.
   String? validate() {
-    final prices = [startPrice, pricePerKm, waitingParaPerMin, minPrice];
+    final prices = [startPrice, pricePerKm, waitingParaPerMin, minPrice, ?firstKmPrice];
     if (prices.any((p) => p < 0)) return 'Cene ne smeju biti negativne.';
-    if ([startPrice, pricePerKm, minPrice].any((p) => p > maxPrice) ||
+    if ([startPrice, pricePerKm, minPrice, ?firstKmPrice].any((p) => p > maxPrice) ||
         waitingParaPerMin > maxPrice * 100) {
       return 'Cena ne sme biti veća od $maxPrice din.';
     }
@@ -45,6 +50,8 @@ class Tariff {
     int? pricePerKm,
     int? waitingParaPerMin,
     int? minPrice,
+    int? firstKmPrice,
+    bool clearFirstKm = false,
     TariffSchedule? schedule,
     bool clearSchedule = false,
   }) {
@@ -55,6 +62,7 @@ class Tariff {
       pricePerKm: pricePerKm ?? this.pricePerKm,
       waitingParaPerMin: waitingParaPerMin ?? this.waitingParaPerMin,
       minPrice: minPrice ?? this.minPrice,
+      firstKmPrice: clearFirstKm ? null : (firstKmPrice ?? this.firstKmPrice),
       schedule: clearSchedule ? null : (schedule ?? this.schedule),
     );
   }

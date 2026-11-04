@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import '../../domain/models/extra_charge.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../../domain/repositories/ride_history_repository.dart';
@@ -26,7 +27,17 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
   Future<RideRecord?> getById(int id) async {
     final db = await _database();
     final rows = await db.query('rides', where: 'id = ?', whereArgs: [id]);
-    return rows.isEmpty ? null : _fromRow(rows.first);
+    if (rows.isEmpty) return null;
+    final extras = await db.query('ride_extras',
+        where: 'ride_id = ?', whereArgs: [id], orderBy: 'id');
+    return _fromRow(rows.first, extras: [
+      for (final e in extras)
+        ExtraCharge(
+          id: e['id'] as int,
+          name: e['name'] as String,
+          amount: e['amount'] as int,
+        ),
+    ]);
   }
 
   @override
@@ -49,6 +60,7 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
       await txn.delete('ride_gaps', where: 'ride_id = ?', whereArgs: [id]);
       await txn.delete('ride_snapshots', where: 'ride_id = ?', whereArgs: [id]);
       await txn.delete('ride_points', where: 'ride_id = ?', whereArgs: [id]);
+      await txn.delete('ride_extras', where: 'ride_id = ?', whereArgs: [id]);
       return true;
     });
   }
@@ -83,7 +95,7 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
         .toList();
   }
 
-  RideRecord _fromRow(Map<String, Object?> r) {
+  RideRecord _fromRow(Map<String, Object?> r, {List<ExtraCharge> extras = const []}) {
     DateTime utc(int ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
     final end = r['end_time'] as int?;
     return RideRecord(
@@ -96,6 +108,8 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
       kmPrice: r['km_price'] as int,
       waitingPrice: r['waiting_price'] as int,
       minPriceAdjustment: (r['min_price_adjustment'] as int?) ?? 0,
+      extrasTotal: (r['extras_total'] as int?) ?? 0,
+      extras: extras,
       totalPrice: r['total_price'] as int,
       status: r['status'] as String,
       fixedRouteName: r['fixed_route_name'] as String?,

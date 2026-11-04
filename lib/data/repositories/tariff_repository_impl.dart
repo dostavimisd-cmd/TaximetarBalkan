@@ -20,6 +20,7 @@ class TariffRepositoryImpl implements TariffRepository {
               pricePerKm: r['price_per_km'] as int,
               waitingParaPerMin: r['waiting_para_per_min'] as int,
               minPrice: r['min_price'] as int,
+              firstKmPrice: r['first_km_price'] as int?,
               schedule: (r['schedule_days'] as int? ?? 0) == 0
                   ? null
                   : TariffSchedule(
@@ -43,6 +44,7 @@ class TariffRepositoryImpl implements TariffRepository {
       'price_per_km': tariff.pricePerKm,
       'waiting_para_per_min': tariff.waitingParaPerMin,
       'min_price': tariff.minPrice,
+      'first_km_price': tariff.firstKmPrice,
       'schedule_days': tariff.schedule?.days ?? 0,
       'schedule_start_min': tariff.schedule?.startMinute ?? 0,
       'schedule_end_min': tariff.schedule?.endMinute ?? 0,

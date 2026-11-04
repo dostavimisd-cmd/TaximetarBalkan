@@ -7,8 +7,8 @@
 
 ## Glavni Moduli
 1. **GPS Engine (Foreground Service):** Sluša lokaciju i drži Android WakeLock. Odbacuje tačke sa lošom tačnošću (prag iz Podešavanja, 5–50 m, podrazumevano 15 m; upisuje se uz vožnju).
-2. **Obračun Cene (FareCalculator):** Pametno čekanje kada je brzina ispod praga (Podešavanja, podrazumevano 8 km/h); kalibracija distance u promilima. Sve celobrojno (vidi `SPEC.md`).
-3. **Lokalna Baza (sqflite, šema v8):** Offline-first. Vožnja se periodično upisuje u `ride_snapshots`. Detalji u `DATA_MODEL.md`.
+2. **Obračun Cene (FareCalculator):** Pametno čekanje kada je brzina ispod praga (Podešavanja, podrazumevano 8 km/h); kalibracija distance u promilima. Prvi km tarife (opciono: prazno = kao ostali, 0 = u startu, > 0 = svoja cena za prvih 1000 m). Doplate (`withExtras`) se dodaju posle minimalne cene. Sve celobrojno (vidi `SPEC.md`).
+3. **Lokalna Baza (sqflite, šema v12):** Offline-first. Vožnja se periodično upisuje u `ride_snapshots`. Detalji u `DATA_MODEL.md`.
 4. **Tarife (Faza 2):** tarife, raspored i praznike unosi korisnik; `TariffSelector` bira tarifu samo pri startu (praznik → raspored → ručni izbor).
 5. **Izveštaji i istorija (Faza 3):** `RideHistoryRepository` (čitanje, brisanje završenih vožnji), `ReportRange`/`RideStats` (dan, nedelja, mesec).
 6. **Štampa (Faza 4):** `EscPos`, `Receipt`, `Dither` (domain, čisti) + `ReceiptPrinter` (Bluetooth, `print_bluetooth_thermal`). Podrazumevano se račun šalje kao slika, pa su naša slova uvek tačna.
@@ -20,7 +20,7 @@
 10. **Rezervna kopija:** `BackupService` (`data/services/backup_service.dart`) izvozi tabele i slike logoa u JSON i vraća ih; `backup_actions.dart` (presentation) šalje fajl preko `share_plus`, bira ga preko `file_picker` i osvežava providere. Kopija iz novije šeme se odbija, kolone kojih nema u bazi se preskaču.
 
 ## Ko piše u bazu
-- `rides`, `ride_snapshots`, `ride_gaps` za vožnju u toku: samo servis (`RideEngine`).
+- `rides`, `ride_snapshots`, `ride_gaps`, `ride_extras` za vožnju u toku: samo servis (`RideEngine`). Doplate stižu kao komande `add_extra{name, amount}` / `remove_extra{id}` (dugme „+” na glavnom ekranu, `widgets/extras_sheet.dart`); spisak stalnih doplata je u Podešavanjima (`app_settings.extras`).
 - UI isolate: `tariffs`, `holidays`, `app_settings`, i brisanje **završenih** vožnji iz istorije (kratka transakcija; WAL + `busy_timeout` sprečavaju sudar sa servisom).
 - **Vraćanje rezervne kopije** (`BackupService.restore`, UI isolate): briše i ponovo upisuje sve tabele u jednoj transakciji. Dozvoljeno samo kad nema aktivne vožnje (provera u bazi i u UI-ju), pa servis tada ne radi. Pre vraćanja se trenutni podaci čuvaju u `pre_vracanja_kopije.json` (dugme „Poništi poslednje vraćanje”).
 
@@ -40,7 +40,8 @@ GPS Senzor -> Foreground Service (`RideEngine`) -> Odbacivanje šuma -> FareCalc
 
 ## Protokol događaja (servis → UI)
 - `ready{active}`, `status{active, distance, waitingMs, price, mode, tariff_id, start_price, waiting_speed_kmh, gap_count, gap_ms, lat, lon}`, `started{ride_id}`, `recovered{...}`, `update{...}` (ista polja kao status), `gap{duration_ms, kind, ...}`, `already_active`, `snapshot_failing`, `warning{message}`.
-- `stopped{ride_id, distance_m, waiting_sec, start_price, km_price, waiting_price, min_price_adjustment, total_price}`; `ride_id: null` znači da vožnje nije bilo.
+- `update`/`status`/`recovered` nose i `extras` (lista `{id, name, amount}`) i `extras_total`; `price` već uključuje doplate.
+- `stopped{ride_id, distance_m, waiting_sec, start_price, km_price, waiting_price, min_price_adjustment, extras, extras_total, total_price}`; `ride_id: null` znači da vožnje nije bilo.
 - `error{message, cmd?}`: `cmd:'start'` → UI se vraća u `idle`, kontroler gasi servis; `cmd:'stop'` → upis nije uspeo, vožnja ostaje aktivna, Stop se može ponoviti.
 - UI faze (`RidePhase`): `idle → starting → running → stopping → finished` (`newRide()` → `idle`).
 

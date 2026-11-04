@@ -35,6 +35,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
   late final TextEditingController _perKm;
   late final TextEditingController _waiting;
   late final TextEditingController _min;
+  late final TextEditingController _firstKm;
   String? _error;
 
   // raspored za automatski izbor
@@ -55,6 +56,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
       text: t == null ? '' : CurrencyConverter.formatPara(t.waitingParaPerMin),
     );
     _min = TextEditingController(text: n(t?.minPrice));
+    _firstKm = TextEditingController(text: n(t?.firstKmPrice));
     final s = t?.schedule;
     if (s != null) {
       _scheduled = true;
@@ -66,7 +68,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
 
   @override
   void dispose() {
-    for (final c in [_name, _start, _perKm, _waiting, _min]) {
+    for (final c in [_name, _start, _perKm, _waiting, _min, _firstKm]) {
       c.dispose();
     }
     super.dispose();
@@ -86,8 +88,11 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
       );
       return;
     }
+    // prvi km: prazno = kao ostali, 0 = uračunat u start
+    final firstKmText = _firstKm.text.trim();
     final tariff = Tariff(
       id: widget.existing?.id ?? 0,
+      firstKmPrice: firstKmText.isEmpty ? null : int.tryParse(firstKmText),
       name: _name.text.trim(),
       startPrice: values[0]!,
       pricePerKm: values[1]!,
@@ -206,6 +211,7 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
     TextEditingController c, {
     bool number = true,
     bool decimal = false,
+    String? helper,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -221,6 +227,9 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(color: Colors.white54),
+          helperText: helper,
+          helperMaxLines: 2,
+          helperStyle: const TextStyle(color: Colors.white38, fontSize: 11),
           isDense: true,
         ),
       ),
@@ -249,6 +258,11 @@ class _TariffEditDialogState extends ConsumerState<_TariffEditDialog> {
               decimal: true,
             ),
             _field(t('Minimalna cena (din)'), _min),
+            _field(
+              t('Prvi km (din/km)'),
+              _firstKm,
+              helper: t('Prazno = kao ostali km. 0 = prvi km je uračunat u start.'),
+            ),
             _scheduleSection(),
             if (_error != null)
               Text(

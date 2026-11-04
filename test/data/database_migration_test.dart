@@ -30,7 +30,7 @@ void main() {
     expect(await db.query('app_settings'), hasLength(3));
   });
 
-  test('5: migracija v1 → v11 čuva istoriju i prekida aktivnu vožnju', () async {
+  test('5: migracija v1 → v12 čuva istoriju i prekida aktivnu vožnju', () async {
     final dir = await Directory.systemTemp.createTemp('taksi_mig');
     addTearDown(() => dir.delete(recursive: true));
     final path = p.join(dir.path, 'v1.db');
@@ -93,6 +93,12 @@ void main() {
     expect(await columns(db, 'tariffs'), contains('waiting_para_per_min'));
     expect((await db.query('tariffs')).single['waiting_para_per_min'], 1500);
     expect(await columns(db, 'rides'), contains('tariff_waiting_para_per_min'));
+    // v12: prvi km u tarifi, doplate u vožnji
+    expect(await columns(db, 'tariffs'), contains('first_km_price'));
+    expect((await db.query('tariffs')).single['first_km_price'], isNull);
+    expect(await columns(db, 'rides'), containsAll(['tariff_first_km_price', 'extras_total']));
+    expect(await columns(db, 'ride_extras'), containsAll(['ride_id', 'name', 'amount', 'added_at']));
+    expect(await indexes(db), contains('idx_extras_ride'));
     // v11: pauza i tačke rute
     expect(await columns(db, 'rides'), contains('paused_sec'));
     expect(await columns(db, 'ride_points'), containsAll(['ride_id', 'ts', 'lat', 'lon']));

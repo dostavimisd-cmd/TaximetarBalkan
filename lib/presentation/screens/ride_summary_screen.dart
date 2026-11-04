@@ -176,7 +176,7 @@ class RideSummaryScreen extends ConsumerWidget {
             child: Column(
               children: [
                 if (ride.fixedRouteName != null)
-                  _Line(t('Fiksna cena'), t('{0} din', [ride.totalPrice]))
+                  _Line(t('Fiksna cena'), t('{0} din', [ride.priceWithoutExtras]))
                 else ...[
                   _Line(t('Start'), t('{0} din', [ride.startPrice])),
                   _Line(t('Kilometraža'), t('{0} din', [ride.kmPrice])),
@@ -187,6 +187,8 @@ class RideSummaryScreen extends ConsumerWidget {
                       t('{0} din', [ride.minPriceAdjustment]),
                     ),
                 ],
+                for (final e in ride.extrasOr(t('Doplata')))
+                  _Line(e.name, t('{0} din', [e.amount])),
                 const Divider(color: Colors.white12, height: 20),
                 _Line(t('UKUPNO'), t('{0} din', [ride.totalPrice]), bold: true),
               ],

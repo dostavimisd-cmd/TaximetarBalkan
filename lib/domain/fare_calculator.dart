@@ -39,8 +39,20 @@ class FareCalculator {
     final int calibratedMeters = _roundHalfUp(distanceMeters * calibrationPermille, 1000);
 
     // 2. Cena po kilometru (1000 metara)
-    // Formula: (metri * cena) / 1000
-    final int kmPrice = _roundHalfUp(calibratedMeters * tariff.pricePerKm, 1000);
+    // Formula: (metri * cena) / 1000. Ako tarifa ima cenu prvog km, prvih
+    // 1000 m ide po njoj (0 = uračunato u start), ostatak po ceni po km;
+    // zaokružuje se jednom, na zbir.
+    final int? firstKm = tariff.firstKmPrice;
+    final int kmPrice;
+    if (firstKm == null) {
+      kmPrice = _roundHalfUp(calibratedMeters * tariff.pricePerKm, 1000);
+    } else {
+      final int firstMeters = calibratedMeters < 1000 ? calibratedMeters : 1000;
+      kmPrice = _roundHalfUp(
+          firstMeters * firstKm +
+              (calibratedMeters - firstMeters) * tariff.pricePerKm,
+          1000);
+    }
 
     // 3. Cena za čekanje: cena po minutu je u para (1/100 dinara)
     // Formula: (sekunde * para po minutu) / (60 * 100)
@@ -68,6 +80,21 @@ class FareCalculator {
       minPriceAdjustment: adjustment,
       totalPrice: total,
       isMinPriceApplied: minApplied,
+    );
+  }
+
+  /// Doplate se dodaju posle minimalne cene: ne „popunjavaju” minimalnu.
+  static FareResult withExtras(FareResult fare, int extras) {
+    if (extras < 0) throw ArgumentError('Doplata ne sme biti negativna.');
+    if (extras == 0) return fare;
+    return FareResult(
+      startPrice: fare.startPrice,
+      kmPrice: fare.kmPrice,
+      waitingPrice: fare.waitingPrice,
+      minPriceAdjustment: fare.minPriceAdjustment,
+      extrasPrice: fare.extrasPrice + extras,
+      totalPrice: fare.totalPrice + extras,
+      isMinPriceApplied: fare.isMinPriceApplied,
     );
   }
 }
