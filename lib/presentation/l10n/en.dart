@@ -26,6 +26,10 @@ const Map<String, String> enStrings = {
       'Phone (WhatsApp and Viber):',
   'Ne mogu da otvorim vezu.':
       'Cannot open the link.',
+  'Štampaj račun na kraju vožnje':
+      'Print the receipt when the ride ends',
+  'Račun se sam šalje na štampač kad završiš vožnju.':
+      'The receipt is sent to the printer automatically when you end the ride.',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

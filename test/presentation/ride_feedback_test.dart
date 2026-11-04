@@ -27,4 +27,10 @@ void main() {
     final off = const AppSettings().copyWith(buttonFeedback: false);
     expect(AppSettings.fromMap(off.toMap()).buttonFeedback, isFalse);
   });
+
+  test('automatska štampa: podrazumevano isključena, čuva se', () {
+    expect(AppSettings.fromMap(const {}).autoPrint, isFalse);
+    final on = const AppSettings().copyWith(autoPrint: true);
+    expect(AppSettings.fromMap(on.toMap()).autoPrint, isTrue);
+  });
 }

@@ -179,6 +179,11 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       }
       if (finishedNow && next.lastResult != null) {
         _showSummary(next.lastResult!.rideId);
+        // A3: račun sam ide na štampač; greška štampe ne blokira kraj vožnje
+        // (printRideReceipt je javlja porukom).
+        if (s != null && s.autoPrint && s.printerMac != null) {
+          printRideReceipt(context, ref, next.lastResult!.rideId);
+        }
       }
       if (!finishedNow ||
           s == null ||

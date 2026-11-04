@@ -38,6 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _showMap = true;
   bool _voice = false;
   bool _feedback = true;
+  bool _autoPrint = false;
   int _refresh = 1;
   bool _keepOn = true;
   String _priceColor = 'bela';
@@ -72,6 +73,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _showMap = s.showMap;
     _voice = s.voiceAnnounce;
     _feedback = s.buttonFeedback;
+    _autoPrint = s.autoPrint;
     _refresh = s.priceRefreshSeconds;
     _keepOn = s.keepScreenOn;
     _priceColor = s.priceColor;
@@ -123,6 +125,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       showMap: _showMap,
       voiceAnnounce: _voice,
       buttonFeedback: _feedback,
+      autoPrint: _autoPrint,
       priceRefreshSeconds: _refresh,
       keepScreenOn: _keepOn,
       priceColor: _priceColor,
@@ -639,6 +642,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     _printing ? t('Štampam…') : t('Probna štampa'),
                     style: const TextStyle(color: Colors.amberAccent),
                   ),
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _autoPrint,
+                onChanged: (v) => setState(() => _autoPrint = v),
+                title: Text(
+                  t('Štampaj račun na kraju vožnje'),
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  _printerMac == null
+                      ? t('Prvo izaberi štampač.')
+                      : t('Račun se sam šalje na štampač kad završiš vožnju.'),
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
               Row(

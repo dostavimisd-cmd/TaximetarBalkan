@@ -30,6 +30,7 @@ class AppSettings {
   static const String keyDisclaimer = 'disclaimer_accepted';
   static const String keyBatteryGuide = 'battery_guide_shown';
   static const String keyButtonFeedback = 'button_feedback';
+  static const String keyAutoPrint = 'auto_print';
 
   /// Boje cene kao na taksimetrima (LED displeji); prikaz je u UI sloju.
   static const List<String> priceColors = ['bela', 'crvena', 'zelena', 'plava', 'zuta', 'narandzasta'];
@@ -109,6 +110,9 @@ class AppSettings {
   /// Vibracija i zvuk kad vožnja počne, stane na pauzu, nastavi se ili završi.
   final bool buttonFeedback;
 
+  /// Račun se sam šalje na izabrani štampač kad se vožnja završi.
+  final bool autoPrint;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -134,6 +138,7 @@ class AppSettings {
     this.disclaimerAccepted = false,
     this.batteryGuideShown = false,
     this.buttonFeedback = true,
+    this.autoPrint = false,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -182,6 +187,7 @@ class AppSettings {
       disclaimerAccepted: m[keyDisclaimer] == '1',
       batteryGuideShown: m[keyBatteryGuide] == '1',
       buttonFeedback: m[keyButtonFeedback] != '0',
+      autoPrint: m[keyAutoPrint] == '1',
     );
   }
 
@@ -211,6 +217,7 @@ class AppSettings {
         keyDisclaimer: disclaimerAccepted ? '1' : '0',
         keyBatteryGuide: batteryGuideShown ? '1' : '0',
         keyButtonFeedback: buttonFeedback ? '1' : '0',
+        keyAutoPrint: autoPrint ? '1' : '0',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -266,6 +273,7 @@ class AppSettings {
     bool? disclaimerAccepted,
     bool? batteryGuideShown,
     bool? buttonFeedback,
+    bool? autoPrint,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -294,6 +302,7 @@ class AppSettings {
       disclaimerAccepted: disclaimerAccepted ?? this.disclaimerAccepted,
       batteryGuideShown: batteryGuideShown ?? this.batteryGuideShown,
       buttonFeedback: buttonFeedback ?? this.buttonFeedback,
+      autoPrint: autoPrint ?? this.autoPrint,
     );
   }
 }
