@@ -69,6 +69,10 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- glasovni unos adrese (sistemsko prepoznavanje govora) -->
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH"/>
+        </intent>
         <!-- glasovna najava cene (sintetizator govora) -->
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE"/>

@@ -8,11 +8,16 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
+import android.speech.RecognizerIntent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    // Glasovni unos adrese: rezultat stiže u onActivityResult.
+    private var pendingVoice: MethodChannel.Result? = null
+    private val voiceRequest = 4711
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "rs.taksimetar.balkan/device")
@@ -33,9 +38,42 @@ class MainActivity : FlutterActivity() {
                     // Signal vozaču (start/pauza/kraj): prava vibracija, jača od
                     // vibracije dodira i ne zavisi od tog podešavanja telefona.
                     "vibrate" -> result.success(vibrate(call.argument<List<Int>>("pattern")))
+                    // Sistemski glasovni unos (onaj koji je podešen na telefonu, npr. Google).
+                    "voiceInput" -> startVoice(call.argument<String>("language"), result)
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun startVoice(language: String?, result: MethodChannel.Result) {
+        if (pendingVoice != null) {
+            result.success(null)
+            return
+        }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        if (!language.isNullOrEmpty()) intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
+        try {
+            pendingVoice = result
+            @Suppress("DEPRECATION")
+            startActivityForResult(intent, voiceRequest)
+        } catch (e: Exception) {
+            pendingVoice = null
+            result.error("unavailable", "Glasovni unos nije dostupan na ovom telefonu.", null)
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != voiceRequest) return
+        val text = if (resultCode == RESULT_OK) {
+            data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        } else null
+        pendingVoice?.success(text)
+        pendingVoice = null
     }
 
     /// pattern: pauza, vibracija, pauza, vibracija… u ms; false ako nije moguće.

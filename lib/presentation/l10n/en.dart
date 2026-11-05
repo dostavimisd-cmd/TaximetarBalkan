@@ -212,6 +212,18 @@ const Map<String, String> enStrings = {
       'Close',
   'Čekanje ({0})':
       'Waiting ({0})',
+  'Glasovni unos nije dostupan; koristi mikrofon na tastaturi.':
+      'Voice input is not available; use the microphone on the keyboard.',
+  'Ukloni iz omiljenih':
+      'Remove from favourites',
+  'Dodaj u omiljene':
+      'Add to favourites',
+  'Glasovni unos':
+      'Voice input',
+  'Traži':
+      'Search',
+  'Omiljene adrese':
+      'Favourite addresses',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

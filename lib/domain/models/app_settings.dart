@@ -1,7 +1,10 @@
 import '../calibration.dart';
 import '../price_throttle.dart';
 import '../printing/escpos.dart';
+import 'dart:convert';
+
 import 'extra_charge.dart';
+import 'navigation.dart';
 
 /// Podešavanja koja unosi korisnik. Čuvaju se u `app_settings` kao parovi
 /// ključ/tekst; ovde su tipizirana i proverena. Podrazumevane vrednosti su
@@ -35,6 +38,10 @@ class AppSettings {
   static const String keyExtras = 'extras';
   static const String keyDailyGoal = 'daily_goal';
   static const String keyGoalEnabled = 'goal_enabled';
+  static const String keyFavorites = 'favorite_places';
+
+  /// Najviše omiljenih adresa (padajući spisak pretrage).
+  static const int maxFavorites = 30;
 
   /// Gornja granica cilja zarade (tehnička, protiv pogrešnog unosa).
   static const int maxDailyGoal = 10000000;
@@ -129,6 +136,9 @@ class AppSettings {
   /// Traka napretka ka cilju na glavnom ekranu (motivacija), uključi/isključi.
   final bool goalEnabled;
 
+  /// Omiljene adrese za pretragu (aerodrom, stanica…); unosi vozač.
+  final List<Place> favorites;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -158,6 +168,7 @@ class AppSettings {
     this.extras = const [],
     this.dailyGoal = 0,
     this.goalEnabled = false,
+    this.favorites = const [],
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -210,6 +221,7 @@ class AppSettings {
       extras: ExtraCharge.decodeList(m[keyExtras]),
       dailyGoal: inRange(keyDailyGoal, 0, 0, maxDailyGoal),
       goalEnabled: m[keyGoalEnabled] == '1',
+      favorites: _decodeFavorites(m[keyFavorites]),
     );
   }
 
@@ -243,7 +255,19 @@ class AppSettings {
         keyExtras: ExtraCharge.encodeList(extras),
         keyDailyGoal: '$dailyGoal',
         keyGoalEnabled: goalEnabled ? '1' : '0',
+        keyFavorites: jsonEncode([for (final p in favorites) p.toJson()]),
       };
+
+  static List<Place> _decodeFavorites(String? source) {
+    if (source == null || source.trim().isEmpty) return const [];
+    try {
+      final data = jsonDecode(source);
+      if (data is! List) return const [];
+      return [for (final o in data) ?Place.fromJson(o)].take(maxFavorites).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
   String? validate() {
@@ -310,6 +334,7 @@ class AppSettings {
     List<ExtraCharge>? extras,
     int? dailyGoal,
     bool? goalEnabled,
+    List<Place>? favorites,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -342,6 +367,7 @@ class AppSettings {
       extras: extras ?? this.extras,
       dailyGoal: dailyGoal ?? this.dailyGoal,
       goalEnabled: goalEnabled ?? this.goalEnabled,
+      favorites: favorites ?? this.favorites,
     );
   }
 }

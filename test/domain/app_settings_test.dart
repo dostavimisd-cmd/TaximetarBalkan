@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taksimetar_balkan/domain/models/app_settings.dart';
+import 'package:taksimetar_balkan/domain/models/navigation.dart';
 import 'package:taksimetar_balkan/domain/printing/escpos.dart';
 
 void main() {
@@ -83,5 +84,20 @@ void main() {
     expect(AppSettings.fromMap(const {'daily_goal': 'abc'}).dailyGoal, 0);
     expect(const AppSettings().goalEnabled, isFalse);
     expect(const AppSettings(dailyGoal: -1).validate(), isNotNull);
+  });
+
+  test('omiljene adrese: čuvaju se, neispravne se preskaču', () {
+    const s = AppSettings(favorites: [
+      Place(label: 'Aerodrom Nikola Tesla', lat: 44.8184, lon: 20.3091),
+    ]);
+    final back = AppSettings.fromMap(s.toMap());
+    expect(back.favorites.single.label, 'Aerodrom Nikola Tesla');
+    expect(back.favorites.single.sameAs(s.favorites.single), isTrue);
+    final bad = AppSettings.fromMap(const {
+      'favorite_places': '[{"label":"","lat":1,"lon":1},{"label":"X","lat":999,"lon":1},'
+          '{"label":"Stanica","lat":44.80,"lon":20.46},"x"]',
+    });
+    expect(bad.favorites.map((p) => p.label), ['Stanica']);
+    expect(AppSettings.fromMap(const {'favorite_places': 'nije json'}).favorites, isEmpty);
   });
 }

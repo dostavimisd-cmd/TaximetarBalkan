@@ -155,6 +155,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       extras: current.extras,
       dailyGoal: _goal(current),
       goalEnabled: _goalEnabled,
+      favorites: current.favorites,
     );
     final invalid = next.validate();
     if (invalid != null) {

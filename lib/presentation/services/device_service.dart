@@ -24,6 +24,11 @@ class DeviceService {
     }
   }
 
+  /// Sistemski glasovni unos (onaj koji je podešen na telefonu). Vraća
+  /// izgovoreni tekst, null ako je korisnik odustao; baca ako unos ne postoji.
+  static Future<String?> voiceInput({String language = 'sr-RS'}) =>
+      _channel.invokeMethod<String>('voiceInput', {'language': language});
+
   /// Otvara sistemski spisak optimizacije baterije; false ako nije uspelo.
   static Future<bool> openBatterySettings() async {
     try {

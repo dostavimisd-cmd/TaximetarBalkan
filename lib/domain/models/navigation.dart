@@ -16,6 +16,24 @@ class Place {
 
   Place withDistance(int meters) =>
       Place(label: label, lat: lat, lon: lon, distanceMeters: meters);
+
+  /// Ista adresa (omiljene): isti natpis i tačka na ~10 m.
+  bool sameAs(Place o) =>
+      o.label == label && (o.lat - lat).abs() < 1e-4 && (o.lon - lon).abs() < 1e-4;
+
+  Map<String, Object> toJson() => {'label': label, 'lat': lat, 'lon': lon};
+
+  static Place? fromJson(Object? o) {
+    if (o is! Map) return null;
+    final label = o['label'], lat = o['lat'], lon = o['lon'];
+    if (label is! String || label.trim().isEmpty || lat is! num || lon is! num) {
+      return null;
+    }
+    if (!lat.isFinite || !lon.isFinite || lat.abs() > 90 || lon.abs() > 180) {
+      return null;
+    }
+    return Place(label: label, lat: lat.toDouble(), lon: lon.toDouble());
+  }
 }
 
 /// Predlog rute do odredišta (samo za orijentaciju vozača; ne utiče na
