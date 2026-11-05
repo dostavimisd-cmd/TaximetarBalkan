@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/tr.dart';
 import '../providers/history_provider.dart';
 import '../screens/about_screen.dart';
+import '../screens/heatmap_screen.dart';
 import 'battery_guide.dart';
 
 class TaximeterDrawer extends ConsumerWidget {
@@ -124,6 +125,19 @@ class TaximeterDrawer extends ConsumerWidget {
                 onTap: () {
                   Navigator.pop(context);
                   onReportsTap();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.whatshot, color: Colors.white70),
+                title: Text(
+                  t('Toplotna mapa'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const HeatmapScreen()),
+                  );
                 },
               ),
               ListTile(

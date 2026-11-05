@@ -1,3 +1,4 @@
+import '../heatmap.dart';
 import '../models/gap_info.dart';
 import '../models/ride_record.dart';
 
@@ -16,6 +17,9 @@ abstract class RideHistoryRepository {
   /// Briše završenu ili prekinutu vožnju sa njenim prekidima signala.
   /// Vožnja u toku se ne briše (vraća false).
   Future<bool> delete(int id);
+
+  /// Mesto (prva tačka rute) i vreme početka završenih vožnji, za toplotnu mapu.
+  Future<List<RideStart>> getRideStarts();
 
   /// Prekidi GPS signala u vožnji, po redu nastanka.
   Future<List<GapInfo>> getGaps(int rideId);

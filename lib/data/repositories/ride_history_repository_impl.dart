@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import '../../domain/heatmap.dart';
 import '../../domain/models/extra_charge.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
@@ -75,6 +76,26 @@ class RideHistoryRepositoryImpl implements RideHistoryRepository {
       orderBy: 'start_time, id',
     );
     return rows.map(_fromRow).toList();
+  }
+
+  @override
+  Future<List<RideStart>> getRideStarts() async {
+    final db = await _database();
+    final rows = await db.rawQuery('''
+      SELECT r.start_time AS t, p.lat AS lat, p.lon AS lon
+      FROM rides r
+      JOIN ride_points p ON p.id = (
+        SELECT MIN(id) FROM ride_points WHERE ride_id = r.id)
+      WHERE r.status != 'active'
+    ''');
+    return [
+      for (final r in rows)
+        RideStart(
+          (r['lat'] as num).toDouble(),
+          (r['lon'] as num).toDouble(),
+          DateTime.fromMillisecondsSinceEpoch(r['t'] as int, isUtc: true).toLocal(),
+        ),
+    ];
   }
 
   @override

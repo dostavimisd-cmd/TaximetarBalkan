@@ -17,6 +17,8 @@
 
 9. **Prvo pokretanje i rad u pozadini:** `showFirstLaunch` (widgets/first_launch.dart) pri prvom startu traži prihvatanje napomene (nije overeni taksimetar), pa jednom prikazuje uputstvo za bateriju. `showBatteryGuide` (widgets/battery_guide.dart) otvara sistemski ekran optimizacije baterije (`ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`, bez dozvole `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) i prikazuje korake po proizvođaču (`batteryGroupFor`, domain/battery_guide.dart). Proizvođač i sistemski ekran dolaze preko `MethodChannel` `rs.taksimetar.balkan/device` (`MainActivity.kt`, `DeviceService`). Ekran `AboutScreen` (verzija preko `package_info_plus`, napomena, adresa politike privatnosti `privacyPolicyUrl` — još prazna).
 
+11. **Vozačev dan (faza G):** ekran za putnika (`PassengerScreen`, položen, samo prikaz), toplotna mapa (`Heatmap` u domain grupiše početke vožnji iz `ride_points` po razdaljini ~250 m, filter dan/deo dana; `HeatmapScreen`), omiljene adrese (`app_settings.favorite_places`) i glasovni unos adrese preko sistemskog `RecognizerIntent` (`MainActivity`, kanal `rs.taksimetar.balkan/device`, metoda `voiceInput`).
+
 10. **Rezervna kopija:** `BackupService` (`data/services/backup_service.dart`) izvozi tabele i slike logoa u JSON i vraća ih; `backup_actions.dart` (presentation) šalje fajl preko `share_plus`, bira ga preko `file_picker` i osvežava providere. Kopija iz novije šeme se odbija, kolone kojih nema u bazi se preskaču.
 
 ## Ko piše u bazu

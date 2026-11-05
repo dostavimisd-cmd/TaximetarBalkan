@@ -144,4 +144,19 @@ void main() {
     }
     expect((await repo.getAll(limit: 3)).length, 3);
   });
+
+  test('getRideStarts: prva tačka rute završenih vožnji, bez vožnje u toku i bez rute', () async {
+    await ride(1000, 'completed', end: 61000); // id 1
+    await ride(2000, 'active'); // id 2
+    await ride(3000, 'completed', end: 63000); // id 3, bez tačaka
+    Future<void> point(int rideId, int ts, double lat) => db.insert('ride_points',
+        {'ride_id': rideId, 'ts': ts, 'lat': lat, 'lon': 20.9});
+    await point(1, 1500, 44.70); // druga po vremenu, ali prva upisana
+    await point(1, 1200, 44.71);
+    await point(2, 2100, 44.80);
+    final starts = await repo.getRideStarts();
+    expect(starts, hasLength(1));
+    expect(starts.single.lat, 44.70);
+    expect(starts.single.local.isUtc, isFalse);
+  });
 }

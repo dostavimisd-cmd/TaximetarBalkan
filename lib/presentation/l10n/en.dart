@@ -224,6 +224,24 @@ const Map<String, String> enStrings = {
       'Search',
   'Omiljene adrese':
       'Favourite addresses',
+  'Toplotna mapa':
+      'Heat map',
+  'Ceo dan':
+      'All day',
+  '06–12':
+      '06–12',
+  '12–18':
+      '12–18',
+  '18–24':
+      '18–24',
+  '00–06':
+      '00–06',
+  'Nema vožnji sa zabeleženom rutom za ovaj izbor.':
+      'No rides with a recorded route for this selection.',
+  'Najjače zone (vožnji: {0})':
+      'Busiest zones (rides: {0})',
+  '{0} vožnji':
+      '{0} rides',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':
