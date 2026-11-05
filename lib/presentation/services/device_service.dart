@@ -29,6 +29,20 @@ class DeviceService {
   static Future<String?> voiceInput({String language = 'sr-RS'}) =>
       _channel.invokeMethod<String>('voiceInput', {'language': language});
 
+  /// Fajl u Download/TaksimetarBalkan (Android 10+), uz čuvanje samo [keep]
+  /// najnovijih kopija; false ako nije moguće (stariji Android, iOS).
+  static Future<bool> saveToDownloads(String name, Uint8List bytes, {int keep = 7}) async {
+    try {
+      return await _channel.invokeMethod<bool>(
+            'saveDownload',
+            {'name': name, 'bytes': bytes, 'keep': keep},
+          ) ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Otvara sistemski spisak optimizacije baterije; false ako nije uspelo.
   static Future<bool> openBatterySettings() async {
     try {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -13,6 +14,7 @@ import '../providers/history_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tariffs_provider.dart';
 import '../providers/taximeter_provider.dart';
+import 'device_service.dart';
 
 /// Podaci pre poslednjeg vraćanja kopije (za „Poništi vraćanje”).
 const String _undoFileName = 'pre_vracanja_kopije.json';
@@ -29,6 +31,30 @@ String _stamp(DateTime d) {
 
 void _say(BuildContext context, String message) =>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+
+/// Automatska kopija (E15): jednom dnevno, pri otvaranju aplikacije, u
+/// Download/TaksimetarBalkan. Greška ne smeta radu (sledeći put opet).
+Future<void> autoBackupIfDue(WidgetRef ref) async {
+  try {
+    final settings = await ref.read(appSettingsProvider.future);
+    if (!settings.autoBackup) return;
+    final now = DateTime.now();
+    final today = _stamp(now).substring(0, 10);
+    if (settings.lastAutoBackup == today) return;
+    final db = await DatabaseHelper.instance.database;
+    final text = BackupService.encode(await BackupService.export(db));
+    final ok = await DeviceService.saveToDownloads(
+      'taksimetar_kopija_${_stamp(now)}.json',
+      Uint8List.fromList(utf8.encode(text)),
+    );
+    if (!ok) return;
+    await ref
+        .read(appSettingsProvider.notifier)
+        .change((s) => s.copyWith(lastAutoBackup: today));
+  } catch (_) {
+    // kopija ne sme da ometa vožnju
+  }
+}
 
 /// Pravi kopiju svih podataka i nudi slanje (Viber, Drive, e-mail…).
 Future<void> exportBackup(BuildContext context, WidgetRef ref) async {

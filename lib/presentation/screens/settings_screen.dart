@@ -37,6 +37,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _header = TextEditingController();
   final _goalCtrl = TextEditingController();
   bool _goalEnabled = false;
+  bool _autoBackup = true;
   String _language = 'sr';
   String _currency = 'RSD';
   bool _autoTariff = false;
@@ -91,6 +92,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _header.text = s.receiptHeader;
     _goalCtrl.text = s.dailyGoal > 0 ? '${s.dailyGoal}' : '';
     _goalEnabled = s.goalEnabled;
+    _autoBackup = s.autoBackup;
     _loaded = true;
   }
 
@@ -156,6 +158,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       dailyGoal: _goal(current),
       goalEnabled: _goalEnabled,
       favorites: current.favorites,
+      autoBackup: _autoBackup,
+      lastAutoBackup: current.lastAutoBackup,
     );
     final invalid = next.validate();
     if (invalid != null) {
@@ -804,6 +808,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               _section(t('REZERVNA KOPIJA')),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _autoBackup,
+                onChanged: (v) => setState(() => _autoBackup = v),
+                title: Text(
+                  t('Automatska dnevna kopija'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  t('Jednom dnevno u Download/TaksimetarBalkan na telefonu (čuva se 7 poslednjih). Na novom telefonu: „Vrati iz kopije”.'),
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ),
               Text(
                 t('Tarife, relacije, vožnje, podešavanja i logo u jednom fajlu. Sačuvaj ga na Drive ili pošalji sebi, pa ga vrati na novom telefonu.'),
                 style: TextStyle(color: Colors.white54, fontSize: 12),

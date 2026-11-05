@@ -15,6 +15,7 @@ import '../providers/tariffs_provider.dart';
 import '../../domain/announcement.dart';
 import '../../domain/price_throttle.dart';
 import '../printing/receipt_printer.dart';
+import '../services/backup_actions.dart';
 import '../services/ride_feedback.dart';
 import '../services/voice_service.dart';
 import '../providers/settings_provider.dart';
@@ -61,6 +62,10 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
     // Osvežava prikaz cene i kad GPS ne šalje nove tačke (npr. tunel).
     _priceTick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && ref.read(taximeterProvider).isRunning) setState(() {});
+    });
+    // E15: automatska dnevna kopija (posle prvog crtanja, ne usporava start)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) autoBackupIfDue(ref);
     });
     // prvo pokretanje: napomena (nije overeni taksimetar), pa uputstvo za bateriju
     ref.read(appSettingsProvider.future).then((s) {

@@ -242,6 +242,10 @@ const Map<String, String> enStrings = {
       'Busiest zones (rides: {0})',
   '{0} vožnji':
       '{0} rides',
+  'Automatska dnevna kopija':
+      'Automatic daily backup',
+  'Jednom dnevno u Download/TaksimetarBalkan na telefonu (čuva se 7 poslednjih). Na novom telefonu: „Vrati iz kopije”.':
+      'Once a day to Download/TaksimetarBalkan on the phone (the last 7 are kept). On a new phone: "Restore from backup".',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

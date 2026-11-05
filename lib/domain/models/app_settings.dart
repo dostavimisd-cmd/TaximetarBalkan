@@ -39,6 +39,8 @@ class AppSettings {
   static const String keyDailyGoal = 'daily_goal';
   static const String keyGoalEnabled = 'goal_enabled';
   static const String keyFavorites = 'favorite_places';
+  static const String keyAutoBackup = 'auto_backup';
+  static const String keyLastAutoBackup = 'last_auto_backup';
 
   /// Najviše omiljenih adresa (padajući spisak pretrage).
   static const int maxFavorites = 30;
@@ -139,6 +141,12 @@ class AppSettings {
   /// Omiljene adrese za pretragu (aerodrom, stanica…); unosi vozač.
   final List<Place> favorites;
 
+  /// Automatska dnevna kopija u Download/TaksimetarBalkan (čuva se 7 najnovijih).
+  final bool autoBackup;
+
+  /// Lokalni dan poslednje automatske kopije (`2026-11-05`); prazno = nikad.
+  final String lastAutoBackup;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -169,6 +177,8 @@ class AppSettings {
     this.dailyGoal = 0,
     this.goalEnabled = false,
     this.favorites = const [],
+    this.autoBackup = true,
+    this.lastAutoBackup = '',
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -222,6 +232,8 @@ class AppSettings {
       dailyGoal: inRange(keyDailyGoal, 0, 0, maxDailyGoal),
       goalEnabled: m[keyGoalEnabled] == '1',
       favorites: _decodeFavorites(m[keyFavorites]),
+      autoBackup: m[keyAutoBackup] != '0',
+      lastAutoBackup: m[keyLastAutoBackup] ?? '',
     );
   }
 
@@ -256,6 +268,8 @@ class AppSettings {
         keyDailyGoal: '$dailyGoal',
         keyGoalEnabled: goalEnabled ? '1' : '0',
         keyFavorites: jsonEncode([for (final p in favorites) p.toJson()]),
+        keyAutoBackup: autoBackup ? '1' : '0',
+        keyLastAutoBackup: lastAutoBackup,
       };
 
   static List<Place> _decodeFavorites(String? source) {
@@ -335,6 +349,8 @@ class AppSettings {
     int? dailyGoal,
     bool? goalEnabled,
     List<Place>? favorites,
+    bool? autoBackup,
+    String? lastAutoBackup,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -368,6 +384,8 @@ class AppSettings {
       dailyGoal: dailyGoal ?? this.dailyGoal,
       goalEnabled: goalEnabled ?? this.goalEnabled,
       favorites: favorites ?? this.favorites,
+      autoBackup: autoBackup ?? this.autoBackup,
+      lastAutoBackup: lastAutoBackup ?? this.lastAutoBackup,
     );
   }
 }

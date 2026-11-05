@@ -1,12 +1,16 @@
 package rs.taksimetar.balkan
 
+import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Environment
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.provider.MediaStore
 import android.provider.Settings
 import android.speech.RecognizerIntent
 import io.flutter.embedding.android.FlutterActivity
@@ -40,9 +44,67 @@ class MainActivity : FlutterActivity() {
                     "vibrate" -> result.success(vibrate(call.argument<List<Int>>("pattern")))
                     // Sistemski glasovni unos (onaj koji je podešen na telefonu, npr. Google).
                     "voiceInput" -> startVoice(call.argument<String>("language"), result)
+                    // Automatska kopija u Download/TaksimetarBalkan (bez dozvole, Android 10+).
+                    "saveDownload" -> {
+                        val name = call.argument<String>("name")
+                        val bytes = call.argument<ByteArray>("bytes")
+                        val keep = call.argument<Int>("keep") ?: 7
+                        if (name == null || bytes == null) {
+                            result.success(false)
+                        } else {
+                            Thread {
+                                val ok = saveDownload(name, bytes, keep)
+                                runOnUiThread { result.success(ok) }
+                            }.start()
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    /// Upisuje fajl u Download/TaksimetarBalkan i ostavlja samo [keep] najnovijih
+    /// kopija (aplikacija vidi i briše samo fajlove koje je sama napravila).
+    private fun saveDownload(name: String, bytes: ByteArray, keep: Int): Boolean {
+        if (Build.VERSION.SDK_INT < 29) return false
+        return try {
+            val resolver = contentResolver
+            val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            val folder = Environment.DIRECTORY_DOWNLOADS + "/TaksimetarBalkan/"
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, name)
+                put(MediaStore.Downloads.MIME_TYPE, "application/json")
+                put(MediaStore.Downloads.RELATIVE_PATH, folder)
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(collection, values) ?: return false
+            val stream = resolver.openOutputStream(uri)
+            if (stream == null) {
+                resolver.delete(uri, null, null)
+                return false
+            }
+            stream.use { it.write(bytes) }
+            values.clear()
+            values.put(MediaStore.Downloads.IS_PENDING, 0)
+            resolver.update(uri, values, null, null)
+            resolver.query(
+                collection,
+                arrayOf(MediaStore.Downloads._ID),
+                "${MediaStore.Downloads.RELATIVE_PATH}=? AND ${MediaStore.Downloads.DISPLAY_NAME} LIKE ?",
+                arrayOf(folder, "taksimetar_kopija_%"),
+                "${MediaStore.Downloads.DATE_ADDED} DESC",
+            )?.use { c ->
+                var i = 0
+                while (c.moveToNext()) {
+                    if (i++ >= keep) {
+                        resolver.delete(ContentUris.withAppendedId(collection, c.getLong(0)), null, null)
+                    }
+                }
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun startVoice(language: String?, result: MethodChannel.Result) {
