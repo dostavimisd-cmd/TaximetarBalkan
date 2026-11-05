@@ -113,7 +113,27 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
 
   /// Rezime vožnje se otvara čim se vožnja završi (čita se iz baze, pa
   /// prikazuje isto što i istorija). Zatvaranje ostavlja mali rezultat ispod.
+  /// Ekran za putnika je otvoren: rezime vožnje čeka da vozač izađe iz njega
+  /// (putnik i dalje vidi „Za naplatu”).
+  bool _passengerOpen = false;
+  int? _pendingSummary;
+
+  Future<void> _openPassenger() async {
+    _passengerOpen = true;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const PassengerScreen()),
+    );
+    _passengerOpen = false;
+    final id = _pendingSummary;
+    _pendingSummary = null;
+    if (id != null && mounted) await _showSummary(id);
+  }
+
   Future<void> _showSummary(int rideId) async {
+    if (_passengerOpen) {
+      _pendingSummary = rideId;
+      return;
+    }
     final ride = await ref.read(rideHistoryRepositoryProvider).getById(rideId);
     if (ride == null || !mounted) return;
     ref.invalidate(rideHistoryProvider);
@@ -377,11 +397,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                 minWidth: 36,
                                 minHeight: 28,
                               ),
-                              onPressed: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const PassengerScreen(),
-                                ),
-                              ),
+                              onPressed: _openPassenger,
                             ),
                             const SizedBox(width: 6),
                             TextButton(

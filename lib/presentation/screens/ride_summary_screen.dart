@@ -10,6 +10,7 @@ import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
 import '../../domain/ride_summary.dart';
 import '../printing/receipt_printer.dart';
+import 'passenger_screen.dart';
 import '../providers/history_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/price_colors.dart';
@@ -198,6 +199,15 @@ class RideSummaryScreen extends ConsumerWidget {
               )
             : null,
         actions: [
+          // upravo završena vožnja: putniku se može pokazati „Za naplatu”
+          if (onNewRide != null)
+            IconButton(
+              tooltip: t('Ekran za putnika'),
+              icon: const Icon(Icons.airline_seat_recline_normal),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const PassengerScreen()),
+              ),
+            ),
           if (onNewRide == null)
             IconButton(
               tooltip: t('Obriši vožnju'),
