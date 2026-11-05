@@ -194,6 +194,24 @@ const Map<String, String> enStrings = {
       'Parking',
   'Ostalo':
       'Other',
+  'Ekran za putnika':
+      'Passenger screen',
+  'Kilometraža ({0} km)':
+      'Distance ({0} km)',
+  'Pomoćni taksimetar · nije overeni taksimetar ni fiskalni uređaj':
+      'Auxiliary taximeter · not a certified taximeter or fiscal device',
+  'RELACIJA':
+      'ROUTE',
+  'TARIFA':
+      'TARIFF',
+  'VOŽNJA U TOKU':
+      'RIDE IN PROGRESS',
+  'ZA NAPLATU':
+      'AMOUNT DUE',
+  'Zatvori':
+      'Close',
+  'Čekanje ({0})':
+      'Waiting ({0})',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

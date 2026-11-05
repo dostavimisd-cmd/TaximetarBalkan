@@ -19,6 +19,7 @@ import '../services/ride_feedback.dart';
 import '../services/voice_service.dart';
 import '../providers/settings_provider.dart';
 import 'history_screen.dart';
+import 'passenger_screen.dart';
 import 'ride_summary_screen.dart';
 import '../providers/history_provider.dart';
 import 'reports_screen.dart';
@@ -250,6 +251,36 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
         ? CurrencyConverter.formatForeign(shownPrice, eurRate!)
         : shownPrice.toString();
 
+    // Položeno uz mapu: cena ide desno iznad mape (levo nema visine za nju).
+    final priceRight = landscape && settings.showMap;
+    final priceView = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            displayPrice,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              color: priceColorOf(settings.priceColor),
+              fontSize: 82 * settings.priceScale / 100,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -3,
+            ),
+          ),
+          Text(
+            currency,
+            style: const TextStyle(
+              color: Colors.white38,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 2,
+            ),
+          ),
+        ],
+      ),
+    );
+
     // Trenutno stajanje (servis javlja mode), ne ukupno čekanje
     final isWaiting = state.isRunning && state.isWaitingNow;
     final isFinished = state.phase == RidePhase.finished;
@@ -333,6 +364,26 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                 ),
                               ),
                             ),
+                            // G5: ekran za putnika (položen, velika cena)
+                            IconButton(
+                              tooltip: t('Ekran za putnika'),
+                              icon: const Icon(
+                                Icons.airline_seat_recline_normal,
+                                color: Colors.white70,
+                                size: 22,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 36,
+                                minHeight: 28,
+                              ),
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const PassengerScreen(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
                             TextButton(
                               onPressed: () => ref
                                   .read(appSettingsProvider.notifier)
@@ -492,37 +543,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           ),
 
                         // Glavna cifra (Cena); smanjuje se kad nema mesta
-                        // (horizontalno, ili uz mapu na manjem ekranu)
-                        Flexible(
-                          flex: 3,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  displayPrice,
-                                  style: TextStyle(
-                                    fontFamily: 'monospace',
-                                    color: priceColorOf(settings.priceColor),
-                                    fontSize: 82 * settings.priceScale / 100,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: -3,
-                                  ),
-                                ),
-                                Text(
-                                  currency,
-                                  style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        if (!priceRight) Flexible(flex: 3, child: priceView),
 
                         if (settings.showMap && !landscape)
                           Expanded(
@@ -989,13 +1010,23 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                       ],
                     ),
                   ),
-                  if (settings.showMap && landscape) ...[
+                  if (priceRight) ...[
                     const SizedBox(width: 12),
                     Expanded(
-                      child: RideMap(
-                        tariff: tariff,
-                        calibrationPermille: settings.calibrationPermille,
-                        fixedPrice: _fixedRoute?.price,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(flex: 2, child: Center(child: priceView)),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            flex: 3,
+                            child: RideMap(
+                              tariff: tariff,
+                              calibrationPermille: settings.calibrationPermille,
+                              fixedPrice: _fixedRoute?.price,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
