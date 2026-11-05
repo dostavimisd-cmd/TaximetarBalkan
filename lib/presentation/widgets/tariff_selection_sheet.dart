@@ -110,6 +110,8 @@ class TariffSelectionSheet extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 4.0),
                     child: Text(
                       '${t('Start: {0} | Km: {1} | Čekanje/min: {2} | Min: {3}', [tariff.startPrice, tariff.pricePerKm, CurrencyConverter.formatPara(tariff.waitingParaPerMin), tariff.minPrice])}'
+                      // prvi km se vidi, da 0 (uračunat u start) ne iznenadi vozača
+                      '${tariff.firstKmPrice == null ? '' : '\n${tariff.firstKmPrice == 0 ? t('Prvi km: uračunat u start (ne naplaćuje se posebno)') : t('Prvi km: {0} din/km', [tariff.firstKmPrice])}'}'
                       '${tariff.schedule == null ? '' : '\n${t('Raspored')}: ${tariff.schedule!.describe(english: t.english)}'}',
                       style: const TextStyle(
                         color: Colors.white60,

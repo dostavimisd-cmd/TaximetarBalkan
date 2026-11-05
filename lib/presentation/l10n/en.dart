@@ -144,6 +144,10 @@ const Map<String, String> enStrings = {
       'Current: {0} %. Applies from the next ride; finished rides do not change. For a more accurate result compare a longer ride (5 km or more).',
   'Kalibracija sačuvana: {0} %':
       'Calibration saved: {0} %',
+  'Prvi km: uračunat u start (ne naplaćuje se posebno)':
+      'First km: included in the base fare (not charged separately)',
+  'Prvi km: {0} din/km':
+      'First km: {0} RSD/km',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':
