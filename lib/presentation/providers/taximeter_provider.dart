@@ -82,6 +82,9 @@ class TaximeterState {
   /// Doplate vožnje u toku (već su u [currentPrice]).
   final List<ExtraCharge> extras;
 
+  /// Id vožnje u toku (red u `rides`); mapa iz baze vraća već pređenu rutu.
+  final int? rideId;
+
   /// Poslednja važeća GPS tačka vožnje (za mapu); null dok je nema.
   final double? lat;
   final double? lon;
@@ -105,6 +108,7 @@ class TaximeterState {
     this.lon,
     this.fixedRouteName,
     this.extras = const [],
+    this.rideId,
     this.pausedSince,
     this.errorMessage,
     this.warningMessage,
@@ -137,6 +141,7 @@ class TaximeterState {
     double? lon,
     String? fixedRouteName,
     List<ExtraCharge>? extras,
+    int? rideId,
     DateTime? pausedSince,
     bool clearPausedSince = false,
     bool clearFixedRoute = false,
@@ -169,6 +174,7 @@ class TaximeterState {
           ? null
           : (fixedRouteName ?? this.fixedRouteName),
       extras: extras ?? this.extras,
+      rideId: rideId ?? this.rideId,
       pausedSince: clearPausedSince ? null : (pausedSince ?? this.pausedSince),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       warningMessage: clearWarning
@@ -264,12 +270,14 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           lon: (event['lon'] as num?)?.toDouble(),
           fixedRouteName: event['fixed_route_name'] as String?,
           extras: ExtraCharge.decodeList(event['extras']),
+          rideId: event['ride_id'] as int?,
           clearError: true,
         );
         break;
       case 'started':
         state = state.copyWith(
           phase: RidePhase.running,
+          rideId: event['ride_id'] as int?,
           clearResult: true,
           clearError: true,
         );
@@ -294,6 +302,7 @@ class TaximeterNotifier extends Notifier<TaximeterState> {
           lon: (event['lon'] as num?)?.toDouble(),
           fixedRouteName: event['fixed_route_name'] as String?,
           extras: ExtraCharge.decodeList(event['extras']),
+          rideId: event['ride_id'] as int?,
           warningMessage: 'Vožnja je nastavljena posle prekida servisa.',
           clearResult: true,
           clearError: true,

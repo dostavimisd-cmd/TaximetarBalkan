@@ -8,6 +8,7 @@ import '../../data/services/navigation_service.dart';
 import '../../domain/fare_estimate.dart';
 import '../../domain/models/navigation.dart';
 import '../../domain/models/tariff.dart';
+import '../providers/history_provider.dart';
 import '../providers/taximeter_provider.dart';
 import 'address_search_dialog.dart';
 import '../l10n/tr.dart';
@@ -45,6 +46,10 @@ class _RideMapState extends ConsumerState<RideMap> {
   Tr get t => ref.read(trProvider);
   final _controller = MapController();
   final List<LatLng> _route = [];
+
+  /// Vožnja čija je već pređena ruta učitana iz baze (posle ponovnog
+  /// otvaranja ekrana linija se vraća, umesto da počne iz početka).
+  int? _routeLoadedFor;
   LatLng? _here;
   bool _ready = false;
 
@@ -83,7 +88,9 @@ class _RideMapState extends ConsumerState<RideMap> {
   @override
   void initState() {
     super.initState();
-    if (!ref.read(taximeterProvider).isRunning) _startIdleLocation();
+    final ride = ref.read(taximeterProvider);
+    if (!ride.isRunning) _startIdleLocation();
+    _loadStoredRoute(ride);
     _lifecycle = AppLifecycleListener(onResume: _retryIdleLocation);
   }
 
@@ -92,6 +99,23 @@ class _RideMapState extends ConsumerState<RideMap> {
     _lifecycle?.dispose();
     _idleSub?.cancel();
     super.dispose();
+  }
+
+  /// Tačke rute koje je servis već upisao (snimak na ~10 s) idu ispred živih.
+  Future<void> _loadStoredRoute(TaximeterState ride) async {
+    final id = ride.rideId;
+    if (!ride.isRunning || id == null || _routeLoadedFor == id) return;
+    _routeLoadedFor = id;
+    try {
+      final stored =
+          await ref.read(rideHistoryRepositoryProvider).getRoute(id);
+      if (!mounted || stored.isEmpty || _routeLoadedFor != id) return;
+      setState(() {
+        _route.insertAll(0, [for (final p in stored) LatLng(p.$1, p.$2)]);
+      });
+    } catch (_) {
+      // bez stare linije; nova se crta i dalje
+    }
   }
 
   /// Lokacija još nije stigla (dozvola, GPS ili greška toka): pokušaj ponovo.
@@ -295,6 +319,7 @@ class _RideMapState extends ConsumerState<RideMap> {
       // nova vožnja, nova linija; kamera ponovo prati vozača (i posle rute)
       setState(() {
         _route.clear();
+        _routeLoadedFor = null;
         _follow = true;
       });
     }
@@ -308,6 +333,7 @@ class _RideMapState extends ConsumerState<RideMap> {
     } else if (!next.isRunning && (prev?.isRunning ?? false)) {
       _startIdleLocation();
     }
+    _loadStoredRoute(next);
     final lat = next.lat, lon = next.lon;
     if (!next.isRunning || lat == null || lon == null) return;
     final point = LatLng(lat, lon);

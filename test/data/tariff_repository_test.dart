@@ -52,6 +52,21 @@ void main() {
     expect(await repo.getAll(), isEmpty);
   });
 
+  test('prvi km: 0 se čuva, a brisanje polja vraća null (kao ostali km)', () async {
+    final id = await repo.save(base.copyWith(firstKmPrice: 0));
+    expect((await repo.getAll()).single.firstKmPrice, 0);
+    // dijalog pravi novu tarifu bez prvog km kad je polje prazno
+    await repo.save(Tariff(
+      id: id,
+      name: base.name,
+      startPrice: base.startPrice,
+      pricePerKm: base.pricePerKm,
+      waitingParaPerMin: base.waitingParaPerMin,
+      minPrice: base.minPrice,
+    ));
+    expect((await repo.getAll()).single.firstKmPrice, isNull);
+  });
+
   test('nevalidna tarifa se ne upisuje', () async {
     expect(() => repo.save(base.copyWith(pricePerKm: -5)), throwsArgumentError);
     expect(await repo.getAll(), isEmpty);
