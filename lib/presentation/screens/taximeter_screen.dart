@@ -10,6 +10,8 @@ import '../../domain/models/fixed_route.dart';
 import '../../domain/models/holiday.dart';
 import '../../domain/models/tariff.dart';
 import '../../domain/tariff_selector.dart';
+import '../../domain/voice_command.dart';
+import '../services/device_service.dart';
 import '../providers/taximeter_provider.dart';
 import '../providers/tariffs_provider.dart';
 import '../../domain/announcement.dart';
@@ -118,6 +120,105 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
 
   /// Rezime vožnje se otvara čim se vožnja završi (čita se iz baze, pa
   /// prikazuje isto što i istorija). Zatvaranje ostavlja mali rezultat ispod.
+  /// Start vožnje: tarifa se bira u trenutku starta, relacija važi za jednu vožnju.
+  void _startRide(AppSettings settings) {
+    final t = _activeTariff;
+    if (t == null) return;
+    ref.read(taximeterProvider.notifier).startRide(
+      tariffId: t.id,
+      startPrice: t.startPrice,
+      pricePerKm: t.pricePerKm,
+      waitingParaPerMin: t.waitingParaPerMin,
+      minPrice: t.minPrice,
+      firstKmPrice: t.firstKmPrice,
+      waitingSpeedKmh: settings.waitingSpeedKmh,
+      calibrationPermille: settings.calibrationPermille,
+      gpsAccuracyM: settings.gpsAccuracyM,
+      fixedPrice: _fixedRoute?.price,
+      fixedRouteName: _fixedRoute?.name,
+    );
+    setState(() => _fixedRoute = null);
+  }
+
+  /// G4: glasovna komanda na dodir mikrofona (ne sluša stalno), pa velika
+  /// potvrda DA/NE, da razgovor sa putnikom ne pokrene ništa.
+  Future<void> _voiceCommand(AppSettings settings) async {
+    final t = ref.read(trProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    String? text;
+    try {
+      text = await DeviceService.voiceInput(language: _voiceLanguages[t.english]!);
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(t('Glasovni unos nije dostupan na ovom telefonu.'))));
+      return;
+    }
+    if (text == null || !mounted) return;
+    final command = VoiceCommands.parse(text);
+    final state = ref.read(taximeterProvider);
+    final allowed = switch (command) {
+      VoiceCommand.start => !state.isRunning && state.isReady && _activeTariff != null,
+      VoiceCommand.pause => state.phase == RidePhase.running,
+      VoiceCommand.resume => state.phase == RidePhase.paused,
+      VoiceCommand.stop => state.phase == RidePhase.running || state.phase == RidePhase.paused,
+      null => false,
+    };
+    if (!allowed) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(t('Komanda nije prepoznata ili sada nije moguća: „{0}”', [text])),
+      ));
+      return;
+    }
+    final label = {
+      VoiceCommand.start: t('POKRENI VOŽNJU'),
+      VoiceCommand.pause: t('PAUZA'),
+      VoiceCommand.resume: t('NASTAVI'),
+      VoiceCommand.stop: t('ZAVRŠI VOŽNJU'),
+    }[command]!;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text(t('Potvrdi: {0}?', [label]),
+            style: const TextStyle(color: Colors.white, fontSize: 22)),
+        actionsAlignment: MainAxisAlignment.spaceEvenly,
+        actions: [
+          SizedBox(
+            width: 120,
+            height: 64,
+            child: ElevatedButton(
+              style: _mainButtonStyle(const Color(0xFF424242)),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: _mainButtonLabel(t('NE')),
+            ),
+          ),
+          SizedBox(
+            width: 120,
+            height: 64,
+            child: ElevatedButton(
+              style: _mainButtonStyle(const Color(0xFF2E7D32)),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: _mainButtonLabel(t('DA')),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final notifier = ref.read(taximeterProvider.notifier);
+    switch (command!) {
+      case VoiceCommand.start:
+        _startRide(settings);
+      case VoiceCommand.pause:
+        await notifier.pauseRide();
+      case VoiceCommand.resume:
+        await notifier.resumeRide();
+      case VoiceCommand.stop:
+        await notifier.stopRide();
+    }
+  }
+
+  static const _voiceLanguages = {true: 'en-US', false: 'sr-RS'};
+
   /// Ekran za putnika je otvoren: rezime vožnje čeka da vozač izađe iz njega
   /// (putnik i dalje vidi „Za naplatu”).
   bool _passengerOpen = false;
@@ -389,6 +490,22 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                 ),
                               ),
                             ),
+                            // G4: glasovna komanda (uz potvrdu)
+                            if (settings.voiceCommands)
+                              IconButton(
+                                tooltip: t('Glasovna komanda'),
+                                icon: const Icon(
+                                  Icons.mic,
+                                  color: Colors.white70,
+                                  size: 22,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 28,
+                                ),
+                                onPressed: () => _voiceCommand(settings),
+                              ),
                             // G5: ekran za putnika (položen, velika cena)
                             IconButton(
                               tooltip: t('Ekran za putnika'),
@@ -985,33 +1102,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                                   await _selectTariff(id);
                                                 }
                                               }
-                                            : () {
-                                                // tarifa se bira u trenutku starta
-                                                final t = _activeTariff!;
-                                                notifier.startRide(
-                                                  tariffId: t.id,
-                                                  startPrice: t.startPrice,
-                                                  pricePerKm: t.pricePerKm,
-                                                  waitingParaPerMin:
-                                                      t.waitingParaPerMin,
-                                                  minPrice: t.minPrice,
-                                                  firstKmPrice: t.firstKmPrice,
-                                                  waitingSpeedKmh:
-                                                      settings.waitingSpeedKmh,
-                                                  calibrationPermille: settings
-                                                      .calibrationPermille,
-                                                  gpsAccuracyM:
-                                                      settings.gpsAccuracyM,
-                                                  fixedPrice:
-                                                      _fixedRoute?.price,
-                                                  fixedRouteName:
-                                                      _fixedRoute?.name,
-                                                );
-                                                // relacija važi za jednu vožnju
-                                                setState(
-                                                  () => _fixedRoute = null,
-                                                );
-                                              },
+                                            : () => _startRide(settings),
                                         style: _mainButtonStyle(
                                           const Color(0xFF2E7D32),
                                         ),

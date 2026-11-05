@@ -246,6 +246,26 @@ const Map<String, String> enStrings = {
       'Automatic daily backup',
   'Jednom dnevno u Download/TaksimetarBalkan na telefonu (čuva se 7 poslednjih). Na novom telefonu: „Vrati iz kopije”.':
       'Once a day to Download/TaksimetarBalkan on the phone (the last 7 are kept). On a new phone: "Restore from backup".',
+  'Glasovni unos nije dostupan na ovom telefonu.':
+      'Voice input is not available on this phone.',
+  'Komanda nije prepoznata ili sada nije moguća: „{0}”':
+      'Command not recognised or not possible now: "{0}"',
+  'POKRENI VOŽNJU':
+      'START RIDE',
+  'ZAVRŠI VOŽNJU':
+      'END RIDE',
+  'Potvrdi: {0}?':
+      'Confirm: {0}?',
+  'NE':
+      'NO',
+  'DA':
+      'YES',
+  'Glasovna komanda':
+      'Voice command',
+  'Glasovne komande (start, pauza, nastavi, kraj)':
+      'Voice commands (start, pause, resume, end)',
+  'Dugme mikrofona na glavnom ekranu. Aplikacija ne sluša stalno; svaka komanda traži potvrdu DA/NE.':
+      'Microphone button on the main screen. The app does not listen all the time; every command asks for YES/NO.',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

@@ -38,6 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _goalCtrl = TextEditingController();
   bool _goalEnabled = false;
   bool _autoBackup = true;
+  bool _voiceCommands = false;
   String _language = 'sr';
   String _currency = 'RSD';
   bool _autoTariff = false;
@@ -93,6 +94,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _goalCtrl.text = s.dailyGoal > 0 ? '${s.dailyGoal}' : '';
     _goalEnabled = s.goalEnabled;
     _autoBackup = s.autoBackup;
+    _voiceCommands = s.voiceCommands;
     _loaded = true;
   }
 
@@ -159,6 +161,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       goalEnabled: _goalEnabled,
       favorites: current.favorites,
       autoBackup: _autoBackup,
+      voiceCommands: _voiceCommands,
       lastAutoBackup: current.lastAutoBackup,
     );
     final invalid = next.validate();
@@ -635,6 +638,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: Text(
                   t('Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.'),
                   style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _voiceCommands,
+                onChanged: (v) => setState(() => _voiceCommands = v),
+                title: Text(
+                  t('Glasovne komande (start, pauza, nastavi, kraj)'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  t('Dugme mikrofona na glavnom ekranu. Aplikacija ne sluša stalno; svaka komanda traži potvrdu DA/NE.'),
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
               _section(t('IZGLED')),

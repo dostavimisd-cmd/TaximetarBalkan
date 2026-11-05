@@ -40,6 +40,7 @@ class AppSettings {
   static const String keyGoalEnabled = 'goal_enabled';
   static const String keyFavorites = 'favorite_places';
   static const String keyAutoBackup = 'auto_backup';
+  static const String keyVoiceCommands = 'voice_commands';
   static const String keyLastAutoBackup = 'last_auto_backup';
 
   /// Najviše omiljenih adresa (padajući spisak pretrage).
@@ -141,6 +142,9 @@ class AppSettings {
   /// Omiljene adrese za pretragu (aerodrom, stanica…); unosi vozač.
   final List<Place> favorites;
 
+  /// Dugme mikrofona za glasovne komande vožnje (uvek uz potvrdu); pod. isključeno.
+  final bool voiceCommands;
+
   /// Automatska dnevna kopija u Download/TaksimetarBalkan (čuva se 7 najnovijih).
   final bool autoBackup;
 
@@ -177,6 +181,7 @@ class AppSettings {
     this.dailyGoal = 0,
     this.goalEnabled = false,
     this.favorites = const [],
+    this.voiceCommands = false,
     this.autoBackup = true,
     this.lastAutoBackup = '',
   });
@@ -232,6 +237,7 @@ class AppSettings {
       dailyGoal: inRange(keyDailyGoal, 0, 0, maxDailyGoal),
       goalEnabled: m[keyGoalEnabled] == '1',
       favorites: _decodeFavorites(m[keyFavorites]),
+      voiceCommands: m[keyVoiceCommands] == '1',
       autoBackup: m[keyAutoBackup] != '0',
       lastAutoBackup: m[keyLastAutoBackup] ?? '',
     );
@@ -268,6 +274,7 @@ class AppSettings {
         keyDailyGoal: '$dailyGoal',
         keyGoalEnabled: goalEnabled ? '1' : '0',
         keyFavorites: jsonEncode([for (final p in favorites) p.toJson()]),
+        keyVoiceCommands: voiceCommands ? '1' : '0',
         keyAutoBackup: autoBackup ? '1' : '0',
         keyLastAutoBackup: lastAutoBackup,
       };
@@ -349,6 +356,7 @@ class AppSettings {
     int? dailyGoal,
     bool? goalEnabled,
     List<Place>? favorites,
+    bool? voiceCommands,
     bool? autoBackup,
     String? lastAutoBackup,
   }) {
@@ -384,6 +392,7 @@ class AppSettings {
       dailyGoal: dailyGoal ?? this.dailyGoal,
       goalEnabled: goalEnabled ?? this.goalEnabled,
       favorites: favorites ?? this.favorites,
+      voiceCommands: voiceCommands ?? this.voiceCommands,
       autoBackup: autoBackup ?? this.autoBackup,
       lastAutoBackup: lastAutoBackup ?? this.lastAutoBackup,
     );
