@@ -91,6 +91,36 @@ To keep it running with a locked screen, turn off battery restrictions for the a
 
 ## 7. Napomena verzije (za Play, „Šta je novo”)
 
+### 1.2.0 (versionCode 3) — zamenjuje neobjavljenu 1.1.0
+
+**Srpski (sr):**
+```
+Verzija 1.2.0
+• Smena počinje sama sa prvom vožnjom; na kraju unosite troškove i vidite koliko ostaje.
+• Cilj zarade sa trakom napretka.
+• Ekran za putnika: velika cena, na kraju „Za naplatu”.
+• Doplate (+), prvi km u tarifi, pomoćnik za kalibraciju.
+• Pretraga adrese dok kucate, glasom i omiljene adrese.
+• Toplotna mapa vožnji, PDF i CSV izveštaji.
+• Automatska dnevna rezervna kopija.
+• Glasovne komande uz potvrdu, vibracija, dugmad u obaveštenju.
+```
+
+**English (en-US):**
+```
+Version 1.2.0
+• Shifts start with the first ride; add expenses at the end and see what remains.
+• Earnings goal with a progress bar.
+• Passenger screen: big fare, "Amount due" at the end.
+• Extras (+), first-km price, calibration helper.
+• Address search as you type, by voice, with favourites.
+• Ride heat map, PDF and CSV reports.
+• Automatic daily backup.
+• Voice commands with confirmation, vibration, notification buttons.
+```
+
+Dužina: SR 452, EN 427 znakova (limit 500). Fajl: `docs/play/raw/TaksimetarBalkan-1.2.0.aab` (nije u gitu), simboli: `docs/play/symbols-1.2.0/`.
+
 ### 1.1.0 (versionCode 2)
 
 **Srpski (sr):**
