@@ -154,6 +154,26 @@ Za sada besplatno (premium je odložen); kasnije se može zaključati u premium.
 
 ### A5 (doplata jednim dodirom): ne radi se, postojeće dugme „+” je dovoljno.
 
+### G5. Ekran za putnika (B1)
+- Položen telefon u držaču: velika cena, logo i naziv firme, distanca, čekanje, doplata, tarifa; na kraju vožnje „Za naplatu” sa razradom, EUR i QR za račun.
+- Izgled (predlog): Artifact „Ekran za putnika” (https://claude.ai/artifact/4QhzdVd54vqWapRrijpCpT).
+- Ostalo iz B i C (QR/slanje računa, firmin paket) se preskače za sada.
+- Veličina M, rizik nizak. **Sonnet.**
+
+### G6. Navigacija i adrese (D12, D13)
+- **D12:** unos adrese glasom preko glasovnog unosa koji je vozač već podesio na telefonu (npr. Google tastatura, mikrofon na tastaturi), bez sopstvenog prepoznavanja govora; dugme mikrofona otvara sistemski glasovni unos.
+- **D13:** omiljene adrese u padajućem meniju pretrage (aerodrom, stanica, bolnica…), dodavanje iz rezultata pretrage.
+- Veličina S–M, rizik nizak. **Sonnet.**
+
+### G7. Toplotna mapa (D14) — verzija 1.2.0
+- Gde i kada je bilo najviše vožnji, iz sopstvene istorije (`ride_points`), po danu u nedelji i satu.
+- Veličina M, rizik nizak. **Sonnet** (prikaz), **Opus** ako treba agregacija u bazi.
+
+### G8. Podaci u oblaku (E15, E16)
+- **E15:** automatska rezervna kopija na Google Drive, svake večeri (postojeći JSON iz B1).
+- **E16:** prelazak na novi telefon u jednom koraku (vraćanje poslednje kopije sa Drive-a).
+- Traži Google prijavu (Drive API, OAuth) i izmenu politike privatnosti i Data safety. Veličina L, rizik srednji. **Opus.**
+
 **Redosled:** G1 → G2 → G3 → G4 (G1 i G2 zajedno daju „zarada / troškovi / ostaje” po smeni).
 
 ---
