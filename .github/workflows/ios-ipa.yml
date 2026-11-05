@@ -9,6 +9,10 @@ on:
     paths:
       - '.github/workflows/ios-ipa.yml'
 
+env:
+  # Naziv .ipa fajla (iPad); prazno = verzija iz pubspec.yaml.
+  NAZIV_IPA: '1.2.2'
+
 jobs:
   build-ipa:
     runs-on: macos-14
@@ -24,7 +28,7 @@ jobs:
 
       - name: Verzija iz pubspec.yaml
         run: |
-          VERZIJA=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          VERZIJA="${NAZIV_IPA:-$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')}"
           echo "VERZIJA=$VERZIJA" >> "$GITHUB_ENV"
 
       - name: Build (bez potpisivanja)
