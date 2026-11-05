@@ -127,6 +127,37 @@ Pre faze C sačekaj 2 nedelje povratnih informacija od kolega; mogu da promene r
 
 ---
 
+## Faza G — vozačev dan (odluke vlasnika 05.11.2026)
+
+Za sada besplatno (premium je odložen); kasnije se može zaključati u premium.
+
+### G1. Automatska smena (A3)
+- Smena počinje sama sa **prvom vožnjom** ako je vozač nije ručno pokrenuo; **završava je samo vozač** (ručno).
+- Postojeća tabela `shifts` ostaje; dodaje se pravilo pri startu vožnje.
+- Veličina S, rizik nizak. **Sonnet.**
+
+### G2. Troškovi i „ostaje za pazar” (A2)
+- Na kraju smene vozač unosi troškove: gorivo, pranje, parking, ostalo (celi dinari; spisak vrsta kao kod doplata).
+- Rezime smene i izveštaj pokazuju **zaradu i troškove jedno pored drugog** i **koliko ostaje** (zarada − troškovi). Troškovi ulaze i u PDF/CSV i u rezervnu kopiju.
+- Nova tabela `shift_expenses` (migracija v13).
+- Veličina M, rizik srednji (baza, izveštaji). **Opus** za bazu i obračun, **Sonnet** za ekrane.
+
+### G3. Dnevni cilj (A1)
+- Vozač podesi cilj zarade (iznos po želji), uključuje/isključuje ga prekidačem; pri početku smene može da ga promeni.
+- Na glavnom ekranu: „Danas 4.350 / 6.000 din” sa trakom napretka (samo kad je uključeno), kao motivacija.
+- Veličina S, rizik nizak. **Sonnet.**
+
+### G4. Glasovne komande (A4)
+- „Start”, „pauza”, „kraj” glasom, **uvek uz potvrdu** (npr. „Potvrdi: kraj vožnje?” pa „da” ili dodir), da razgovor sa putnikom ne pokrene komandu.
+- Prekidač u podešavanjima, podrazumevano isključeno. Traži dozvolu za mikrofon (izmena Data safety na Play-u).
+- Veličina M, rizik srednji (prepoznavanje govora, srpski, dozvole). **Opus** za tok i bezbednost komandi.
+
+### A5 (doplata jednim dodirom): ne radi se, postojeće dugme „+” je dovoljno.
+
+**Redosled:** G1 → G2 → G3 → G4 (G1 i G2 zajedno daju „zarada / troškovi / ostaje” po smeni).
+
+---
+
 ## Odluke vlasnika (04.11.2026)
 - **Redosled:** A → B (oba Opus) → C → popravka mape i pretraga adrese → F na kraju. Faza E (jezici) se odlaže: za sada SR i EN.
 - **Prvi kilometar (C1):** opciono polje u tarifi. Prazno = kao do sada (sve po ceni km); 0 = prvi km uključen u start; iznos > 0 = prvi km po toj ceni, ostatak po ceni km. Vrednost unosi vozač ili firma.
