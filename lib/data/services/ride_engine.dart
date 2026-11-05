@@ -98,6 +98,12 @@ class RideEngine {
 
   bool get hasActiveRide => tracker != null && currentRideId != null;
 
+  /// Pauza je u toku (za dijagnostički GPS dnevnik).
+  bool get isPaused => _paused;
+
+  /// Tekuća cena vožnje (za dijagnostički GPS dnevnik); null bez vožnje.
+  int? get currentPrice => tracker == null ? null : _currentPrice(tracker!);
+
   /// Prima komandu iz UI-ja i stavlja je u red. Vraćeni Future se završava
   /// kad je komanda obrađena (za testove; handler ga ignoriše).
   Future<void> receive(Map<String, dynamic> data) =>

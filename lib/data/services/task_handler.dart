@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../domain/models/location_point.dart';
 import '../database_helper.dart';
 import 'ride_engine.dart';
@@ -42,6 +44,12 @@ List<NotificationButton>? rideNotificationButtons(
 /// a GPS stream i snapshot timer drži otvorenim samo dok traje vožnja.
 /// Dugmad u obaveštenju (pauza, nastavak, kraj) šalju iste komande kao UI.
 class RideTaskHandler extends TaskHandler {
+  /// Dijagnostika (samo probni build: `--dart-define=GPS_TRACE=true`): svaka
+  /// GPS tačka i odluka obračuna idu u CSV u spoljnoj fascikli aplikacije
+  /// (Android/data/PAKET/files/gps_trace_*.csv), da se vožnja ponovi u testu.
+  static const bool _gpsTrace = bool.fromEnvironment('GPS_TRACE');
+  IOSink? _trace;
+
   StreamSubscription<Position>? _positionStream;
   Timer? _snapshotTimer;
   bool _stopFromNotification = false;
@@ -131,15 +139,31 @@ class RideTaskHandler extends TaskHandler {
     ).listen((position) {
       // U6: lažne lokacije samo u debug build-u (emulator); accuracy 0 znači
       // da uređaj nije dao preciznost, pa se tačka ne može proveriti.
-      if (kReleaseMode && position.isMocked) return;
-      if (position.accuracy <= 0) return;
-      _engine.onPosition(LocationPoint(
+      if (kReleaseMode && position.isMocked) {
+        _traceLine(position, 'mock');
+        return;
+      }
+      if (position.accuracy <= 0) {
+        _traceLine(position, 'no_accuracy');
+        return;
+      }
+      final point = LocationPoint(
         latitude: position.latitude,
         longitude: position.longitude,
         accuracy: position.accuracy,
         speed: position.speed,
         timestamp: position.timestamp.toUtc(),
-      ));
+      );
+      _engine.onPosition(point);
+      if (_gpsTrace) {
+        final last = _engine.tracker?.lastValidPoint;
+        _traceLine(
+          position,
+          _engine.isPaused
+              ? 'paused'
+              : (identical(last, point) ? 'ok' : 'rejected'),
+        );
+      }
     }, onError: (dynamic error) {
       FlutterForegroundTask.sendDataToMain({
         'event': 'error',
@@ -148,11 +172,51 @@ class RideTaskHandler extends TaskHandler {
     });
     _snapshotTimer ??=
         Timer.periodic(const Duration(seconds: 10), (_) => _engine.saveSnapshot());
+    if (_gpsTrace && _trace == null) unawaited(_openTrace());
+  }
+
+  Future<void> _openTrace() async {
+    try {
+      final dir = await getExternalStorageDirectory();
+      if (dir == null) return;
+      final file = File(
+          '${dir.path}/gps_trace_${DateTime.now().millisecondsSinceEpoch}.csv');
+      _trace = file.openWrite()
+        ..writeln('wall_ms,gps_ms,lat,lon,acc_m,speed_ms,result,'
+            'dist_m,wait_ms,waiting_now,price');
+    } catch (_) {
+      // dijagnostika ne sme da utiče na vožnju
+    }
+  }
+
+  void _traceLine(Position p, String result) {
+    final sink = _trace;
+    if (!_gpsTrace || sink == null) return;
+    final t = _engine.tracker;
+    sink.writeln([
+      DateTime.now().toUtc().millisecondsSinceEpoch,
+      p.timestamp.toUtc().millisecondsSinceEpoch,
+      p.latitude.toStringAsFixed(7),
+      p.longitude.toStringAsFixed(7),
+      p.accuracy.toStringAsFixed(1),
+      p.speed.toStringAsFixed(2),
+      result,
+      t?.totalDistanceMeters.toStringAsFixed(1) ?? '',
+      t?.totalWaitingMs ?? '',
+      t?.isWaitingNow ?? '',
+      _engine.currentPrice ?? '',
+    ].join(','));
   }
 
   Future<void> _stopTracking() async {
     _snapshotTimer?.cancel();
     _snapshotTimer = null;
+    final trace = _trace;
+    _trace = null;
+    try {
+      await trace?.flush();
+      await trace?.close();
+    } catch (_) {}
     final sub = _positionStream;
     _positionStream = null;
     await sub?.cancel();

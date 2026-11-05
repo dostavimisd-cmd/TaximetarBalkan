@@ -51,6 +51,7 @@ Stanje na dan 04.11.2026. Verzija **1.1.0** (versionCode 2), tag `v1.1.0`, sve j
   `flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info`
   Sačuvaj simbole iz `build/debug-info/` pod `docs/play/symbols-<verzija>/`.
 - **Probna kopija na telefonu koji ima Play verziju:** `TAKSI_PROBA=1 flutter build apk --release` daje paket `rs.taksimetar.balkan.proba` („Taksimetar PROBA”), koji stoji pored prave aplikacije i ne dira njene podatke.
+- **GPS dnevnik za dijagnostiku (samo probna kopija):** `TAKSI_PROBA=1 flutter build apk --release --dart-define=GPS_TRACE=true`. Svaka GPS tačka i odluka obračuna idu u `/sdcard/Android/data/rs.taksimetar.balkan.proba/files/gps_trace_*.csv` (preuzimanje: `adb pull`). Play build ga nema.
 - **iPad:** repo privremeno na Public → Actions → „iOS IPA” → Run workflow → artifact → repo nazad na Private.
 
 ## Test na telefonu
