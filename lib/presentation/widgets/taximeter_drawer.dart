@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/tr.dart';
+import '../providers/history_provider.dart';
 import '../screens/about_screen.dart';
 import 'battery_guide.dart';
 
@@ -10,17 +11,23 @@ class TaximeterDrawer extends ConsumerWidget {
   final VoidCallback onReportsTap;
   final VoidCallback onSettingsTap;
 
+  /// Počni ili završi smenu (G1/G2), u zavisnosti od toga da li je otvorena.
+  final VoidCallback onShiftTap;
+
   const TaximeterDrawer({
     super.key,
     required this.onTariffsTap,
     required this.onHistoryTap,
     required this.onReportsTap,
     required this.onSettingsTap,
+    required this.onShiftTap,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(trProvider);
+    final shift = ref.watch(currentShiftProvider).value;
+    String two(int v) => v.toString().padLeft(2, '0');
     // Tekst u meniju 10% veći od ostatka aplikacije (sistemska veličina i dalje važi).
     final textScale = MediaQuery.textScalerOf(context).scale(1) * 1.1;
     return Drawer(
@@ -75,6 +82,28 @@ class TaximeterDrawer extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
+              ListTile(
+                leading: Icon(
+                  shift == null ? Icons.play_circle_outline : Icons.stop_circle_outlined,
+                  color: shift == null ? Colors.greenAccent : Colors.redAccent,
+                ),
+                title: Text(
+                  shift == null ? t('Počni smenu') : t('Završi smenu'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: shift == null
+                    ? null
+                    : Text(
+                        t('U toku od {0}', [
+                          '${two(shift.start.toLocal().hour)}:${two(shift.start.toLocal().minute)}',
+                        ]),
+                        style: const TextStyle(color: Colors.white38),
+                      ),
+                onTap: () {
+                  Navigator.pop(context);
+                  onShiftTap();
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.history, color: Colors.white70),
                 title: Text(

@@ -33,6 +33,11 @@ class AppSettings {
   static const String keyButtonFeedback = 'button_feedback';
   static const String keyAutoPrint = 'auto_print';
   static const String keyExtras = 'extras';
+  static const String keyDailyGoal = 'daily_goal';
+  static const String keyGoalEnabled = 'goal_enabled';
+
+  /// Gornja granica cilja zarade (tehnička, protiv pogrešnog unosa).
+  static const int maxDailyGoal = 10000000;
 
   /// Boje cene kao na taksimetrima (LED displeji); prikaz je u UI sloju.
   static const List<String> priceColors = ['bela', 'crvena', 'zelena', 'plava', 'zuta', 'narandzasta'];
@@ -118,6 +123,12 @@ class AppSettings {
   /// Spisak doplata za dugme „+” tokom vožnje (naziv + iznos); unosi korisnik.
   final List<ExtraCharge> extras;
 
+  /// Cilj zarade (din) za smenu/dan; 0 = nije postavljen. Unosi vozač.
+  final int dailyGoal;
+
+  /// Traka napretka ka cilju na glavnom ekranu (motivacija), uključi/isključi.
+  final bool goalEnabled;
+
   const AppSettings({
     this.eurRateMilli,
     this.waitingSpeedKmh = defaultWaitingSpeedKmh,
@@ -145,6 +156,8 @@ class AppSettings {
     this.buttonFeedback = true,
     this.autoPrint = false,
     this.extras = const [],
+    this.dailyGoal = 0,
+    this.goalEnabled = false,
   });
 
   /// Čita sačuvane vrednosti; neispravna ili nepoznata vrednost daje
@@ -195,6 +208,8 @@ class AppSettings {
       buttonFeedback: m[keyButtonFeedback] != '0',
       autoPrint: m[keyAutoPrint] == '1',
       extras: ExtraCharge.decodeList(m[keyExtras]),
+      dailyGoal: inRange(keyDailyGoal, 0, 0, maxDailyGoal),
+      goalEnabled: m[keyGoalEnabled] == '1',
     );
   }
 
@@ -226,6 +241,8 @@ class AppSettings {
         keyButtonFeedback: buttonFeedback ? '1' : '0',
         keyAutoPrint: autoPrint ? '1' : '0',
         keyExtras: ExtraCharge.encodeList(extras),
+        keyDailyGoal: '$dailyGoal',
+        keyGoalEnabled: goalEnabled ? '1' : '0',
       };
 
   /// Opis prve greške ili null ako su sva podešavanja ispravna.
@@ -251,6 +268,7 @@ class AppSettings {
       return 'Veličina cene: od $minPriceScale do $maxPriceScale %.';
     }
     if (receiptHeader.length > 500) return 'Zaglavlje računa je predugačko.';
+    if (dailyGoal < 0 || dailyGoal > maxDailyGoal) return 'Neispravan cilj zarade.';
     if (extras.length > ExtraCharge.maxCount) {
       return 'Najviše ${ExtraCharge.maxCount} doplata.';
     }
@@ -290,6 +308,8 @@ class AppSettings {
     bool? buttonFeedback,
     bool? autoPrint,
     List<ExtraCharge>? extras,
+    int? dailyGoal,
+    bool? goalEnabled,
   }) {
     return AppSettings(
       eurRateMilli: eurRateMilli ?? this.eurRateMilli,
@@ -320,6 +340,8 @@ class AppSettings {
       buttonFeedback: buttonFeedback ?? this.buttonFeedback,
       autoPrint: autoPrint ?? this.autoPrint,
       extras: extras ?? this.extras,
+      dailyGoal: dailyGoal ?? this.dailyGoal,
+      goalEnabled: goalEnabled ?? this.goalEnabled,
     );
   }
 }

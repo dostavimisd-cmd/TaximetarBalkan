@@ -11,6 +11,7 @@ import '../../domain/models/ride_record.dart';
 import '../../domain/report_export.dart';
 import '../../domain/reports.dart';
 import '../printing/report_pdf.dart';
+import '../widgets/shift_ui.dart';
 import '../providers/history_provider.dart';
 import '../providers/settings_provider.dart';
 import 'history_screen.dart' show formatClock;
@@ -83,15 +84,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   });
 
   Future<void> _toggleShift(Shift? open) async {
-    final repo = ref.read(shiftRepositoryProvider);
-    final now = DateTime.now().toUtc();
     if (open == null) {
-      await repo.start(now);
+      await startShiftFlow(context, ref);
     } else {
-      await repo.end(now);
+      await endShiftFlow(context, ref);
     }
-    ref.invalidate(shiftsProvider);
-    setState(() => _shiftIndex = 0);
+    if (mounted) setState(() => _shiftIndex = 0);
   }
 
   /// Vožnje i naslov trenutnog prikaza (period ili smena) za izvoz.
@@ -348,10 +346,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           .endOr(DateTime.now().toUtc())
                           .difference(shift.start)
                           .inSeconds;
-                      return _StatsCard(
-                        stats: RideStats.of(rides),
-                        eurRate: eurRate,
-                        shiftSeconds: shiftSeconds,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ShiftBalanceCard(shift: shift),
+                          const SizedBox(height: 12),
+                          _StatsCard(
+                            stats: RideStats.of(rides),
+                            eurRate: eurRate,
+                            shiftSeconds: shiftSeconds,
+                          ),
+                        ],
                       );
                     },
                   ),

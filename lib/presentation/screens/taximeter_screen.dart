@@ -28,6 +28,7 @@ import '../widgets/extras_sheet.dart';
 import '../widgets/fixed_route_picker.dart';
 import '../widgets/price_colors.dart';
 import '../widgets/ride_map.dart';
+import '../widgets/shift_ui.dart';
 import '../widgets/tariff_edit_dialog.dart';
 import '../widgets/tariff_selection_sheet.dart';
 import '../widgets/taximeter_drawer.dart';
@@ -175,6 +176,15 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
       final finishedNow =
           next.phase == RidePhase.finished && prev?.phase != RidePhase.finished;
       final s = ref.read(appSettingsProvider).value;
+      // G1: vožnja je krenula, a smena nije otvorena → smena počinje sama
+      // (start() vraća već otvorenu smenu, pa ručno započeta ostaje ista).
+      if (prev?.phase == RidePhase.starting && next.phase == RidePhase.running) {
+        ref
+            .read(shiftRepositoryProvider)
+            .start(DateTime.now().toUtc())
+            .then((_) => refreshShifts(ref), onError: (_) {});
+      }
+      if (finishedNow) refreshShifts(ref); // cilj i izveštaj smene
       final feedback = rideFeedbackFor(prev?.phase, next.phase);
       if (feedback != null && (s?.buttonFeedback ?? true)) {
         playRideFeedback(feedback);
@@ -256,6 +266,15 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
         ).push(MaterialPageRoute<void>(builder: (_) => const ReportsScreen())),
         onTariffsTap: () => _openTariffSheet(context),
         onSettingsTap: _openSettings,
+        onShiftTap: () async {
+          final open = await ref.read(shiftRepositoryProvider).current();
+          if (!context.mounted) return;
+          if (open == null) {
+            await startShiftFlow(context, ref);
+          } else {
+            await endShiftFlow(context, ref);
+          }
+        },
       ),
       body: Stack(
         children: [
@@ -520,6 +539,13 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           )
                         else
                           const Spacer(flex: 1),
+
+                        // G3: cilj zarade (ako je uključen)
+                        GoalBar(
+                          runningPrice: state.isRunning
+                              ? state.currentPrice
+                              : null,
+                        ),
 
                         // Info paneli: Razdaljina, Čekanje i Tarifa
                         Container(

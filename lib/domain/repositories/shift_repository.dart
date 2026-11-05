@@ -1,4 +1,5 @@
 import '../models/shift.dart';
+import '../models/shift_expense.dart';
 
 abstract class ShiftRepository {
   /// Smene, najnovija prva.
@@ -12,4 +13,12 @@ abstract class ShiftRepository {
 
   /// Završava otvorenu smenu (ako postoji).
   Future<void> end(DateTime nowUtc);
+
+  /// Troškovi smene po redu unosa.
+  Future<List<ShiftExpense>> getExpenses(int shiftId);
+
+  /// Upisuje trošak (baca [ArgumentError] ako nije ispravan); vraća id.
+  Future<int> addExpense(ShiftExpense expense, DateTime nowUtc);
+
+  Future<void> deleteExpense(int id);
 }

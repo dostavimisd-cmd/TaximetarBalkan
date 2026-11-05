@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import '../../domain/models/shift.dart';
+import '../../domain/models/shift_expense.dart';
 import '../../domain/repositories/shift_repository.dart';
 
 class ShiftRepositoryImpl implements ShiftRepository {
@@ -40,6 +41,41 @@ class ShiftRepositoryImpl implements ShiftRepository {
     final ms = nowUtc.toUtc().millisecondsSinceEpoch;
     final id = await db.insert('shifts', {'start_time': ms, 'end_time': null});
     return Shift(id: id, start: DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true));
+  }
+
+  @override
+  Future<List<ShiftExpense>> getExpenses(int shiftId) async {
+    final db = await _database();
+    final rows = await db.query('shift_expenses',
+        where: 'shift_id = ?', whereArgs: [shiftId], orderBy: 'id');
+    return [
+      for (final r in rows)
+        ShiftExpense(
+          id: r['id'] as int,
+          shiftId: r['shift_id'] as int,
+          name: r['name'] as String,
+          amount: r['amount'] as int,
+        ),
+    ];
+  }
+
+  @override
+  Future<int> addExpense(ShiftExpense expense, DateTime nowUtc) async {
+    final error = expense.validate();
+    if (error != null) throw ArgumentError(error);
+    final db = await _database();
+    return db.insert('shift_expenses', {
+      'shift_id': expense.shiftId,
+      'name': expense.name.trim(),
+      'amount': expense.amount,
+      'created_at': nowUtc.toUtc().millisecondsSinceEpoch,
+    });
+  }
+
+  @override
+  Future<void> deleteExpense(int id) async {
+    final db = await _database();
+    await db.delete('shift_expenses', where: 'id = ?', whereArgs: [id]);
   }
 
   @override

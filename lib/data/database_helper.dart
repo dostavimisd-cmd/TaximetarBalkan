@@ -23,7 +23,7 @@ class DatabaseHelper {
   static Future<Database> openAt(String path) {
     return openDatabase(
       path,
-      version: 12,
+      version: 13,
       onConfigure: _configureDB,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
@@ -60,6 +60,20 @@ class DatabaseHelper {
         end_time INTEGER
       )
     ''');
+  }
+
+  /// Troškovi smene (v13): gorivo, pranje, parking…
+  static Future<void> _createExpensesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE shift_expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        shift_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_expenses_shift ON shift_expenses(shift_id)');
   }
 
   /// Doplate dodate tokom vožnje (v12).
@@ -180,6 +194,7 @@ class DatabaseHelper {
     await _createShiftsTable(db);
     await _createPointsTable(db);
     await _createExtrasTable(db);
+    await _createExpensesTable(db);
 
     await db.execute('''
       CREATE TABLE fixed_routes (
@@ -240,6 +255,9 @@ class DatabaseHelper {
           db, 'rides', 'tariff_waiting_price_per_min', 'tariff_waiting_para_per_min');
       await _waitingToPara(
           db, 'tariffs', 'waiting_price_per_min', 'waiting_para_per_min');
+    }
+    if (oldVersion < 13) {
+      await _createExpensesTable(db);
     }
     if (oldVersion < 12) {
       // Prvi kilometar u tarifi (NULL = kao ostali) i doplate u vožnji.

@@ -33,10 +33,11 @@ class BackupService {
     'ride_points',
     'shifts',
     'ride_extras',
+    'shift_expenses',
   ];
 
   /// Tabele koje kopije iz starije verzije nemaju; tada su prazne.
-  static const Set<String> optionalTables = {'ride_extras'};
+  static const Set<String> optionalTables = {'ride_extras', 'shift_expenses'};
 
   /// Ključevi podešavanja koji pokazuju na sliku (fajl ide u kopiju).
   static const List<String> imageKeys = ['receipt_logo', 'background_logo'];

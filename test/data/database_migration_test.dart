@@ -30,7 +30,7 @@ void main() {
     expect(await db.query('app_settings'), hasLength(3));
   });
 
-  test('5: migracija v1 → v12 čuva istoriju i prekida aktivnu vožnju', () async {
+  test('5: migracija v1 → v13 čuva istoriju i prekida aktivnu vožnju', () async {
     final dir = await Directory.systemTemp.createTemp('taksi_mig');
     addTearDown(() => dir.delete(recursive: true));
     final path = p.join(dir.path, 'v1.db');
@@ -93,6 +93,9 @@ void main() {
     expect(await columns(db, 'tariffs'), contains('waiting_para_per_min'));
     expect((await db.query('tariffs')).single['waiting_para_per_min'], 1500);
     expect(await columns(db, 'rides'), contains('tariff_waiting_para_per_min'));
+    // v13: troškovi smene
+    expect(await columns(db, 'shift_expenses'), containsAll(['shift_id', 'name', 'amount', 'created_at']));
+    expect(await indexes(db), contains('idx_expenses_shift'));
     // v12: prvi km u tarifi, doplate u vožnji
     expect(await columns(db, 'tariffs'), contains('first_km_price'));
     expect((await db.query('tariffs')).single['first_km_price'], isNull);

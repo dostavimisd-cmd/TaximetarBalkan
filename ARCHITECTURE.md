@@ -8,9 +8,9 @@
 ## Glavni Moduli
 1. **GPS Engine (Foreground Service):** Sluša lokaciju i drži Android WakeLock. Odbacuje tačke sa lošom tačnošću (prag iz Podešavanja, 5–50 m, podrazumevano 15 m; upisuje se uz vožnju).
 2. **Obračun Cene (FareCalculator):** Pametno čekanje kada je brzina ispod praga (Podešavanja, podrazumevano 8 km/h); kalibracija distance u promilima. Prvi km tarife (opciono: prazno = kao ostali, 0 = u startu, > 0 = svoja cena za prvih 1000 m). Pomoćnik za kalibraciju (`Calibration.fromOfficial`): iz km zvaničnog taksimetra i izmerene distance vožnje (bez kalibracije) računa promile; nudi se u rezimeu vožnje. Doplate (`withExtras`) se dodaju posle minimalne cene. Sve celobrojno (vidi `SPEC.md`).
-3. **Lokalna Baza (sqflite, šema v12):** Offline-first. Vožnja se periodično upisuje u `ride_snapshots`. Detalji u `DATA_MODEL.md`.
+3. **Lokalna Baza (sqflite, šema v13):** Offline-first. Vožnja se periodično upisuje u `ride_snapshots`. Detalji u `DATA_MODEL.md`.
 4. **Tarife (Faza 2):** tarife, raspored i praznike unosi korisnik; `TariffSelector` bira tarifu samo pri startu (praznik → raspored → ručni izbor).
-5. **Izveštaji i istorija (Faza 3):** `RideHistoryRepository` (čitanje, brisanje završenih vožnji), `ReportRange`/`RideStats` (dan, nedelja, mesec).
+5. **Izveštaji i istorija (Faza 3):** `RideHistoryRepository` (čitanje, brisanje završenih vožnji), `ReportRange`/`RideStats` (dan, nedelja, mesec). **Smena (G1–G3):** UI pri prelazu `starting → running` zove `ShiftRepository.start` (vraća već otvorenu), troškovi smene u `shift_expenses`, `ShiftBalance` (domain) daje zaradu, troškove i „ostaje”; `widgets/shift_ui.dart` (početak/kraj smene, unos troška, `GoalBar` na glavnom ekranu).
 6. **Štampa (Faza 4):** `EscPos`, `Receipt`, `Dither` (domain, čisti) + `ReceiptPrinter` (Bluetooth, `print_bluetooth_thermal`). Podrazumevano se račun šalje kao slika, pa su naša slova uvek tačna.
 7. **Mapa i navigacija:** `RideMap` (flutter_map, OpenStreetMap podloge; tamna pozadina ispod pločica, neuspele pločice se ponovo traže, lokacija se ponovo traži pri povratku u aplikaciju i kad servis postane spreman, vožnja vraća praćenje kamere), `NavigationService` (pretraga dok se kuca preko Photon-a uz rezervu Nominatim, OSRM ruta). `PlaceSearch` (domain): upit („đ” → „dj”), ćirilica → latinica za prikaz, redosled po vazdušnoj udaljenosti od vozača i izbacivanje duplikata. Samo za orijentaciju; obračun ne zavisi od mape ni interneta.
 8. **Podešavanja:** `AppSettings` (domain, tipizirano i provereno) u `app_settings`; jedan `appSettingsProvider`.
@@ -21,7 +21,7 @@
 
 ## Ko piše u bazu
 - `rides`, `ride_snapshots`, `ride_gaps`, `ride_extras` za vožnju u toku: samo servis (`RideEngine`). Doplate stižu kao komande `add_extra{name, amount}` / `remove_extra{id}` (dugme „+” na glavnom ekranu, `widgets/extras_sheet.dart`); spisak stalnih doplata je u Podešavanjima (`app_settings.extras`).
-- UI isolate: `tariffs`, `holidays`, `app_settings`, i brisanje **završenih** vožnji iz istorije (kratka transakcija; WAL + `busy_timeout` sprečavaju sudar sa servisom).
+- UI isolate: `tariffs`, `holidays`, `app_settings`, `shifts`, `shift_expenses`, i brisanje **završenih** vožnji iz istorije (kratka transakcija; WAL + `busy_timeout` sprečavaju sudar sa servisom).
 - **Vraćanje rezervne kopije** (`BackupService.restore`, UI isolate): briše i ponovo upisuje sve tabele u jednoj transakciji. Dozvoljeno samo kad nema aktivne vožnje (provera u bazi i u UI-ju), pa servis tada ne radi. Pre vraćanja se trenutni podaci čuvaju u `pre_vracanja_kopije.json` (dugme „Poništi poslednje vraćanje”).
 
 ## Tok Podataka

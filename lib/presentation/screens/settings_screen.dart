@@ -35,6 +35,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _gps = TextEditingController();
   final _rate = TextEditingController();
   final _header = TextEditingController();
+  final _goalCtrl = TextEditingController();
+  bool _goalEnabled = false;
   String _language = 'sr';
   String _currency = 'RSD';
   bool _autoTariff = false;
@@ -57,7 +59,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   void dispose() {
-    for (final c in [_speed, _calibration, _gps, _rate, _header]) {
+    for (final c in [_speed, _calibration, _gps, _rate, _header, _goalCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -87,6 +89,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _printerName = s.printerName;
     _printOption = PrintOption.of(s);
     _header.text = s.receiptHeader;
+    _goalCtrl.text = s.dailyGoal > 0 ? '${s.dailyGoal}' : '';
+    _goalEnabled = s.goalEnabled;
     _loaded = true;
   }
 
@@ -110,6 +114,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
     if (_currency == 'EUR' && rate == null) {
       error ??= t('Za prikaz u EUR unesi kurs.');
+    }
+    if (_goalEnabled && _goal(current) <= 0) {
+      error ??= t('Unesi cilj zarade (ceo broj dinara) ili isključi cilj.');
     }
     if (error != null) {
       setState(() => _error = error);
@@ -146,6 +153,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       disclaimerAccepted: current.disclaimerAccepted,
       batteryGuideShown: current.batteryGuideShown,
       extras: current.extras,
+      dailyGoal: _goal(current),
+      goalEnabled: _goalEnabled,
     );
     final invalid = next.validate();
     if (invalid != null) {
@@ -261,6 +270,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } finally {
       if (mounted) setState(() => _printing = false);
     }
+  }
+
+  /// Cilj iz polja; prazno ili neispravno = 0 (nije postavljen).
+  int _goal(AppSettings current) {
+    final v = int.tryParse(_goalCtrl.text.trim());
+    return v == null || v < 0 || v > AppSettings.maxDailyGoal ? 0 : v;
   }
 
   /// Spisak doplata se čuva odmah (kao izbor štampača), ne tek na SAČUVAJ.
@@ -467,6 +482,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: TextStyle(color: Colors.amberAccent),
                 ),
               ),
+              _section(t('CILJ ZARADE')),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _goalEnabled,
+                onChanged: (v) => setState(() => _goalEnabled = v),
+                title: Text(
+                  t('Prikaži cilj na glavnom ekranu'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  t('Traka napretka: zarada otvorene smene (ili današnja) prema cilju.'),
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ),
+              if (_goalEnabled)
+                _number(
+                  t('Cilj zarade (din)'),
+                  _goalCtrl,
+                  helper: t('Iznos po želji; može se promeniti i pri početku smene.'),
+                ),
               _section(t('DOPLATE')),
               _extrasSection(settings.value?.extras ?? const []),
               _section(t('GPS')),

@@ -3,6 +3,7 @@ import '../../data/database_helper.dart';
 import '../../data/repositories/ride_history_repository_impl.dart';
 import '../../data/repositories/shift_repository_impl.dart';
 import '../../domain/models/shift.dart';
+import '../../domain/models/shift_expense.dart';
 import '../../domain/repositories/shift_repository.dart';
 import '../../domain/models/gap_info.dart';
 import '../../domain/models/ride_record.dart';
@@ -49,6 +50,36 @@ final shiftRidesProvider = FutureProvider.autoDispose
             shift.endOr(DateTime.now().toUtc()).millisecondsSinceEpoch + 1,
           ),
     );
+
+/// Otvorena smena ili null (meni, cilj).
+final currentShiftProvider = FutureProvider.autoDispose<Shift?>(
+  (ref) => ref.read(shiftRepositoryProvider).current(),
+);
+
+/// Troškovi smene (G2).
+final shiftExpensesProvider = FutureProvider.autoDispose
+    .family<List<ShiftExpense>, int>(
+      (ref, shiftId) => ref.read(shiftRepositoryProvider).getExpenses(shiftId),
+    );
+
+/// Zarada za cilj (G3): otvorena smena, a bez nje današnji dan (lokalno).
+final goalEarnedProvider = FutureProvider.autoDispose<int>((ref) async {
+  final shift = await ref.read(shiftRepositoryProvider).current();
+  final now = DateTime.now();
+  final int from;
+  final int to;
+  if (shift != null) {
+    from = shift.start.millisecondsSinceEpoch;
+    to = now.toUtc().millisecondsSinceEpoch + 1;
+  } else {
+    final day = ReportRange.containing(ReportPeriod.day, now);
+    from = day.startUtcMs;
+    to = day.endUtcMs;
+  }
+  final rides =
+      await ref.read(rideHistoryRepositoryProvider).getBetween(from, to);
+  return rides.fold<int>(0, (s, r) => s + r.totalPrice);
+});
 
 /// Pređena ruta vožnje za prikaz na mapi.
 final rideRouteProvider = FutureProvider.autoDispose

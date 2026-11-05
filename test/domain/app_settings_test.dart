@@ -73,4 +73,15 @@ void main() {
   test('bez kursa se ne upisuje ključ kursa', () {
     expect(const AppSettings().toMap().containsKey('eur_rate_milli'), false);
   });
+
+  test('cilj zarade: čuva se, neispravan se čita kao 0, prekidač', () {
+    const s = AppSettings(dailyGoal: 6000, goalEnabled: true);
+    final back = AppSettings.fromMap(s.toMap());
+    expect(back.dailyGoal, 6000);
+    expect(back.goalEnabled, isTrue);
+    expect(AppSettings.fromMap(const {'daily_goal': '-5'}).dailyGoal, 0);
+    expect(AppSettings.fromMap(const {'daily_goal': 'abc'}).dailyGoal, 0);
+    expect(const AppSettings().goalEnabled, isFalse);
+    expect(const AppSettings(dailyGoal: -1).validate(), isNotNull);
+  });
 }

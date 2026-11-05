@@ -148,6 +148,52 @@ const Map<String, String> enStrings = {
       'First km: included in the base fare (not charged separately)',
   'Prvi km: {0} din/km':
       'First km: {0} RSD/km',
+  'CILJ ZARADE':
+      'EARNINGS GOAL',
+  'Cilj ostvaren: {0} / {1} din':
+      'Goal reached: {0} / {1} RSD',
+  'Cilj za ovu smenu':
+      'Goal for this shift',
+  'Cilj zarade (din)':
+      'Earnings goal (RSD)',
+  'Cilj: {0} / {1} din':
+      'Goal: {0} / {1} RSD',
+  'Dodaj trošak':
+      'Add expense',
+  'Iznos po želji; može se promeniti i pri početku smene.':
+      'Any amount; can also be changed when a shift starts.',
+  'OSTAJE':
+      'REMAINING',
+  'Počni smenu':
+      'Start shift',
+  'Prikaži cilj na glavnom ekranu':
+      'Show goal on the main screen',
+  'TROŠKOVI':
+      'EXPENSES',
+  'Traka napretka: zarada otvorene smene (ili današnja) prema cilju.':
+      'Progress bar: earnings of the open shift (or today) towards the goal.',
+  'Trošak':
+      'Expense',
+  'U toku od {0}':
+      'Running since {0}',
+  'Unesi cilj zarade (ceo broj dinara) ili isključi cilj.':
+      'Enter an earnings goal (whole RSD) or turn the goal off.',
+  'ZARADA':
+      'EARNINGS',
+  'Završi smenu':
+      'End shift',
+  'Neispravan cilj zarade.':
+      'Invalid earnings goal.',
+  'Naziv troška je obavezan.':
+      'Expense name is required.',
+  'Gorivo':
+      'Fuel',
+  'Pranje':
+      'Car wash',
+  'Parking':
+      'Parking',
+  'Ostalo':
+      'Other',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':
