@@ -483,15 +483,21 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Text(
-                                t('POMOĆNI TAKSIMETAR'),
-                                style: TextStyle(
-                                  color: Colors.amberAccent.withValues(
-                                    alpha: 0.85,
+                              // u uskoj koloni (položeno) se smanjuje, ne lomi
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  t('POMOĆNI TAKSIMETAR'),
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    color: Colors.amberAccent.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.1,
                                   ),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.1,
                                 ),
                               ),
                             ),
@@ -584,7 +590,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           ],
                         ),
 
-                        const Spacer(flex: 1),
+                        // položeno: sav slobodan prostor ide ceni
+                        if (!landscape) const Spacer(flex: 1),
 
                         // Status režima rada (Vožnja vs Čekanje)
                         // Pauza: obračun staje, cena ostaje; prikazuje se trajanje pauze
@@ -701,7 +708,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                               ),
                             ),
                           )
-                        else
+                        else if (!landscape)
                           const Spacer(flex: 1),
 
                         // G3: cilj zarade (ako je uključen)
