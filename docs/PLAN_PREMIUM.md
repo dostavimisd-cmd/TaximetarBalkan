@@ -102,6 +102,8 @@ Pre faze C sačekaj 2 nedelje povratnih informacija od kolega; mogu da promene r
 - Automatski svetli/tamni režim **samo ako ga traže kolege** (taksimetri su obično tamni).
 - Veličina S–M, rizik nizak. **Sonnet.**
 
+**Urađeno 11.11.2026** (telefon i iPad 9. gen. potvrdio vlasnik; IPA 1.2.4).
+
 **Odluke vlasnika (11.11.2026), predlog: https://claude.ai/artifact/NbLwLA9HCwvnBBL6C2Xd4Y**
 - Varijanta **A**: dorada postojećeg položenog izgleda (sa mapom). Levo oko 42%: tarifa i GPS, velika cena, distanca, čekanje i brzina, cilj, dugmad (+, PAUZA, ZAVRŠI) na dnu. Desno oko 58%: mapa preko cele visine, pretraga adrese ostaje na mapi.
 - Glavni uređaj: **iPad 9. generacije** (10,2", 4:3, 1080×810 tačaka), položen, držač na sredini table iznad ventilacije. Vozač je levo, pa dugmad ostaju **levo**.
@@ -110,6 +112,7 @@ Pre faze C sačekaj 2 nedelje povratnih informacija od kolega; mogu da promene r
 - Predlozi uz to: zaključavanje položenog ekrana i pun ekran tokom vožnje, strana dugmadi u Podešavanjima (levo podrazumevano); svaki je opcija.
 
 ### D3. Grafikon zarade (odluka 11.11.2026)
+**Urađeno 11.11.2026**: sve pločice iz predloga (po satu rada, poređenje, vožnje i km, prosek po vožnji, linija cilja).
 - Novi ekran u Izveštajima: Nedelja, Mesec, Godina; stubovi zarada i troškovi po danu (godina: po mesecu), linija proseka; pločice Zarada, Troškovi, Ostaje, Najbolji dan; „Najbolji sati” (broj vožnji po satu). Dodir na stub otvara izveštaj tog dana.
 - Podaci iz postojećih tabela (`rides`, `shift_expenses`), bez nove šeme; novac int.
 - Otvoreno (vlasnik oseća da nešto fali): zarada po satu rada, poređenje sa prethodnim periodom, broj vožnji i km, prosek po vožnji, linija dnevnog cilja (G3).
