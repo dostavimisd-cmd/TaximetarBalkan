@@ -91,6 +91,28 @@ To keep it running with a locked screen, turn off battery restrictions for the a
 
 ## 7. Napomena verzije (za Play, „Šta je novo”)
 
+### 1.3.0 (versionCode 4)
+
+**Srpski (sr):**
+```
+Verzija 1.3.0
+• Položen ekran (tablet i telefon u držaču): cena i dugmad levo, mapa desno preko cele visine.
+• Grafikon zarade: nedelja, mesec, godina; zarada po satu, poređenje sa prošlim periodom, najbolji sati.
+• Ekran za putnika: pauza i završetak vožnje, manja cena.
+• Vodič za početak za nove korisnike (meni).
+```
+
+**English (en-US):**
+```
+Version 1.3.0
+• Landscape screen (tablet or phone in a holder): fare and buttons on the left, full-height map on the right.
+• Earnings chart: week, month, year; earnings per hour, comparison with the previous period, best hours.
+• Passenger screen: pause and end the ride, smaller fare.
+• Getting started guide for new users (menu).
+```
+
+Dužina: SR 316, EN 332 znakova (limit 500). Fajl: `docs/play/raw/TaksimetarBalkan-1.3.0.aab` (nije u gitu), simboli: `docs/play/symbols-1.3.0/`.
+
 ### 1.2.0 (versionCode 3) — zamenjuje neobjavljenu 1.1.0
 
 **Srpski (sr):**
