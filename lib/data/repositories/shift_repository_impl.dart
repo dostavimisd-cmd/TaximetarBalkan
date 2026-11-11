@@ -48,16 +48,26 @@ class ShiftRepositoryImpl implements ShiftRepository {
     final db = await _database();
     final rows = await db.query('shift_expenses',
         where: 'shift_id = ?', whereArgs: [shiftId], orderBy: 'id');
-    return [
-      for (final r in rows)
-        ShiftExpense(
-          id: r['id'] as int,
-          shiftId: r['shift_id'] as int,
-          name: r['name'] as String,
-          amount: r['amount'] as int,
-        ),
-    ];
+    return rows.map(_expenseFromRow).toList();
   }
+
+  @override
+  Future<List<ShiftExpense>> getExpensesBetween(int fromUtcMs, int toUtcMs) async {
+    final db = await _database();
+    final rows = await db.query('shift_expenses',
+        where: 'created_at >= ? AND created_at < ?',
+        whereArgs: [fromUtcMs, toUtcMs],
+        orderBy: 'created_at');
+    return rows.map(_expenseFromRow).toList();
+  }
+
+  ShiftExpense _expenseFromRow(Map<String, Object?> r) => ShiftExpense(
+        id: r['id'] as int,
+        shiftId: r['shift_id'] as int,
+        name: r['name'] as String,
+        amount: r['amount'] as int,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(r['created_at'] as int, isUtc: true),
+      );
 
   @override
   Future<int> addExpense(ShiftExpense expense, DateTime nowUtc) async {

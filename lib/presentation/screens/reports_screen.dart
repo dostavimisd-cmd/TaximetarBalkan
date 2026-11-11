@@ -14,6 +14,7 @@ import '../printing/report_pdf.dart';
 import '../widgets/shift_ui.dart';
 import '../providers/history_provider.dart';
 import '../providers/settings_provider.dart';
+import 'earnings_chart_screen.dart';
 import 'history_screen.dart' show formatClock;
 import '../l10n/tr.dart';
 
@@ -65,7 +66,10 @@ List<(String, String)?> reportStatsRows(
 
 /// Izveštaji (Faza 3): zarada i rad po danu, nedelji i mesecu.
 class ReportsScreen extends ConsumerStatefulWidget {
-  const ReportsScreen({super.key});
+  const ReportsScreen({super.key, this.initialDay});
+
+  /// Dan koji se otvara (npr. dodir na stub grafikona); null = danas.
+  final DateTime? initialDay;
 
   @override
   ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
@@ -73,7 +77,10 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Tr get t => ref.read(trProvider);
-  ReportRange _range = ReportRange.containing(ReportPeriod.day, DateTime.now());
+  late ReportRange _range = ReportRange.containing(
+    ReportPeriod.day,
+    widget.initialDay ?? DateTime.now(),
+  );
 
   /// null = izveštaj po periodu; inače indeks smene u listi (0 = najnovija).
   int? _shiftIndex;
@@ -381,6 +388,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         backgroundColor: Colors.black,
         title: Text(t('Izveštaji')),
         actions: [
+          IconButton(
+            tooltip: t('Grafikon zarade'),
+            icon: const Icon(Icons.insights),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const EarningsChartScreen()),
+            ),
+          ),
           IconButton(
             tooltip: t('Izvezi izveštaj'),
             icon: const Icon(Icons.ios_share),

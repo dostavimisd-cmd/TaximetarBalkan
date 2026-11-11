@@ -70,4 +70,17 @@ void main() {
     expect(() => repo.addExpense(ShiftExpense(shiftId: a.id, name: 'X', amount: 0), t(19)),
         throwsArgumentError);
   });
+
+  test('troškovi u intervalu (za grafikon) nose vreme upisa', () async {
+    final s = await repo.start(t(8));
+    await repo.addExpense(ShiftExpense(shiftId: s.id, name: 'Gorivo', amount: 1500), t(9));
+    await repo.addExpense(ShiftExpense(shiftId: s.id, name: 'Pranje', amount: 300), t(12));
+    final list = await repo.getExpensesBetween(
+      t(9).millisecondsSinceEpoch,
+      t(12).millisecondsSinceEpoch,
+    );
+    expect(list.map((e) => e.amount), [1500]);
+    expect(list.single.createdAt, t(9));
+    expect((await repo.getExpenses(s.id)).last.createdAt, t(12));
+  });
 }

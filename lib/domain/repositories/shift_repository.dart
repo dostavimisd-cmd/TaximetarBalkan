@@ -18,6 +18,9 @@ abstract class ShiftRepository {
   Future<List<ShiftExpense>> getExpenses(int shiftId);
 
   /// Upisuje trošak (baca [ArgumentError] ako nije ispravan); vraća id.
+  /// Troškovi upisani u [fromUtcMs, toUtcMs), za grafikon zarade.
+  Future<List<ShiftExpense>> getExpensesBetween(int fromUtcMs, int toUtcMs);
+
   Future<int> addExpense(ShiftExpense expense, DateTime nowUtc);
 
   Future<void> deleteExpense(int id);

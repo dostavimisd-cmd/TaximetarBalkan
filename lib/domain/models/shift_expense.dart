@@ -12,12 +12,14 @@ class ShiftExpense {
   final int shiftId;
   final String name;
   final int amount;
+  final DateTime? createdAt; // UTC; null dok nije upisan
 
   const ShiftExpense({
     this.id,
     required this.shiftId,
     required this.name,
     required this.amount,
+    this.createdAt,
   });
 
   /// Opis greške ili null ako je trošak ispravan.

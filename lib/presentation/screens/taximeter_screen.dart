@@ -377,8 +377,14 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
         ? CurrencyConverter.formatForeign(shownPrice, eurRate!)
         : shownPrice.toString();
 
-    // Položeno uz mapu: cena ide desno iznad mape (levo nema visine za nju).
-    final priceRight = landscape && settings.showMap;
+    // D2: tablet (iPad) ima dovoljno visine, pa položeno cena ostaje levo uz
+    // dugmad, a mapa ide desno preko cele visine. Telefon položeno: cena desno
+    // iznad mape (levo nema visine za nju).
+    final tablet = MediaQuery.sizeOf(context).shortestSide >= 600;
+    final mapRight = landscape && settings.showMap && tablet;
+    final priceRight = landscape && settings.showMap && !tablet;
+    // Dugmad +, PAUZA i ZAVRŠI: na iPadu 9. gen. 78 tačaka je oko 1,5 cm.
+    final buttonHeight = tablet ? 78.0 : 74.0;
     final priceView = FittedBox(
       fit: BoxFit.scaleDown,
       child: Column(
@@ -389,7 +395,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
             style: TextStyle(
               fontFamily: 'monospace',
               color: priceColorOf(settings.priceColor),
-              fontSize: 82 * settings.priceScale / 100,
+              fontSize: 82 * settings.priceScale / 100 * (tablet ? 1.6 : 1),
               fontWeight: FontWeight.bold,
               letterSpacing: -3,
             ),
@@ -458,6 +464,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
+                    flex: mapRight ? 42 : 1,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -860,8 +867,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                             GestureDetector(
                               onTap: () => _openTariffSheet(context),
                               child: Container(
-                                height: 74,
-                                width: 74,
+                                height: buttonHeight,
+                                width: buttonHeight,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1C1C1C),
                                   borderRadius: BorderRadius.circular(18),
@@ -934,8 +941,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                   );
                                 },
                                 child: Container(
-                                  height: 74,
-                                  width: 74,
+                                  height: buttonHeight,
+                                  width: buttonHeight,
                                   margin: const EdgeInsets.only(right: 8),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF1C1C1C),
@@ -978,8 +985,8 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                               GestureDetector(
                                 onTap: () => showExtrasSheet(context),
                                 child: Container(
-                                  height: 74,
-                                  width: 74,
+                                  height: buttonHeight,
+                                  width: buttonHeight,
                                   margin: const EdgeInsets.only(right: 8),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF1C1C1C),
@@ -1023,7 +1030,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                             // Masivno Start / Stop dugme
                             Expanded(
                               child: SizedBox(
-                                height: 74,
+                                height: buttonHeight,
                                 child: isFinished
                                     ? ElevatedButton(
                                         onPressed: notifier.newRide,
@@ -1041,7 +1048,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                           Expanded(
                                             flex: 4,
                                             child: SizedBox(
-                                              height: 74,
+                                              height: buttonHeight,
                                               child: ElevatedButton(
                                                 onPressed: state.isBusy
                                                     ? null
@@ -1070,7 +1077,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                                           Expanded(
                                             flex: 5,
                                             child: SizedBox(
-                                              height: 74,
+                                              height: buttonHeight,
                                               child: ElevatedButton(
                                                 onPressed: state.isBusy
                                                     ? null
@@ -1122,6 +1129,17 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                       ],
                     ),
                   ),
+                  if (mapRight) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 58,
+                      child: RideMap(
+                        tariff: tariff,
+                        calibrationPermille: settings.calibrationPermille,
+                        fixedPrice: _fixedRoute?.price,
+                      ),
+                    ),
+                  ],
                   if (priceRight) ...[
                     const SizedBox(width: 12),
                     Expanded(

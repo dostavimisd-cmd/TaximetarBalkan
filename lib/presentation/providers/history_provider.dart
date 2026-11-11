@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/database_helper.dart';
 import '../../data/repositories/ride_history_repository_impl.dart';
 import '../../data/repositories/shift_repository_impl.dart';
+import '../../domain/earnings_chart.dart';
 import '../../domain/models/shift.dart';
 import '../../domain/models/shift_expense.dart';
 import '../../domain/repositories/shift_repository.dart';
@@ -18,6 +19,22 @@ final rideHistoryRepositoryProvider = Provider<RideHistoryRepository>(
 final rideHistoryProvider = FutureProvider.autoDispose<List<RideRecord>>(
   (ref) => ref.read(rideHistoryRepositoryProvider).getAll(),
 );
+
+/// Grafikon zarade za period (D3): vožnje, troškovi, smene i prethodni period.
+final earningsChartProvider = FutureProvider.autoDispose
+    .family<EarningsChart, ChartRange>((ref, range) async {
+      final rides = ref.read(rideHistoryRepositoryProvider);
+      final shifts = ref.read(shiftRepositoryProvider);
+      final prev = range.previous();
+      return EarningsChart.build(
+        range: range,
+        rides: await rides.getBetween(range.startUtcMs, range.endUtcMs),
+        expenses: await shifts.getExpensesBetween(range.startUtcMs, range.endUtcMs),
+        shifts: await shifts.getAll(),
+        previousRides: await rides.getBetween(prev.startUtcMs, prev.endUtcMs),
+        nowUtc: DateTime.now().toUtc(),
+      );
+    });
 
 final rideGapsProvider = FutureProvider.autoDispose.family<List<GapInfo>, int>(
   (ref, rideId) => ref.read(rideHistoryRepositoryProvider).getGaps(rideId),

@@ -266,6 +266,44 @@ const Map<String, String> enStrings = {
       'Voice commands (start, pause, resume, end)',
   'Dugme mikrofona na glavnom ekranu. Aplikacija ne sluša stalno; svaka komanda traži potvrdu DA/NE.':
       'Microphone button on the main screen. The app does not listen all the time; every command asks for YES/NO.',
+  'Grafikon zarade':
+      'Earnings chart',
+  'Nedelja':
+      'Week',
+  'Mesec':
+      'Month',
+  'Godina':
+      'Year',
+  'Prema prošloj nedelji':
+      'Versus last week',
+  'Prema prošlom mesecu':
+      'Versus last month',
+  'Prema prošloj godini':
+      'Versus last year',
+  'Najbolji dan':
+      'Best day',
+  'Najbolji mesec':
+      'Best month',
+  'Po satu rada (smene)':
+      'Per hour worked (shifts)',
+  'Zarada':
+      'Earnings',
+  'Troškovi':
+      'Expenses',
+  'Ostaje':
+      'Remaining',
+  '{0} din/h':
+      '{0} RSD/h',
+  'Vožnji · km':
+      'Rides · km',
+  'Prosek po radnom danu':
+      'Average per working day',
+  'Dnevni cilj':
+      'Daily goal',
+  'Dodir na stub otvara izveštaj tog dana.':
+      "Tap a bar to open that day's report.",
+  'Najbolji sati (broj vožnji po satu početka)':
+      'Best hours (rides by starting hour)',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':
