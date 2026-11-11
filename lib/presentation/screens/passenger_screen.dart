@@ -18,7 +18,8 @@ const _muted = Color(0xFFB8B8B8);
 
 /// Ekran za putnika (G5): položen telefon ili tablet u držaču, velika cena,
 /// logo i naziv firme; posle kraja vožnje „Za naplatu” sa razradom.
-/// Samo prikaz: obračun i dugmad ostaju na glavnom ekranu.
+/// Tokom vožnje vozač može i odavde da pauzira, nastavi i završi vožnju
+/// (iste komande kao na glavnom ekranu).
 class PassengerScreen extends ConsumerStatefulWidget {
   const PassengerScreen({super.key});
 
@@ -62,7 +63,8 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
   Widget build(BuildContext context) {
     final t = ref.watch(trProvider);
     final state = ref.watch(taximeterProvider);
-    final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
+    final settings =
+        ref.watch(appSettingsProvider).value ?? const AppSettings();
     final result = state.phase == RidePhase.finished ? state.lastResult : null;
 
     return Scaffold(
@@ -105,7 +107,12 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
         if (hasLogo)
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.file(File(path), width: logo, height: logo, fit: BoxFit.contain),
+            child: Image.file(
+              File(path),
+              width: logo,
+              height: logo,
+              fit: BoxFit.contain,
+            ),
           ),
         if (hasLogo) const SizedBox(width: 14),
         Flexible(
@@ -115,16 +122,23 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
             children: [
               // zaglavlje računa je korisnički tekst: ne prevodi se
               if (lines.isNotEmpty)
-                Text(lines.first,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  lines.first,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               if (lines.length > 1)
-                Text(lines[1],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: _muted, fontSize: 13)),
+                Text(
+                  lines[1],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _muted, fontSize: 13),
+                ),
             ],
           ),
         ),
@@ -132,32 +146,72 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
     );
   }
 
+  /// Cena popunjava 80% svog prostora (cela je bila prevelika).
   Widget _price(int value, Color color, {double max = 150}) => Expanded(
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(money(value),
-                  style: TextStyle(
-                      color: color,
-                      fontSize: max,
-                      height: 1,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -2)),
-              const SizedBox(width: 14),
-              Padding(
-                padding: EdgeInsets.only(bottom: max * 0.12),
-                child: Text('RSD',
-                    style: TextStyle(
-                        color: _muted, fontSize: max * 0.23, fontWeight: FontWeight.bold)),
+    child: FractionallySizedBox(
+      widthFactor: 0.8,
+      heightFactor: 0.8,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              money(value),
+              style: TextStyle(
+                color: color,
+                fontSize: max,
+                height: 1,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -2,
               ),
-            ],
+            ),
+            const SizedBox(width: 14),
+            Padding(
+              padding: EdgeInsets.only(bottom: max * 0.12),
+              child: Text(
+                'RSD',
+                style: TextStyle(
+                  color: _muted,
+                  fontSize: max * 0.23,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _button(String label, Color color, VoidCallback? onPressed) =>
+      SizedBox(
+        width: 150,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            disabledBackgroundColor: color.withValues(alpha: 0.4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: FittedBox(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
           ),
         ),
       );
 
-  Widget _tile(String label, String value, {Color color = Colors.white}) => Expanded(
+  Widget _tile(String label, String value, {Color color = Colors.white}) =>
+      Expanded(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -168,11 +222,23 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: const TextStyle(color: Color(0xFFA8A8A8), fontSize: 11, letterSpacing: 1)),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFFA8A8A8),
+                  fontSize: 11,
+                  letterSpacing: 1,
+                ),
+              ),
               FittedBox(
-                child: Text(value,
-                    style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -183,9 +249,12 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
     final paused = state.phase == RidePhase.paused;
     final active = state.isRunning;
     final tariffs = ref.watch(tariffsProvider).value ?? const [];
-    final tariff = tariffs.where((x) => x.id == state.selectedTariffId).firstOrNull;
+    final tariff = tariffs
+        .where((x) => x.id == state.selectedTariffId)
+        .firstOrNull;
     final extras = ExtraCharge.total(state.extras);
     final statusColor = paused ? Colors.amberAccent : const Color(0xFF66D19E);
+    final notifier = ref.read(taximeterProvider.notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -195,7 +264,10 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
             if (active)
               Container(
                 margin: const EdgeInsets.only(right: 40),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: statusColor),
@@ -203,10 +275,11 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
                 child: Text(
                   paused ? t('PAUZA') : t('VOŽNJA U TOKU'),
                   style: TextStyle(
-                      color: statusColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1),
+                    color: statusColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
           ],
@@ -214,27 +287,60 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
         Expanded(
           child: Row(
             children: [
-              _price(active ? state.currentPrice : 0, priceColorOf(s.priceColor)),
+              _price(
+                active ? state.currentPrice : 0,
+                priceColorOf(s.priceColor),
+              ),
             ],
           ),
         ),
-        Row(
-          children: [
-            _tile(t('DISTANCA'),
-                t('{0} km', [(state.currentDistanceMeters / 1000).toStringAsFixed(1)])),
-            const SizedBox(width: 10),
-            _tile(t('ČEKANJE'), RideSummary.clock(state.currentWaitingMs ~/ 1000)),
-            if (extras > 0) ...[
+        SizedBox(
+          height: 64,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _tile(
+                t('DISTANCA'),
+                t('{0} km', [
+                  (state.currentDistanceMeters / 1000).toStringAsFixed(1),
+                ]),
+              ),
               const SizedBox(width: 10),
-              _tile(t('DOPLATA'), '+$extras', color: const Color(0xFFFFD54F)),
+              _tile(
+                t('ČEKANJE'),
+                RideSummary.clock(state.currentWaitingMs ~/ 1000),
+              ),
+              if (extras > 0) ...[
+                const SizedBox(width: 10),
+                _tile(t('DOPLATA'), '+$extras', color: const Color(0xFFFFD54F)),
+              ],
+              if (state.fixedRouteName != null || tariff != null) ...[
+                const SizedBox(width: 10),
+                // naziv relacije i tarife unosi korisnik: ne prevodi se
+                _tile(
+                  state.fixedRouteName != null ? t('RELACIJA') : t('TARIFA'),
+                  state.fixedRouteName ?? tariff!.name,
+                ),
+              ],
+              // PAUZA/NASTAVI i ZAVRŠI: iste komande kao na glavnom ekranu
+              if (active) ...[
+                const SizedBox(width: 10),
+                _button(
+                  paused ? t('NASTAVI') : t('PAUZA'),
+                  paused ? const Color(0xFF2E7D32) : const Color(0xFFF9A825),
+                  state.isBusy
+                      ? null
+                      : (paused ? notifier.resumeRide : notifier.pauseRide),
+                ),
+                const SizedBox(width: 10),
+                _button(
+                  t('ZAVRŠI'),
+                  const Color(0xFFD32F2F),
+                  state.isBusy ? null : notifier.stopRide,
+                ),
+              ],
             ],
-            if (state.fixedRouteName != null || tariff != null) ...[
-              const SizedBox(width: 10),
-              // naziv relacije i tarife unosi korisnik: ne prevodi se
-              _tile(state.fixedRouteName != null ? t('RELACIJA') : t('TARIFA'),
-                  state.fixedRouteName ?? tariff!.name),
-            ],
-          ],
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -248,24 +354,30 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
 
   Widget _finished(Tr t, TaximeterState state, RideResult r, AppSettings s) {
     Widget line(String label, int value, {bool bold = false}) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(label,
-                    style: TextStyle(
-                        color: bold ? Colors.white : _muted,
-                        fontSize: bold ? 18 : 15,
-                        fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: bold ? Colors.white : _muted,
+                fontSize: bold ? 18 : 15,
+                fontWeight: bold ? FontWeight.bold : FontWeight.normal,
               ),
-              Text(t('{0} din', [money(value)]),
-                  style: TextStyle(
-                      color: bold ? const Color(0xFFFFD54F) : Colors.white,
-                      fontSize: bold ? 18 : 15,
-                      fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
-            ],
+            ),
           ),
-        );
+          Text(
+            t('{0} din', [money(value)]),
+            style: TextStyle(
+              color: bold ? const Color(0xFFFFD54F) : Colors.white,
+              fontSize: bold ? 18 : 15,
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
     final eur = s.eurRateMilli;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -276,15 +388,30 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
             children: [
               _firm(s, logo: 44),
               const Spacer(),
-              Text(t('ZA NAPLATU'),
-                  style: const TextStyle(color: _muted, fontSize: 16, letterSpacing: 2)),
+              Text(
+                t('ZA NAPLATU'),
+                style: const TextStyle(
+                  color: _muted,
+                  fontSize: 16,
+                  letterSpacing: 2,
+                ),
+              ),
               SizedBox(
                 height: 130,
-                child: Row(children: [_price(r.totalPrice, const Color(0xFFFFD54F), max: 120)]),
+                child: Row(
+                  children: [
+                    _price(r.totalPrice, const Color(0xFFFFD54F), max: 120),
+                  ],
+                ),
               ),
               if (eur != null)
-                Text('≈ ${t('{0} EUR', [CurrencyConverter.formatForeign(r.totalPrice, eur)])}',
-                    style: const TextStyle(color: Color(0xFFD0D0D0), fontSize: 18)),
+                Text(
+                  '≈ ${t('{0} EUR', [CurrencyConverter.formatForeign(r.totalPrice, eur)])}',
+                  style: const TextStyle(
+                    color: Color(0xFFD0D0D0),
+                    fontSize: 18,
+                  ),
+                ),
               const Spacer(),
             ],
           ),
@@ -306,11 +433,19 @@ class _PassengerScreenState extends ConsumerState<PassengerScreen> {
                 line(t('Fiksno: {0}', [state.fixedRouteName]), r.startPrice)
               else ...[
                 line(t('Start'), r.startPrice),
-                line(t('Kilometraža ({0} km)', [(r.distanceMeters / 1000).toStringAsFixed(1)]),
-                    r.kmPrice),
-                line(t('Čekanje ({0})', [RideSummary.clock(r.waitingSeconds)]), r.waitingPrice),
+                line(
+                  t('Kilometraža ({0} km)', [
+                    (r.distanceMeters / 1000).toStringAsFixed(1),
+                  ]),
+                  r.kmPrice,
+                ),
+                line(
+                  t('Čekanje ({0})', [RideSummary.clock(r.waitingSeconds)]),
+                  r.waitingPrice,
+                ),
               ],
-              if (r.minPriceAdjustment > 0) line(t('Dopuna do minimalne'), r.minPriceAdjustment),
+              if (r.minPriceAdjustment > 0)
+                line(t('Dopuna do minimalne'), r.minPriceAdjustment),
               for (final e in r.extras) line(e.name, e.amount),
               const Divider(color: _border, height: 18),
               line(t('UKUPNO'), r.totalPrice, bold: true),
