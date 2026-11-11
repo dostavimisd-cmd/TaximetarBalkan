@@ -11,7 +11,7 @@ on:
 
 env:
   # Naziv .ipa fajla (iPad); prazno = verzija iz pubspec.yaml.
-  NAZIV_IPA: '1.2.2'
+  NAZIV_IPA: '1.2.3'
 
 jobs:
   build-ipa:
