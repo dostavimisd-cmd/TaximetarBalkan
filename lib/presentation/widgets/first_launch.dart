@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/tr.dart';
 import '../providers/settings_provider.dart';
-import 'battery_guide.dart';
+import '../screens/welcome_guide_screen.dart';
 
 /// Pri prvom pokretanju: napomena da aplikacija nije overeni taksimetar
-/// (obavezno prihvatanje), a zatim jednom uputstvo za rad u pozadini.
+/// (obavezno prihvatanje), a zatim jednom vodič za početak (D1: tarifa,
+/// relacije, štampač, rad u pozadini).
 Future<void> showFirstLaunch(BuildContext context, WidgetRef ref) async {
   final t = ref.read(trProvider);
   await showDialog<void>(
@@ -46,6 +47,10 @@ Future<void> showFirstLaunch(BuildContext context, WidgetRef ref) async {
     await ref.read(appSettingsProvider.notifier).change(
           (s) => s.copyWith(batteryGuideShown: true),
         );
-    if (context.mounted) await showBatteryGuide(context, ref);
+    if (context.mounted) {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const WelcomeGuideScreen()),
+      );
+    }
   }
 }

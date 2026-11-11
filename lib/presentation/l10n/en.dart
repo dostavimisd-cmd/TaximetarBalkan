@@ -304,6 +304,40 @@ const Map<String, String> enStrings = {
       "Tap a bar to open that day's report.",
   'Najbolji sati (broj vožnji po satu početka)':
       'Best hours (rides by starting hour)',
+  'Vodič za početak':
+      'Getting started',
+  'Tvoja tarifa':
+      'Your tariff',
+  'Fiksne relacije (opciono)':
+      'Fixed routes (optional)',
+  'Štampač računa (opciono)':
+      'Receipt printer (optional)',
+  'Rad sa zaključanim ekranom':
+      'Working with the screen locked',
+  'Unesi start, cenu po km, čekanje i minimalnu cenu iz svog cenovnika. Aplikacija ne predlaže cene. Kasnije možeš dodati još tarifa (noćna, praznik) i raspored.':
+      'Enter the start fee, price per km, waiting and minimum fare from your own price list. The app does not suggest prices. You can add more tariffs (night, holiday) and a schedule later.',
+  'Ako imaš stalne cene za relacije (npr. aerodrom), nalepi spisak: jedan red je jedna relacija. Može i kasnije u Podešavanjima → Fiksne relacije.':
+      'If you have set prices for routes (e.g. the airport), paste the list: one line is one route. You can also do this later in Settings → Fixed routes.',
+  'Ako imaš Bluetooth termalni štampač, izaberi ga u Podešavanjima → Štampač računa. Bez štampača aplikacija radi normalno.':
+      'If you have a Bluetooth thermal printer, choose it in Settings → Receipt printer. The app works normally without a printer.',
+  'Da taksimetar kuca i kad je ekran zaključan, isključi štednju baterije za ovu aplikaciju. Vodič pokazuje korake za tvoj telefon.':
+      'To keep the meter running with the screen locked, turn off battery saving for this app. The guide shows the steps for your phone.',
+  'UVEZI RELACIJE':
+      'IMPORT ROUTES',
+  'OTVORI PODEŠAVANJA':
+      'OPEN SETTINGS',
+  'PODESI BATERIJU':
+      'SET UP BATTERY',
+  'Uneto tarifa: {0}':
+      'Tariffs entered: {0}',
+  'Uneto relacija: {0}':
+      'Routes entered: {0}',
+  'Korak {0} od {1}':
+      'Step {0} of {1}',
+  'GOTOVO':
+      'DONE',
+  'DALJE':
+      'NEXT',
   'Vibracija i zvuk':
       'Vibration and sound',
   'Kratak signal kad vožnja počne, stane na pauzu, nastavi se ili završi.':

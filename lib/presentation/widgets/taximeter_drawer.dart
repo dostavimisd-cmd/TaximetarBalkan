@@ -5,6 +5,7 @@ import '../providers/history_provider.dart';
 import '../screens/about_screen.dart';
 import '../screens/earnings_chart_screen.dart';
 import '../screens/heatmap_screen.dart';
+import '../screens/welcome_guide_screen.dart';
 import 'battery_guide.dart';
 
 class TaximeterDrawer extends ConsumerWidget {
@@ -189,6 +190,19 @@ class TaximeterDrawer extends ConsumerWidget {
                 onTap: () {
                   Navigator.pop(context);
                   showBatteryGuide(context, ref);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.school_outlined, color: Colors.white70),
+                title: Text(
+                  t('Vodič za početak'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const WelcomeGuideScreen()),
+                  );
                 },
               ),
               ListTile(
