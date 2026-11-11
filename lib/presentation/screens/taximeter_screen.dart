@@ -693,7 +693,12 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           ),
 
                         // Glavna cifra (Cena); smanjuje se kad nema mesta
-                        Flexible(flex: 3, child: priceView),
+                        // Položeno cena zauzima sav slobodan prostor, pa su
+                        // info i dugmad uvek na dnu (iPad je viši od cene).
+                        if (landscape)
+                          Expanded(child: Center(child: priceView))
+                        else
+                          Flexible(flex: 3, child: priceView),
 
                         if (settings.showMap && !landscape)
                           Expanded(
