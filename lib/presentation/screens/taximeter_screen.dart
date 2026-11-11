@@ -377,12 +377,10 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
         ? CurrencyConverter.formatForeign(shownPrice, eurRate!)
         : shownPrice.toString();
 
-    // D2: tablet (iPad) ima dovoljno visine, pa položeno cena ostaje levo uz
-    // dugmad, a mapa ide desno preko cele visine. Telefon položeno: cena desno
-    // iznad mape (levo nema visine za nju).
+    // D2: položeno (telefon i tablet) cena ostaje levo uz dugmad, a mapa ide
+    // desno preko cele visine; cena se smanjuje kad nema mesta.
     final tablet = MediaQuery.sizeOf(context).shortestSide >= 600;
-    final mapRight = landscape && settings.showMap && tablet;
-    final priceRight = landscape && settings.showMap && !tablet;
+    final mapRight = landscape && settings.showMap;
     // Dugmad +, PAUZA i ZAVRŠI: na iPadu 9. gen. 78 tačaka je oko 1,5 cm.
     final buttonHeight = tablet ? 78.0 : 74.0;
     final priceView = FittedBox(
@@ -688,7 +686,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           ),
 
                         // Glavna cifra (Cena); smanjuje se kad nema mesta
-                        if (!priceRight) Flexible(flex: 3, child: priceView),
+                        Flexible(flex: 3, child: priceView),
 
                         if (settings.showMap && !landscape)
                           Expanded(
@@ -755,7 +753,7 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 18),
+                        SizedBox(height: landscape ? 8 : 18),
 
                         // Konačan obračun završene vožnje
                         if (isFinished && result != null)
@@ -1137,26 +1135,6 @@ class _TaximeterScreenState extends ConsumerState<TaximeterScreen> {
                         tariff: tariff,
                         calibrationPermille: settings.calibrationPermille,
                         fixedPrice: _fixedRoute?.price,
-                      ),
-                    ),
-                  ],
-                  if (priceRight) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(flex: 2, child: Center(child: priceView)),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            flex: 3,
-                            child: RideMap(
-                              tariff: tariff,
-                              calibrationPermille: settings.calibrationPermille,
-                              fixedPrice: _fixedRoute?.price,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ],

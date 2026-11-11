@@ -21,7 +21,7 @@
 
 10. **Rezervna kopija:** `BackupService` (`data/services/backup_service.dart`) izvozi tabele i slike logoa u JSON i vraća ih; `backup_actions.dart` (presentation) šalje fajl preko `share_plus`, bira ga preko `file_picker` i osvežava providere. Kopija iz novije šeme se odbija, kolone kojih nema u bazi se preskaču.
 
-12. **Raspored glavnog ekrana (D2):** uspravno (telefon) kao do sada. Položeno: tablet (`shortestSide >= 600`, npr. iPad) drži cenu levo uz dugmad (42%), mapa desno preko cele visine (58%), dugmad 78 tačaka (~1,5 cm na iPadu 9. gen.); telefon položeno drži cenu desno iznad mape.
+12. **Raspored glavnog ekrana (D2):** uspravno (telefon) kao do sada. Položeno (telefon i tablet): cena levo uz dugmad (42%, smanjuje se kad nema mesta), mapa desno preko cele visine (58%). Tablet (`shortestSide >= 600`, npr. iPad): cena 1,6× veća, dugmad 78 tačaka (~1,5 cm na iPadu 9. gen.).
 
 ## Ko piše u bazu
 - `rides`, `ride_snapshots`, `ride_gaps`, `ride_extras` za vožnju u toku: samo servis (`RideEngine`). Doplate stižu kao komande `add_extra{name, amount}` / `remove_extra{id}` (dugme „+” na glavnom ekranu, `widgets/extras_sheet.dart`); spisak stalnih doplata je u Podešavanjima (`app_settings.extras`).
